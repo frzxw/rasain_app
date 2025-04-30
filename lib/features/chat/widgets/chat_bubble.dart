@@ -10,11 +10,11 @@ class ChatBubble extends StatelessWidget {
   final VoidCallback? onRateNegative;
   
   const ChatBubble({
-    Key? key,
+    super.key,
     required this.message,
     this.onRatePositive,
     this.onRateNegative,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

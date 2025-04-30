@@ -27,7 +27,7 @@ class CustomButton extends StatelessWidget {
   final bool disabled;
   
   const CustomButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.variant = ButtonVariant.primary,
@@ -37,11 +37,11 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.isFullWidth = false,
     this.disabled = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: isFullWidth ? double.infinity : null,
       height: _getHeightForSize(),
       child: _buildButton(context),

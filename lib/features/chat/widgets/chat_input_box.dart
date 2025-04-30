@@ -8,10 +8,10 @@ class ChatInputBox extends StatefulWidget {
   final Function(List<int>, String) onSendImage;
   
   const ChatInputBox({
-    Key? key,
+    super.key,
     required this.onSendText,
     required this.onSendImage,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatInputBox> createState() => _ChatInputBoxState();

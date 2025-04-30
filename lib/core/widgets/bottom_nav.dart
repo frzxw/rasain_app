@@ -6,9 +6,9 @@ class ScaffoldWithBottomNavBar extends StatefulWidget {
   final Widget child;
   
   const ScaffoldWithBottomNavBar({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<ScaffoldWithBottomNavBar> createState() => _ScaffoldWithBottomNavBarState();

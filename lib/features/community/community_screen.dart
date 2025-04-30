@@ -11,7 +11,7 @@ import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({Key? key}) : super(key: key);
+  const CommunityScreen({super.key});
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();

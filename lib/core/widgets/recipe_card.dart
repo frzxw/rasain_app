@@ -12,13 +12,13 @@ class RecipeCard extends StatelessWidget {
   final bool isHighlighted;
   
   const RecipeCard({
-    Key? key,
+    super.key,
     required this.recipe,
     this.width = AppSizes.recipeCardWidth,
     this.height = AppSizes.recipeCardHeight,
     this.showEstimatedCost = true,
     this.isHighlighted = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

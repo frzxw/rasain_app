@@ -12,14 +12,14 @@ class IngredientTile extends StatelessWidget {
   final VoidCallback? onDelete;
   
   const IngredientTile({
-    Key? key,
+    super.key,
     required this.ingredient,
     this.isOwned = false,
     this.showPrice = false,
     this.onToggle,
     this.onEdit,
     this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
