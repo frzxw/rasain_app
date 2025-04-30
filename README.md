@@ -1,16 +1,97 @@
-# rasain_app
+# Pemrograman Visual dan Piranti Bergerak
 
-A new Flutter project.
+---
 
-## Getting Started
+## Tugas 3
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+### Kelompok 24 Kelas Kamis
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Proyek ini dikembangkan oleh kelompok 24 sebagai bagian dari tugas 3 pada mata kuliah Pemrograman Visual dan Piranti Bergerak. Adapun anggota dari kelompok kami adalah:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **2307589 Fariz Wibisono**
+- **2309245 Hasbi Haqqul Fikri**
+
+
+---
+
+## Deskripsi Aplikasi
+
+---
+
+Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai resep masakan Indonesia dengan detail lengkap. Aplikasi ini dirancang dengan pendekatan dwibahasa, menggunakan kode Bahasa Inggris untuk kolaborasi pengembang global sambil menampilkan konten kuliner dalam Bahasa Indonesia.
+
+## Fitur Utama
+
+---
+
+- **Eksplorasi Resep** – Jelajahi koleksi resep masakan Indonesia yang beragam.  
+- **Detail Resep** – Informasi lengkap tentang bahan, instruksi memasak, dan waktu persiapan.  
+- **Pencarian Cerdas** – Cari resep berdasarkan nama atau bahan.  
+- **Pencarian Gambar** – Temukan resep dengan mengunggah foto makanan.  
+- **Asisten Koki Virtual** – Dapatkan tips memasak, alternatif bahan, dan panduan langkah demi langkah.  
+- **Komunitas** – Bagikan pengalaman memasak dan terhubung dengan penggemar masakan lainnya.  
+- **Manajemen Dapur** – Kelola bahan yang Anda miliki dan dapatkan saran resep sesuai inventaris.  
+- **Profil Pengguna** – Simpan resep favorit dan pantau perjalanan memasak Anda.
+
+## Teknologi yang Digunakan
+
+---
+
+- **Flutter** (versi terbaru)
+- **Dart**
+- **State Management:** Provider
+- **Navigation:** GoRouter
+- **UI Components:** Material Design
+
+## Cara Install dan Menjalankan Aplikasi
+
+---
+
+### **Clone Repository**
+
+```bash
+git clone https://github.com/username/rasain_app.git
+cd rasain_app
+```
+
+### **Install Dependencies**
+
+Pastikan Anda telah menginstal Flutter versi terbaru. Jika belum, unduh Flutter dari [situs resmi](https://flutter.dev/docs/get-started/install). Setelah itu, jalankan perintah berikut:
+
+```bash
+flutter pub get
+```
+
+### **Menjalankan Aplikasi**
+
+Jalankan aplikasi di emulator atau perangkat fisik dengan perintah berikut:
+
+```bash
+flutter run
+```
+
+## Struktur Folder
+
+---
+
+```
+lib/
+├── main.dart             # Entry point aplikasi
+├── app.dart              # Konfigurasi aplikasi utama
+├── routes.dart           # Rute navigasi
+├── core/                 # Komponen utama
+│   ├── constants/        # Konstanta aplikasi
+│   ├── theme/            # Definisi tema UI
+│   └── widgets/          # Widget bersama
+├── features/             # Fitur aplikasi
+│   ├── home/             # Layar beranda 
+│   ├── recipe_detail/    # Detail resep
+│   ├── community/        # Forum komunitas
+│   ├── chat/             # Asisten koki virtual
+│   ├── profile/          # Profil pengguna
+│   └── pantry/           # Manajemen dapur
+├── models/               # Model data
+└── services/             # Layanan dan handler API
+```
