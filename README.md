@@ -10,8 +10,11 @@
 
 Proyek ini dikembangkan oleh kelompok 24 sebagai bagian dari tugas 3 pada mata kuliah Pemrograman Visual dan Piranti Bergerak. Adapun anggota dari kelompok kami adalah:
 
-- **2307589 Fariz Wibisono**
-- **2309245 Hasbi Haqqul Fikri**
+- 2305995 A Bintang Iftitah FJ
+- 2307589 Fariz Wibisono
+- 2308817 Hafidz Tantowi
+- 2309245 Hasbi Haqqul Fikri
+- 2308163 Putra Hadiyanto Nugroho
 
 
 ---
