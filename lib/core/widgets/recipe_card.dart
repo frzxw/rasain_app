@@ -22,6 +22,9 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug output to verify recipe data
+    debugPrint('Building RecipeCard for recipe: ${recipe.name}');
+    
     return GestureDetector(
       onTap: () => GoRouter.of(context).push('/recipe/${recipe.id}'),
       child: Container(
@@ -55,7 +58,7 @@ class RecipeCard extends StatelessWidget {
                 height: height * 0.6,
                 width: double.infinity,
                 color: AppColors.surface,
-                child: recipe.imageUrl != null
+                child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
                     ? Image.network(
                         recipe.imageUrl!,
                         fit: BoxFit.cover,
@@ -74,17 +77,44 @@ class RecipeCard extends StatelessWidget {
                           );
                         },
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.restaurant,
-                            color: AppColors.textSecondary,
-                            size: AppSizes.iconL,
+                          debugPrint('❌ Error loading image for ${recipe.name}: $error');
+                          return const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.restaurant,
+                                  color: AppColors.textSecondary,
+                                  size: AppSizes.iconL,
+                                ),
+                                Text('Image unavailable',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       )
-                    : const Icon(
-                        Icons.restaurant,
-                        color: AppColors.textSecondary,
-                        size: AppSizes.iconL,
+                    : const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.restaurant,
+                              color: AppColors.textSecondary,
+                              size: AppSizes.iconL,
+                            ),
+                            Text('No image',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
               ),
             ),

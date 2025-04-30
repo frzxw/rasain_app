@@ -86,11 +86,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Saved Recipes',
+                    'Resep Tersimpan', // Changed to Indonesian
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(
-                    '${user.savedRecipesCount} saved',
+                    '${user.savedRecipesCount} tersimpan', // Changed to Indonesian
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -199,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildStatItem(
                 context,
                 count: user.savedRecipesCount,
-                label: 'Saved',
+                label: 'Tersimpan', // Changed to Indonesian
               ),
               Container(
                 height: 24,
@@ -210,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildStatItem(
                 context,
                 count: user.postsCount,
-                label: 'Posts',
+                label: 'Postingan', // Changed to Indonesian
               ),
             ],
           ),
@@ -252,13 +252,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: AppSizes.marginL),
             Text(
-              'Sign in to access your profile',
+              'Masuk untuk mengakses profil Anda', // Changed to Indonesian
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'Save your favorite recipes, track your cooking journey, and connect with the community',
+              'Simpan resep favorit Anda, lacak perjalanan memasak Anda, dan terhubung dengan komunitas', // Changed to Indonesian
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -275,7 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
                 ),
-                child: const Text('Sign In'),
+                child: const Text('Masuk'), // Changed to Indonesian
               ),
             ),
             const SizedBox(height: AppSizes.marginM),
@@ -289,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
                 ),
-                child: const Text('Create Account'),
+                child: const Text('Buat Akun'), // Changed to Indonesian
               ),
             ),
           ],
@@ -306,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign In'),
+        title: const Text('Masuk'), // Changed to Indonesian
         content: SizedBox(
           width: double.maxFinite,
           child: Form(
@@ -317,13 +317,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextFormField(
                   controller: emailController,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Surel',
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Masukkan email Anda'; // Changed to Indonesian
                     }
                     return null;
                   },
@@ -332,13 +332,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextFormField(
                   controller: passwordController,
                   decoration: const InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Kata Sandi',
                     prefixIcon: Icon(Icons.lock_outlined),
                   ),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return 'Masukkan password Anda'; // Changed to Indonesian
                     }
                     return null;
                   },
@@ -350,7 +350,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           ElevatedButton(
             onPressed: () async {
@@ -367,14 +367,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!success && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(authService.error ?? 'Login failed. Please try again.'),
+                      content: Text(authService.error ?? 'Login gagal. Silakan coba lagi.'), // Changed to Indonesian
                       backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Sign In'),
+            child: const Text('Masuk'), // Changed to Indonesian
           ),
         ],
       ),
@@ -390,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Create Account'),
+        title: const Text('Buat Akun'), // Changed to Indonesian
         content: SizedBox(
           width: double.maxFinite,
           child: Form(
@@ -401,12 +401,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextFormField(
                   controller: nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Name',
+                    labelText: 'Nama', // Changed to Indonesian
                     prefixIcon: Icon(Icons.person_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return 'Masukkan nama Anda'; // Changed to Indonesian
                     }
                     return null;
                   },
@@ -421,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Masukkan email Anda'; // Changed to Indonesian
                     }
                     return null;
                   },
@@ -430,16 +430,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextFormField(
                   controller: passwordController,
                   decoration: const InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Kata Sandi',
                     prefixIcon: Icon(Icons.lock_outlined),
                   ),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return 'Masukkan password'; // Changed to Indonesian
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'Password minimal 6 karakter'; // Changed to Indonesian
                     }
                     return null;
                   },
@@ -451,7 +451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           ElevatedButton(
             onPressed: () async {
@@ -469,14 +469,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!success && context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(authService.error ?? 'Registration failed. Please try again.'),
+                      content: Text(authService.error ?? 'Pendaftaran gagal. Silakan coba lagi.'), // Changed to Indonesian
                       backgroundColor: AppColors.error,
                     ),
                   );
                 }
               }
             },
-            child: const Text('Register'),
+            child: const Text('Daftar'), // Changed to Indonesian
           ),
         ],
       ),

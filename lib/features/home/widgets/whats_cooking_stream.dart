@@ -102,7 +102,7 @@ class WhatsCookingStream extends StatelessWidget {
                       _buildRatingStars(recipe.rating),
                       const SizedBox(width: AppSizes.marginS),
                       Text(
-                        '(${recipe.reviewCount} reviews)',
+                        '(${recipe.reviewCount} ulasan)',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -142,7 +142,7 @@ class WhatsCookingStream extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Est. ${recipe.estimatedCost}',
+                              'Est. Rp ${recipe.estimatedCost}',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -267,14 +267,14 @@ class WhatsCookingStream extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'No recipes available',
+              'Belum ada resep tersedia',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              'Check back later for new recommendations',
+              'Periksa kembali nanti untuk rekomendasi baru',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),

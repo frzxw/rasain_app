@@ -1,14 +1,16 @@
 import 'package:flutter/foundation.dart';
 import '../models/recipe.dart';
-import 'api_service.dart';
+import 'mock_api_service.dart';
 
 class RecipeService extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  // Use MockApiService instead of ApiService
+  final MockApiService _apiService = MockApiService();
   
   List<Recipe> _popularRecipes = [];
   List<Recipe> _pantryRecipes = [];
   List<Recipe> _whatsNewRecipes = [];
   List<Recipe> _savedRecipes = [];
+  List<Recipe> _recommendedRecipes = []; // Added this line for recommended recipes
   
   Recipe? _currentRecipe;
   
@@ -20,6 +22,7 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> get pantryRecipes => _pantryRecipes;
   List<Recipe> get whatsNewRecipes => _whatsNewRecipes;
   List<Recipe> get savedRecipes => _savedRecipes;
+  List<Recipe> get recommendedRecipes => _recommendedRecipes; // Added this getter
   
   Recipe? get currentRecipe => _currentRecipe;
   bool get isLoading => _isLoading;
@@ -31,6 +34,8 @@ class RecipeService extends ChangeNotifier {
       fetchPopularRecipes(),
       fetchWhatsNewRecipes(),
       fetchSavedRecipes(),
+      fetchRecommendedRecipes(),
+      fetchPantryRecipes(), // Added this call to initialize pantry recipes
     ]);
   }
   
@@ -113,6 +118,34 @@ class RecipeService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _setError('Failed to load saved recipes: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Fetch recommended recipes (new method)
+  Future<void> fetchRecommendedRecipes() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final response = await _apiService.get('recipes/recommendations');
+      
+      final recipes = (response['recipes'] as List)
+          .map((recipe) => Recipe.fromJson(recipe))
+          .toList();
+      
+      _recommendedRecipes = recipes;
+      
+      // Debug print to verify recipes are loaded
+      debugPrint('🍲 Loaded ${recipes.length} recommended recipes');
+      for (final recipe in recipes) {
+        debugPrint('Recipe: ${recipe.name}, Image URL: ${recipe.imageUrl}');
+      }
+      
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load recommended recipes: $e');
     } finally {
       _setLoading(false);
     }
@@ -293,6 +326,7 @@ class RecipeService extends ChangeNotifier {
     updateList(_popularRecipes);
     updateList(_pantryRecipes);
     updateList(_whatsNewRecipes);
+    updateList(_recommendedRecipes); // Added this line
     
     if (_currentRecipe != null && _currentRecipe!.id == recipeId) {
       _currentRecipe = _currentRecipe!.copyWith(isSaved: isSaved);

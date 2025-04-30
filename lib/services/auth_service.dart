@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
-import 'api_service.dart';
+import 'mock_api_service.dart';
 
 class AuthService extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final MockApiService _apiService = MockApiService();
   
   UserProfile? _currentUser;
   bool _isAuthenticated = false;

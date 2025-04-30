@@ -5,7 +5,7 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
-import '../../services/api_service.dart';
+import '../../services/mock_api_service.dart';
 import '../../models/community_post.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
@@ -18,18 +18,19 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
+  // Updated with Indonesian cuisine categories
   final List<String> _tags = [
-    'All', 'Popular', 'Vegetarian', 'Dessert', 'BBQ', 
-    'Quick Meals', 'Breakfast', 'Local Cuisine'
+    'Semua', 'Makanan Utama', 'Pedas', 'Tradisional', 'Sup', 
+    'Daging', 'Manis', 'Minuman'
   ];
   
-  String _selectedTag = 'All';
+  String _selectedTag = 'Semua';
   bool _isLoading = false;
   List<CommunityPost> _posts = [];
   String? _error;
   
   // Mock API service for post loading
-  final ApiService _apiService = ApiService();
+  final MockApiService _apiService = MockApiService();
 
   @override
   void initState() {
@@ -147,13 +148,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'Oops! Something went wrong',
+              'Oops! Terjadi kesalahan',
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              _error ?? 'Failed to load posts',
+              _error ?? 'Gagal memuat postingan',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -161,7 +162,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginL),
             CustomButton(
-              label: 'Try Again',
+              label: 'Coba Lagi',
               icon: Icons.refresh,
               onPressed: _loadPosts,
               variant: ButtonVariant.primary,
@@ -186,17 +187,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              _selectedTag == 'All'
-                  ? 'No posts yet'
-                  : 'No posts in $_selectedTag',
+              _selectedTag == 'Semua'
+                  ? 'Belum ada postingan'
+                  : 'Belum ada postingan di $_selectedTag',
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              _selectedTag == 'All'
-                  ? 'Be the first to share your cooking journey!'
-                  : 'Try a different category or be the first to post here',
+              _selectedTag == 'Semua'
+                  ? 'Jadilah yang pertama berbagi pengalaman memasak Anda!'
+                  : 'Coba kategori lain atau jadilah yang pertama posting di sini',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -204,7 +205,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginL),
             CustomButton(
-              label: 'Create Post',
+              label: 'Buat Postingan',
               icon: Icons.add,
               onPressed: _showCreatePostDialog,
               variant: ButtonVariant.primary,
@@ -237,7 +238,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to update like. Please try again.'),
+          content: Text('Gagal memperbarui suka. Silakan coba lagi.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -270,7 +271,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Comments (${post.commentCount})',
+                        'Komentar (${post.commentCount})',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       IconButton(
@@ -305,7 +306,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       Expanded(
                         child: TextField(
                           decoration: InputDecoration(
-                            hintText: 'Add a comment...',
+                            hintText: 'Tambahkan komentar...',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppSizes.radiusL),
                             ),
@@ -342,7 +343,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     // Implementation for sharing a post would go here
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Sharing post from ${post.userName}...'),
+        content: Text('Membagikan postingan dari ${post.userName}...'),
         backgroundColor: AppColors.success,
       ),
     );
@@ -354,14 +355,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
     List<String> selectedIngredients = [];
     XFile? selectedImage;
     
+    // Updated with Indonesian ingredients
     final availableIngredients = [
-      'Tomato', 'Chicken', 'Rice', 'Pasta', 'Garlic',
-      'Olive Oil', 'Basil', 'Cheese', 'Butter', 'Egg'
+      'Beras', 'Cabai Merah', 'Cabai Rawit', 'Bawang Merah', 'Bawang Putih',
+      'Daging Sapi', 'Ayam', 'Telur', 'Kecap Manis', 'Santan', 'Tempe', 'Terasi'
     ];
     
+    // Updated with Indonesian cuisine categories
     final availableCategories = [
-      'Vegetarian', 'Dessert', 'BBQ', 'Quick Meals',
-      'Breakfast', 'Local Cuisine', 'Other'
+      'Makanan Utama', 'Pedas', 'Tradisional', 'Sup', 
+      'Daging', 'Manis', 'Minuman'
     ];
     
     await showModalBottomSheet(
@@ -389,7 +392,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Create Post',
+                          'Buat Postingan',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         IconButton(
@@ -406,7 +409,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       controller: contentController,
                       maxLines: 5,
                       decoration: const InputDecoration(
-                        hintText: 'Share your cooking journey...',
+                        hintText: 'Bagikan pengalaman masak Anda...',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -481,7 +484,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                   }
                                 },
                                 icon: const Icon(Icons.image),
-                                label: const Text('Add Photo'),
+                                label: const Text('Tambah Foto'),
                               ),
                       ],
                     ),
@@ -491,11 +494,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     // Category selection
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
-                        labelText: 'Category',
+                        labelText: 'Kategori',
                         border: OutlineInputBorder(),
                       ),
                       value: selectedCategory,
-                      hint: const Text('Select Category'),
+                      hint: const Text('Pilih Kategori'),
                       onChanged: (value) {
                         setState(() {
                           selectedCategory = value;
@@ -513,7 +516,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     
                     // Ingredient Tags
                     Text(
-                      'Tag Ingredients',
+                      'Tag Bahan-bahan',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                     const SizedBox(height: AppSizes.marginS),
@@ -544,14 +547,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
-                        label: 'Post',
+                        label: 'Kirim',
                         onPressed: () async {
                           // Validate form
                           if (contentController.text.trim().isEmpty &&
                               selectedImage == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Please add text or an image to your post'),
+                                content: Text('Mohon tambahkan teks atau gambar pada postingan Anda'),
                                 backgroundColor: AppColors.error,
                               ),
                             );

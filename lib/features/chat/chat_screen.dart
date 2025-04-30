@@ -39,7 +39,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'AI Chef Assistant',
+        title: 'Virtual Cooking Assistant',
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert),
@@ -150,7 +150,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'Ask me anything about cooking!',
+              'Tanya saya tentang masakan Indonesia!', // Changed to Indonesian
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -158,7 +158,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'I can help with cooking techniques, ingredient substitutions, or step-by-step recipe guidance.',
+              'Saya dapat membantu dengan teknik memasak, pengganti bahan, atau panduan resep langkah demi langkah.', // Changed to Indonesian
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -168,9 +168,10 @@ class _ChatScreenState extends State<ChatScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSuggestionChip('How do I make fluffy pancakes?'),
-                _buildSuggestionChip('What can I substitute for eggs?'),
-                _buildSuggestionChip('Help me with knife techniques'),
+                // Updated with Indonesian cuisine suggestions
+                _buildSuggestionChip('Bagaimana cara membuat rendang yang empuk?'),
+                _buildSuggestionChip('Apa bahan pengganti santan?'),
+                _buildSuggestionChip('Bagaimana cara membuat sambal yang enak?'),
               ],
             ),
           ],
@@ -221,7 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.history),
-                  title: const Text('Chat History'),
+                  title: const Text('Riwayat Chat'), // Changed to Indonesian
                   onTap: () {
                     Navigator.pop(context);
                     // Show chat history in a dialog or new screen
@@ -229,7 +230,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.delete_outline),
-                  title: const Text('Clear Chat'),
+                  title: const Text('Hapus Chat'), // Changed to Indonesian
                   onTap: () {
                     Navigator.pop(context);
                     _confirmClearChat();
@@ -237,7 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.help_outline),
-                  title: const Text('Help & Tips'),
+                  title: const Text('Bantuan & Tips'), // Changed to Indonesian
                   onTap: () {
                     Navigator.pop(context);
                     // Show help dialog
@@ -255,12 +256,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Chat'),
-        content: const Text('Are you sure you want to clear your chat history? This action cannot be undone.'),
+        title: const Text('Hapus Chat'), // Changed to Indonesian
+        content: const Text('Apakah Anda yakin ingin menghapus riwayat chat? Tindakan ini tidak dapat dibatalkan.'), // Changed to Indonesian
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           TextButton(
             onPressed: () {
@@ -271,7 +272,7 @@ class _ChatScreenState extends State<ChatScreen> {
             style: TextButton.styleFrom(
               foregroundColor: AppColors.error,
             ),
-            child: const Text('Clear'),
+            child: const Text('Hapus'), // Changed to Indonesian
           ),
         ],
       ),

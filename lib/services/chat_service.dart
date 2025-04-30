@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
-import 'api_service.dart';
+import 'mock_api_service.dart';
 
 class ChatService extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final MockApiService _apiService = MockApiService();
   
   List<ChatMessage> _messages = [];
   bool _isLoading = false;

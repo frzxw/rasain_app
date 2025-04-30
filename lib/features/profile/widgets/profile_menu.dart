@@ -22,12 +22,12 @@ class ProfileMenu extends StatefulWidget {
 
 class _ProfileMenuState extends State<ProfileMenu> {
   bool _notificationsEnabled = true;
-  String _selectedLanguage = 'en';
+  String _selectedLanguage = 'id'; // Default to Indonesian
   bool _darkModeEnabled = false;
   
   final List<Map<String, dynamic>> _availableLanguages = [
-    {'code': 'en', 'name': 'English'},
     {'code': 'id', 'name': 'Bahasa Indonesia'},
+    {'code': 'en', 'name': 'English'},
     {'code': 'es', 'name': 'Spanish'},
     {'code': 'fr', 'name': 'French'},
     {'code': 'zh', 'name': 'Chinese'},
@@ -37,7 +37,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
   void initState() {
     super.initState();
     _notificationsEnabled = widget.user.isNotificationsEnabled;
-    _selectedLanguage = widget.user.language ?? 'en';
+    _selectedLanguage = widget.user.language ?? 'id'; // Default to Indonesian
     _darkModeEnabled = widget.user.isDarkModeEnabled;
   }
 
@@ -50,7 +50,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
         children: [
           // Settings Header
           Text(
-            'Settings',
+            'Pengaturan', // Changed to Indonesian
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           
@@ -58,8 +58,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
           
           // Notifications
           _buildSettingsToggle(
-            title: 'Push Notifications',
-            subtitle: 'Receive recipe recommendations and updates',
+            title: 'Notifikasi', // Changed to Indonesian
+            subtitle: 'Terima rekomendasi resep dan pembaruan', // Changed to Indonesian
             value: _notificationsEnabled,
             onChanged: (value) {
               setState(() {
@@ -78,8 +78,8 @@ class _ProfileMenuState extends State<ProfileMenu> {
           
           // Dark Mode
           _buildSettingsToggle(
-            title: 'Dark Mode',
-            subtitle: 'Use dark theme for the app',
+            title: 'Mode Gelap', // Changed to Indonesian
+            subtitle: 'Gunakan tema gelap untuk aplikasi', // Changed to Indonesian
             value: _darkModeEnabled,
             onChanged: (value) {
               setState(() {
@@ -93,7 +93,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
           
           // Account Management Section
           Text(
-            'Account',
+            'Akun', // Changed to Indonesian
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           
@@ -102,14 +102,14 @@ class _ProfileMenuState extends State<ProfileMenu> {
           // Change Password
           _buildMenuButton(
             icon: Icons.lock_outline,
-            title: 'Change Password',
+            title: 'Ubah Password', // Changed to Indonesian
             onTap: () => _showChangePasswordDialog(context),
           ),
           
           // Logout
           _buildMenuButton(
             icon: Icons.logout,
-            title: 'Logout',
+            title: 'Keluar', // Changed to Indonesian
             onTap: _confirmLogout,
             iconColor: AppColors.error,
             textColor: AppColors.error,
@@ -118,7 +118,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
           // Delete Account
           _buildMenuButton(
             icon: Icons.delete_outline,
-            title: 'Delete Account',
+            title: 'Hapus Akun', // Changed to Indonesian
             onTap: () => _showDeleteAccountDialog(context),
             iconColor: AppColors.error,
             textColor: AppColors.error,
@@ -188,11 +188,11 @@ class _ProfileMenuState extends State<ProfileMenu> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Language',
+                  'Bahasa', // Changed to Indonesian
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
-                  'Select your preferred language',
+                  'Pilih bahasa yang Anda inginkan', // Changed to Indonesian
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -278,12 +278,12 @@ class _ProfileMenuState extends State<ProfileMenu> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: const Text('Keluar'), // Changed to Indonesian
+        content: const Text('Apakah Anda yakin ingin keluar?'), // Changed to Indonesian
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           TextButton(
             onPressed: () {
@@ -293,7 +293,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
             style: TextButton.styleFrom(
               foregroundColor: AppColors.error,
             ),
-            child: const Text('Logout'),
+            child: const Text('Keluar'), // Changed to Indonesian
           ),
         ],
       ),
@@ -309,7 +309,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Password'),
+        title: const Text('Ubah Password'), // Changed to Indonesian
         content: Form(
           key: formKey,
           child: Column(
@@ -319,13 +319,13 @@ class _ProfileMenuState extends State<ProfileMenu> {
               TextFormField(
                 controller: currentPasswordController,
                 decoration: const InputDecoration(
-                  labelText: 'Current Password',
+                  labelText: 'Password Saat Ini', // Changed to Indonesian
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your current password';
+                    return 'Masukkan password saat ini'; // Changed to Indonesian
                   }
                   return null;
                 },
@@ -337,16 +337,16 @@ class _ProfileMenuState extends State<ProfileMenu> {
               TextFormField(
                 controller: newPasswordController,
                 decoration: const InputDecoration(
-                  labelText: 'New Password',
+                  labelText: 'Password Baru', // Changed to Indonesian
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a new password';
+                    return 'Masukkan password baru'; // Changed to Indonesian
                   }
                   if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return 'Password minimal 6 karakter'; // Changed to Indonesian
                   }
                   return null;
                 },
@@ -358,16 +358,16 @@ class _ProfileMenuState extends State<ProfileMenu> {
               TextFormField(
                 controller: confirmPasswordController,
                 decoration: const InputDecoration(
-                  labelText: 'Confirm New Password',
+                  labelText: 'Konfirmasi Password Baru', // Changed to Indonesian
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please confirm your new password';
+                    return 'Konfirmasi password baru Anda'; // Changed to Indonesian
                   }
                   if (value != newPasswordController.text) {
-                    return 'Passwords do not match';
+                    return 'Password tidak cocok'; // Changed to Indonesian
                   }
                   return null;
                 },
@@ -378,7 +378,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           ElevatedButton(
             onPressed: () {
@@ -389,13 +389,13 @@ class _ProfileMenuState extends State<ProfileMenu> {
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Password changed successfully'),
+                    content: Text('Password berhasil diubah'), // Changed to Indonesian
                     backgroundColor: AppColors.success,
                   ),
                 );
               }
             },
-            child: const Text('Change Password'),
+            child: const Text('Ubah Password'), // Changed to Indonesian
           ),
         ],
       ),
@@ -409,14 +409,14 @@ class _ProfileMenuState extends State<ProfileMenu> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
+        title: const Text('Hapus Akun'), // Changed to Indonesian
         content: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'This action cannot be undone. All your data will be permanently deleted.',
+                'Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus secara permanen.', // Changed to Indonesian
                 style: TextStyle(color: AppColors.error),
               ),
               
@@ -426,13 +426,13 @@ class _ProfileMenuState extends State<ProfileMenu> {
               TextFormField(
                 controller: passwordController,
                 decoration: const InputDecoration(
-                  labelText: 'Enter Password to Confirm',
+                  labelText: 'Masukkan Password untuk Konfirmasi', // Changed to Indonesian
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password to confirm';
+                    return 'Masukkan password Anda untuk konfirmasi'; // Changed to Indonesian
                   }
                   return null;
                 },
@@ -443,7 +443,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Batal'), // Changed to Indonesian
           ),
           TextButton(
             onPressed: () {
@@ -456,7 +456,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
             style: TextButton.styleFrom(
               foregroundColor: AppColors.error,
             ),
-            child: const Text('Delete Account'),
+            child: const Text('Hapus Akun'), // Changed to Indonesian
           ),
         ],
       ),

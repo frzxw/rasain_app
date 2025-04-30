@@ -7,6 +7,7 @@ import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/ingredient_tile.dart';
 import '../../services/pantry_service.dart';
+import '../../services/mock_data.dart';  // Import mock data
 import '../../models/pantry_item.dart';
 import 'widgets/pantry_input_form.dart';
 import 'widgets/pantry_suggestions.dart';
@@ -19,11 +20,8 @@ class PantryScreen extends StatefulWidget {
 }
 
 class _PantryScreenState extends State<PantryScreen> {
-  final List<String> _allKitchenTools = [
-    'Pan', 'Pot', 'Blender', 'Oven', 'Grill', 
-    'Microwave', 'Air Fryer', 'Pressure Cooker', 
-    'Slow Cooker', 'Food Processor'
-  ];
+  // Use Indonesian kitchen tools from mock data
+  final List<String> _allKitchenTools = MockData.kitchenTools;
 
   bool _showInputForm = false;
   PantryItem? _editingItem;

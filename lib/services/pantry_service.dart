@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/pantry_item.dart';
 import '../models/recipe.dart';
-import 'api_service.dart';
+import 'mock_api_service.dart';
 
 class PantryService extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final MockApiService _apiService = MockApiService();
   
   List<PantryItem> _pantryItems = [];
   List<String> _kitchenTools = [];

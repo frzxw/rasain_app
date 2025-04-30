@@ -20,12 +20,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<String> _categories = [
-    'Breakfast',
-    'Vegetarian',
-    'Quick Bites',
-    'Dessert',
-    'Healthy',
-    'Budget',
+    'Makanan Utama',
+    'Pedas',
+    'Tradisional',
+    'Sup',
+    'Daging',
+    'Manis',
   ];
   
   String _selectedCategory = 'All';
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search recipe...',
+                      hintText: 'Cari resep...',
                       prefixIcon: const Icon(
                         Icons.search,
                         color: AppColors.textSecondary,
@@ -162,8 +162,23 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Recommended Recipes (new section)
+            _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
+            const SizedBox(height: AppSizes.marginS),
+            Consumer<RecipeService>(
+              builder: (context, recipeService, _) {
+                final recommendedRecipes = recipeService.recommendedRecipes;
+                return RecipeCarousel(
+                  recipes: recommendedRecipes,
+                  isLoading: recipeService.isLoading && recommendedRecipes.isEmpty,
+                );
+              },
+            ),
+            
+            const SizedBox(height: AppSizes.marginL),
+            
             // Top Highlights Carousel
-            _buildSectionTitle('Top Highlights'),
+            _buildSectionTitle('Hidangan Populer'),
             const SizedBox(height: AppSizes.marginS),
             Consumer<RecipeService>(
               builder: (context, recipeService, _) {
@@ -178,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: AppSizes.marginL),
             
             // From Your Pantry Carousel
-            _buildSectionTitle('From Your Pantry'),
+            _buildSectionTitle('Dari Dapur Anda'),
             const SizedBox(height: AppSizes.marginS),
             Consumer<RecipeService>(
               builder: (context, recipeService, _) {
@@ -193,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: AppSizes.marginL),
             
             // What's Cooking Stream
-            _buildSectionTitle("What's Cooking Stream"),
+            _buildSectionTitle('Masak Apa Hari Ini?'),
             const SizedBox(height: AppSizes.marginS),
             Consumer<RecipeService>(
               builder: (context, recipeService, _) {
@@ -222,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Search Results',
+                'Hasil Pencarian',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               TextButton(
@@ -233,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _searchController.clear();
                   });
                 },
-                child: const Text('Clear'),
+                child: const Text('Bersihkan'),
               ),
             ],
           ),
@@ -252,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: AppSizes.marginM),
                       Text(
-                        'No recipes found',
+                        'Tidak ada resep ditemukan',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -364,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Est. ${recipe.estimatedCost}',
+                              'Est. Rp ${recipe.estimatedCost}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
@@ -386,6 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
       recipeService.fetchPopularRecipes(),
       recipeService.fetchPantryRecipes(),
       recipeService.fetchWhatsNewRecipes(),
+      recipeService.fetchRecommendedRecipes(),
     ]);
   }
   
@@ -455,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Error processing image. Please try again.'),
+          content: Text('Gagal memproses gambar. Silakan coba lagi.'),
           backgroundColor: AppColors.error,
         ),
       );
