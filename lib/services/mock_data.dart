@@ -2,7 +2,6 @@ import '../models/recipe.dart';
 import '../models/pantry_item.dart';
 import '../models/user_profile.dart';
 import '../models/community_post.dart';
-import '../models/chat_message.dart';
 
 /// Mock data with Indonesian-themed content for the Rasain app
 class MockData {
@@ -11,7 +10,7 @@ class MockData {
     Recipe(
       id: '1',
       name: 'Nasi Goreng Kampung',
-      imageUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://www.istockphoto.com/photo/yummy-nasi-goreng-tiwul-ikan-asin-pete-or-stink-bean-petai-petes-salted-fish-tiwul-gm2171902924-591703175?utm_campaign=srp_photos_top&utm_content=https%3A%2F%2Funsplash.com%2Fs%2Fphotos%2Fnasi-goreng&utm_medium=affiliate&utm_source=unsplash&utm_term=nasi+goreng%3A%3A%3A',
       rating: 4.8,
       reviewCount: 245,
       estimatedCost: 'Rp25.000',
@@ -26,7 +25,7 @@ class MockData {
           'quantity': '2',
           'unit': 'piring',
           'price': 'Rp5.000',
-          'image_url': 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&h=150&q=80'
+          'image_url': 'https://www.freepik.com/free-photo/rice-cooked-white-dish_8085222.htm#fromView=keyword&page=1&position=0&uuid=1293548d-f718-4064-96fe-3b83662b524b&query=Nasi+Putih'
         },
         {
           'id': '2',
@@ -34,7 +33,7 @@ class MockData {
           'quantity': '5',
           'unit': 'siung',
           'price': 'Rp2.000',
-          'image_url': 'https://placeholder.com/150x150/B22222/FFFFFF?text=Bawang+Merah'
+          'image_url': 'https://www.google.com/imgres?q=bawang%20merah%20HD&imgurl=https%3A%2F%2Fimages.tokopedia.net%2Fimg%2Fcache%2F700%2Fproduct-1%2F2020%2F6%2F18%2F99105105%2F99105105_707d145c-e762-4543-9189-7e1ee3d5a247_800_800&imgrefurl=https%3A%2F%2Fwww.tokopedia.com%2Faeeshastore-1%2Fbawang-merah-batu-bawang-merah-besar-bawang-merah-1000-gram&docid=8VTYIAc99lTZHM&tbnid=KzI_zRhM6fPkQM&vet=12ahUKEwi4s5698_-MAxXV8zgGHWMeF34QM3oECHcQAA..i&w=700&h=700&hcb=2&ved=2ahUKEwi4s5698_-MAxXV8zgGHWMeF34QM3oECHcQAA'
         },
         {
           'id': '3',
@@ -42,7 +41,7 @@ class MockData {
           'quantity': '3',
           'unit': 'siung',
           'price': 'Rp1.500',
-          'image_url': 'https://placeholder.com/150x150/FFFFFF/000000?text=Bawang+Putih'
+          'image_url': 'https://www.google.com/imgres?q=bawang%20putih%20HD&imgurl=https%3A%2F%2Fwww.lapakbuah.com%2Fwp-content%2Fuploads%2F2021%2F07%2Fbawang-putih.jpg&imgrefurl=https%3A%2F%2Fhome.lapakbuah.com%2Fproduct%2Fbawang-putih-500gram%2F&docid=NuOuQ3QpwuAvaM&tbnid=YFAODz_9v7PvEM&vet=12ahUKEwjljq7b8_-MAxVLyzgGHcZHOpoQM3oECFsQAA..i&w=499&h=334&hcb=2&ved=2ahUKEwjljq7b8_-MAxVLyzgGHcZHOpoQM3oECFsQAA'
         },
         {
           'id': '4',
@@ -50,7 +49,7 @@ class MockData {
           'quantity': '4',
           'unit': 'buah',
           'price': 'Rp2.500',
-          'image_url': 'https://placeholder.com/150x150/FF0000/FFFFFF?text=Cabai+Merah'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.shutterstock.com%2Fsearch%2Fcabe-rawit-merah&psig=AOvVaw3klAOWxtv9sZdEMym1udBJ&ust=1746107596440000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCIDQke_z_4wDFQAAAAAdAAAAABAQ'
         },
         {
           'id': '5',
@@ -58,7 +57,7 @@ class MockData {
           'quantity': '2',
           'unit': 'butir',
           'price': 'Rp3.000',
-          'image_url': 'https://placeholder.com/150x150/FFF8DC/000000?text=Telur+Ayam'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.pngtree.com%2Ffree-backgrounds-photos%2Fputih-telur-ayam-foto&psig=AOvVaw28gEKC-2zJLEK7umuPxa8d&ust=1746107647673000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLi8_of0_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '6',
@@ -66,7 +65,7 @@ class MockData {
           'quantity': '2',
           'unit': 'sdm',
           'price': 'Rp1.000',
-          'image_url': 'https://placeholder.com/150x150/4A2100/FFFFFF?text=Kecap+Manis'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.masakapahariini.com%2Fproduk%2Fkecap-bango-manis%2F&psig=AOvVaw2erybyyGogyTfwHfL0QKMn&ust=1746107703115000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCIDJs5z0_4wDFQAAAAAdAAAAABAE'
         }
       ],
       instructions: [
@@ -83,7 +82,7 @@ class MockData {
     Recipe(
       id: '2',
       name: 'Rendang Daging Sapi',
-      imageUrl: 'https://images.unsplash.com/photo-1628689469838-524a4a973b8e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://www.google.com/imgres?q=rendang%20HD&imgurl=https%3A%2F%2Fdoku.promo%2Fbl-content%2Fuploads%2Fpages%2Ffb0da6279f88f310e0d704ee19401837%2FResepRahasiaRendangEnakyangAutentikdariMinang.jpg&imgrefurl=https%3A%2F%2Fdoku.promo%2Fresep-rendang-enak&docid=hCRYtxiN5kcjWM&tbnid=p6_mSePHTVTudM&vet=12ahUKEwi54IKm9P-MAxVUzDgGHR4xJFwQM3oECFQQAA..i&w=5000&h=3419&hcb=2&ved=2ahUKEwi54IKm9P-MAxVUzDgGHR4xJFwQM3oECFQQAA',
       rating: 4.9,
       reviewCount: 312,
       estimatedCost: 'Rp85.000',
@@ -98,7 +97,7 @@ class MockData {
           'quantity': '1',
           'unit': 'kg',
           'price': 'Rp140.000',
-          'image_url': 'https://placeholder.com/150x150/8B0000/FFFFFF?text=Daging+Sapi'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.kompas.com%2Ffood%2Fimage%2F2021%2F07%2F15%2F180800975%2F3-cara-pilih-daging-sapi-segar-tips-dari-koki&psig=AOvVaw3rpZjdQWeGnMaXXBcPmrag&ust=1746107854970000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPD5-Ob0_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '8',
@@ -106,7 +105,7 @@ class MockData {
           'quantity': '2',
           'unit': 'liter',
           'price': 'Rp25.000',
-          'image_url': 'https://placeholder.com/150x150/FFFFFF/000000?text=Santan+Kelapa'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.sasa.co.id%2Four-products%2Fview%2Fsantan-cair&psig=AOvVaw13dp4xEw_mY3Wz1GIFwDwU&ust=1746107898579000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOiQz_v0_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '9',
@@ -114,7 +113,7 @@ class MockData {
           'quantity': '1',
           'unit': 'paket',
           'price': 'Rp15.000',
-          'image_url': 'https://placeholder.com/150x150/CD853F/000000?text=Bumbu+Rendang'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mirotakampus.com%2Fid%2FProducts%2F45%2F2040&psig=AOvVaw0cI6zG_djhUGLkWyY3Y_XZ&ust=1746107944366000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOCqpJD1_4wDFQAAAAAdAAAAABAE'
         }
       ],
       instructions: [
@@ -130,7 +129,7 @@ class MockData {
     Recipe(
       id: '3',
       name: 'Soto Ayam Lamongan',
-      imageUrl: 'https://images.unsplash.com/photo-1593001872095-7d5b3868dd30?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.freepik.com%2Fpremium-photo%2Fsoto-ayam-indonesian-delicious-traditional-chicken-soup-isolated-white-background_23325816.htm&psig=AOvVaw1vXnh2EyDPDuip0P7freCw&ust=1746108026824000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCKC16rb1_4wDFQAAAAAdAAAAABAJ',
       rating: 4.7,
       reviewCount: 178,
       estimatedCost: 'Rp35.000',
@@ -145,7 +144,7 @@ class MockData {
           'quantity': '1',
           'unit': 'ekor',
           'price': 'Rp65.000',
-          'image_url': 'https://placeholder.com/150x150/F5DEB3/000000?text=Ayam+Kampung'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.istockphoto.com%2Fid%2Ffoto-foto%2Fdaging-ayam&psig=AOvVaw3DpFDhULLgnqz1WSSJrWr3&ust=1746108079220000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPDg6c_1_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '11',
@@ -153,7 +152,7 @@ class MockData {
           'quantity': '3',
           'unit': 'ruas',
           'price': 'Rp2.000',
-          'image_url': 'https://placeholder.com/150x150/FFA500/000000?text=Kunyit'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.istockphoto.com%2Fid%2Ffoto%2Fkunyit-segar-dengan-daun-di-latar-belakang-putih-gambar-komersial-tanaman-obat-gm1226214001-361218275&psig=AOvVaw3YGCULqC89jYJHyhEv-CpR&ust=1746108102811000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCNioh9v1_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '12',
@@ -161,7 +160,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp10.000',
-          'image_url': 'https://placeholder.com/150x150/FAFAD2/000000?text=Koya'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.hipwee.com%2Ftips%2Fcara-bikin-bubuk-koya%2F&psig=AOvVaw2Wu3ZADwxGMKHZaBICj3Ha&ust=1746108132363000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOiGmu_1_4wDFQAAAAAdAAAAABAE'
         }
       ],
       instructions: [
@@ -176,7 +175,7 @@ class MockData {
     Recipe(
       id: '4',
       name: 'Martabak Manis Coklat Keju',
-      imageUrl: 'https://images.unsplash.com/photo-1529402754141-f043d81841d8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fmymilk.com%2Fmilkeveryday%2Frecipe%2Fresep-martabak-keju-makin-lembut-dan-gurih-dengan-susu&psig=AOvVaw2Q9wPrwH-2MYMVuJBWbKi7&ust=1746108169695000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCJCNsvz1_4wDFQAAAAAdAAAAABAQ',
       rating: 4.6,
       reviewCount: 203,
       estimatedCost: 'Rp45.000',
@@ -191,7 +190,7 @@ class MockData {
           'quantity': '250',
           'unit': 'gram',
           'price': 'Rp5.000',
-          'image_url': 'https://placeholder.com/150x150/FFFFF0/000000?text=Tepung+Terigu'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.mirotakampus.com%2Fid%2FProducts%2F44%2F1093&psig=AOvVaw0hurBT-T9ADsJexm-In-3E&ust=1746108205119000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCIDW-Zn2_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '14',
@@ -199,7 +198,7 @@ class MockData {
           'quantity': '150',
           'unit': 'gram',
           'price': 'Rp3.000',
-          'image_url': 'https://placeholder.com/150x150/FFFFFF/000000?text=Gula+Pasir'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.monotaro.id%2Fp106952420.html&psig=AOvVaw3abz-eCnatYCSxcilN2jNB&ust=1746108258491000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCMDh3aj2_4wDFQAAAAAdAAAAABAJ'
         },
         {
           'id': '15',
@@ -207,7 +206,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp10.000',
-          'image_url': 'https://placeholder.com/150x150/3B1E00/FFFFFF?text=Coklat+Meses'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwarindo.de%2Fwarung%2Fcokelat-meses-ceres-classic-225g-verpackung-ist-etwas-beschaedigt%2F&psig=AOvVaw2i0WO1bdvJonQFMSFh6pO_&ust=1746108322160000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCKDBpMn2_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '16',
@@ -215,7 +214,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp15.000',
-          'image_url': 'https://placeholder.com/150x150/FFCC33/000000?text=Keju+Cheddar'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fbundakraft.com%2Fproduk&psig=AOvVaw1qyouO2WLPpeTE2OqSNzWi&ust=1746108355584000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLCe_NT2_4wDFQAAAAAdAAAAABAZ'
         }
       ],
       instructions: [
@@ -232,7 +231,7 @@ class MockData {
     Recipe(
       id: '5',
       name: 'Sate Ayam Madura',
-      imageUrl: 'https://images.unsplash.com/photo-1529563021893-cc83c992d75d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=600&h=400&q=80',
+      imageUrl: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fbundakraft.com%2Fproduk&psig=AOvVaw1qyouO2WLPpeTE2OqSNzWi&ust=1746108355584000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLCe_NT2_4wDFQAAAAAdAAAAABAZ',
       rating: 4.7,
       reviewCount: 189,
       estimatedCost: 'Rp30.000',
@@ -247,7 +246,7 @@ class MockData {
           'quantity': '500',
           'unit': 'gram',
           'price': 'Rp35.000',
-          'image_url': 'https://placeholder.com/150x150/FFF5EE/000000?text=Ayam+Fillet'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fraisa.aeonstore.id%2Fshop%2Fseafood-meat%2Fpoultry%2Ffillet%2F&psig=AOvVaw1C2awyqM_Djd1JbWIV2lwY&ust=1746108431491000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLCH7vf2_4wDFQAAAAAdAAAAABAE'
         },
         {
           'id': '18',
@@ -255,7 +254,7 @@ class MockData {
           'quantity': '200',
           'unit': 'gram',
           'price': 'Rp8.000',
-          'image_url': 'https://placeholder.com/150x150/D2B48C/000000?text=Kacang+Tanah'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fid.lovepik.com%2Fimage-501580591%2Fpeanut.html&psig=AOvVaw3nFUlBj6Q7ujQ2i-H-t3um&ust=1746108454914000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCPCjgoP3_4wDFQAAAAAdAAAAABAR'
         },
         {
           'id': '19',
@@ -263,7 +262,7 @@ class MockData {
           'quantity': '5',
           'unit': 'sdm',
           'price': 'Rp3.000',
-          'image_url': 'https://placeholder.com/150x150/4A2100/FFFFFF?text=Kecap+Manis'
+          'image_url': 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.masakapahariini.com%2Fproduk%2Fkecap-bango-manis%2F&psig=AOvVaw35bdM0KMWdJz4q36mzCuIe&ust=1746108485256000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCLD6zZH3_4wDFQAAAAAdAAAAABAE'
         }
       ],
       instructions: [
