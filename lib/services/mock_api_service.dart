@@ -1,4 +1,3 @@
-import '../models/recipe.dart';
 import 'mock_data.dart';
 
 /// A mock implementation of API service that returns our Indonesian-themed mock data
