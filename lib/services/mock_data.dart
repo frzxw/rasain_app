@@ -69,13 +69,13 @@ class MockData {
         }
       ],
       instructions: [
-        'Haluskan bawang merah, bawang putih, dan cabai.',
-        'Panaskan minyak, tumis bumbu halus hingga harum.',
-        'Masukkan nasi putih, aduk rata.',
-        'Tambahkan kecap manis, garam, dan penyedap rasa secukupnya.',
-        'Aduk hingga semua bumbu tercampur rata.',
-        'Goreng telur mata sapi terpisah.',
-        'Sajikan nasi goreng dengan telur mata sapi di atasnya dan kerupuk.'
+        {'text': 'Haluskan bawang merah, bawang putih, dan cabai.', 'videoUrl': null},
+        {'text': 'Panaskan minyak, tumis bumbu halus hingga harum.', 'videoUrl': null},
+        {'text': 'Masukkan nasi putih, aduk rata.', 'videoUrl': null},
+        {'text': 'Tambahkan kecap manis, garam, dan penyedap rasa secukupnya.', 'videoUrl': null},
+        {'text': 'Aduk hingga semua bumbu tercampur rata.', 'videoUrl': null},
+        {'text': 'Goreng telur mata sapi terpisah.', 'videoUrl': null},
+        {'text': 'Sajikan nasi goreng dengan telur mata sapi di atasnya dan kerupuk.', 'videoUrl': null}
       ],
       isSaved: true,
     ),
@@ -117,12 +117,12 @@ class MockData {
         }
       ],
       instructions: [
-        'Haluskan semua bumbu rendang (bawang merah, bawang putih, cabai, lengkuas, serai, dll).',
-        'Tumis bumbu halus hingga harum dan matang.',
-        'Masukkan daging sapi, aduk rata dengan bumbu.',
-        'Tuang santan, masak dengan api kecil sambil sesekali diaduk.',
-        'Masak hingga santan menyusut dan daging empuk (sekitar 3-4 jam).',
-        'Rendang siap disajikan dengan nasi putih hangat.'
+        {'text': 'Haluskan semua bumbu rendang (bawang merah, bawang putih, cabai, lengkuas, serai, dll).', 'videoUrl': null},
+        {'text': 'Tumis bumbu halus hingga harum dan matang.', 'videoUrl': null},
+        {'text': 'Masukkan daging sapi, aduk rata dengan bumbu.', 'videoUrl': null},
+        {'text': 'Tuang santan, masak dengan api kecil sambil sesekali diaduk.', 'videoUrl': null},
+        {'text': 'Masak hingga santan menyusut dan daging empuk (sekitar 3-4 jam).', 'videoUrl': null},
+        {'text': 'Rendang siap disajikan dengan nasi putih hangat.', 'videoUrl': null}
       ],
       isSaved: false,
     ),
@@ -164,11 +164,11 @@ class MockData {
         }
       ],
       instructions: [
-        'Rebus ayam hingga matang dan empuk.',
-        'Tumis bumbu halus hingga harum.',
-        'Masukkan bumbu ke dalam rebusan ayam.',
-        'Angkat ayam, suwir-suwir dagingnya.',
-        'Sajikan kuah soto dengan ayam suwir, telur rebus, tauge, seledri, dan koya di atasnya.'
+        {'text': 'Rebus ayam hingga matang dan empuk.', 'videoUrl': null},
+        {'text': 'Tumis bumbu halus hingga harum.', 'videoUrl': null},
+        {'text': 'Masukkan bumbu ke dalam rebusan ayam.', 'videoUrl': null},
+        {'text': 'Angkat ayam, suwir-suwir dagingnya.', 'videoUrl': null},
+        {'text': 'Sajikan kuah soto dengan ayam suwir, telur rebus, tauge, seledri, dan koya di atasnya.', 'videoUrl': null}
       ],
       isSaved: true,
     ),
@@ -218,13 +218,13 @@ class MockData {
         }
       ],
       instructions: [
-        'Campurkan tepung terigu, gula, ragi, dan air. Aduk rata.',
-        'Diamkan adonan sekitar 30 menit hingga mengembang.',
-        'Panaskan cetakan martabak dengan api sedang.',
-        'Tuang adonan ke dalam cetakan, tutup sebentar.',
-        'Setelah berlubang-lubang, taburi gula pasir dan tutup kembali.',
-        'Setelah matang, olesi dengan margarin, taburi meses dan keju parut.',
-        'Lipat martabak dan potong sesuai selera.'
+        {'text': 'Campurkan tepung terigu, gula, ragi, dan air. Aduk rata.', 'videoUrl': null},
+        {'text': 'Diamkan adonan sekitar 30 menit hingga mengembang.', 'videoUrl': null},
+        {'text': 'Panaskan cetakan martabak dengan api sedang.', 'videoUrl': null},
+        {'text': 'Tuang adonan ke dalam cetakan, tutup sebentar.', 'videoUrl': null},
+        {'text': 'Setelah berlubang-lubang, taburi gula pasir dan tutup kembali.', 'videoUrl': null},
+        {'text': 'Setelah matang, olesi dengan margarin, taburi meses dan keju parut.', 'videoUrl': null},
+        {'text': 'Lipat martabak dan potong sesuai selera.', 'videoUrl': null}
       ],
       isSaved: false,
     ),
@@ -266,12 +266,12 @@ class MockData {
         }
       ],
       instructions: [
-        'Potong ayam fillet menjadi dadu kecil.',
-        'Rendam ayam dalam bumbu marinasi.',
-        'Tusuk ayam dengan tusuk sate.',
-        'Panggang sate di atas bara api/panggangan.',
-        'Haluskan kacang tanah goreng dan bumbu saus kacang.',
-        'Sajikan sate dengan saus kacang dan kecap manis.'
+        {'text': 'Potong ayam fillet menjadi dadu kecil.', 'videoUrl': null},
+        {'text': 'Rendam ayam dalam bumbu marinasi.', 'videoUrl': null},
+        {'text': 'Tusuk ayam dengan tusuk sate.', 'videoUrl': null},
+        {'text': 'Panggang sate di atas bara api/panggangan.', 'videoUrl': null},
+        {'text': 'Haluskan kacang tanah goreng dan bumbu saus kacang.', 'videoUrl': null},
+        {'text': 'Sajikan sate dengan saus kacang dan kecap manis.', 'videoUrl': null}
       ],
       isSaved: true,
     ),
@@ -313,11 +313,11 @@ class MockData {
         }
       ],
       instructions: [
-        'Rebus semua sayuran hingga matang.',
-        'Haluskan kacang tanah untuk saus.',
-        'Tambahkan bumbu-bumbu ke saus kacang.',
-        'Tata sayuran di piring saji.',
-        'Siram dengan saus kacang dan taburi dengan bawang goreng.'
+        {'text': 'Rebus semua sayuran hingga matang.', 'videoUrl': null},
+        {'text': 'Haluskan kacang tanah untuk saus.', 'videoUrl': null},
+        {'text': 'Tambahkan bumbu-bumbu ke saus kacang.', 'videoUrl': null},
+        {'text': 'Tata sayuran di piring saji.', 'videoUrl': null},
+        {'text': 'Siram dengan saus kacang dan taburi dengan bawang goreng.', 'videoUrl': null}
       ],
       isSaved: false,
     ),
@@ -343,11 +343,11 @@ class MockData {
         }
       ],
       instructions: [
-        'Campur daging giling dengan tepung dan bumbu.',
-        'Bentuk adonan menjadi bola-bola.',
-        'Rebus bakso hingga mengapung.',
-        'Siapkan kuah dengan bumbu yang gurih.',
-        'Sajikan bakso dengan mie, tahu, dan pangsit.'
+        {'text': 'Campur daging giling dengan tepung dan bumbu.', 'videoUrl': null},
+        {'text': 'Bentuk adonan menjadi bola-bola.', 'videoUrl': null},
+        {'text': 'Rebus bakso hingga mengapung.', 'videoUrl': null},
+        {'text': 'Siapkan kuah dengan bumbu yang gurih.', 'videoUrl': null},
+        {'text': 'Sajikan bakso dengan mie, tahu, dan pangsit.', 'videoUrl': null}
       ],
       isSaved: true,
     ),
@@ -560,5 +560,70 @@ class MockData {
     'Kompor Gas',
     'Kukusan',
     'Parutan',
+  ];
+  
+  /// List of common ingredients for search functionality
+  static List<String> commonIngredients = [
+    // Vegetables
+    'bawang merah', 'bawang putih', 'tomat', 'cabai merah', 'cabai rawit', 
+    'wortel', 'kentang', 'ketimun', 'brokoli', 'kembang kol', 'bayam', 'kangkung',
+    'terong', 'tauge', 'jagung',
+    
+    // Fruits
+    'apel', 'pisang', 'jeruk', 'stroberi', 'mangga', 'nanas', 
+    'semangka', 'melon', 'pepaya', 'alpukat', 'jambu biji', 'durian', 'rambutan',
+    
+    // Spices
+    'lada', 'garam', 'ketumbar', 'jintan', 'pala', 'kayu manis', 
+    'cengkeh', 'kunyit', 'jahe', 'lengkuas', 'daun salam', 'daun jeruk', 'serai',
+    
+    // Proteins
+    'daging sapi', 'daging ayam', 'telur', 'ikan', 'udang', 'tempe', 'tahu',
+    
+    // Dairy
+    'susu', 'keju', 'mentega', 'yogurt', 'krim',
+    
+    // Grains
+    'beras', 'tepung terigu', 'tepung tapioka', 'tepung beras', 'mie', 'pasta',
+    
+    // Canned/Processed
+    'sarden kalengan', 'kornet', 'kecap manis', 'kecap asin', 'saus tiram', 'saus tomat',
+    'minyak goreng', 'santan', 'gula pasir', 'gula merah', 'terasi',
+    
+    // Other
+    'air mineral', 'es batu', 'roti', 'kerupuk', 'kacang tanah', 'kacang hijau'
+  ];
+  
+  /// List of vegetables for category auto-detection
+  static List<String> vegetablesList = [
+    'bawang merah', 'bawang putih', 'tomat', 'cabai merah', 'cabai rawit', 
+    'wortel', 'kentang', 'ketimun', 'brokoli', 'kembang kol', 'bayam', 'kangkung',
+    'terong', 'tauge', 'jagung', 'labu', 'timun', 'selada', 'kol', 'daun bawang',
+    'seledri', 'kemangi', 'sawi'
+  ];
+  
+  /// List of fruits for category auto-detection
+  static List<String> fruitsList = [
+    'apel', 'pisang', 'jeruk', 'stroberi', 'mangga', 'nanas', 
+    'semangka', 'melon', 'pepaya', 'alpukat', 'jambu biji', 'durian', 'rambutan', 
+    'manggis', 'kelapa', 'kiwi', 'lemon', 'anggur', 'salak', 'belimbing'
+  ];
+  
+  /// List of meats for category auto-detection
+  static List<String> meatList = [
+    'daging sapi', 'daging ayam', 'daging kambing', 'daging babi', 'daging kelinci',
+    'ikan', 'udang', 'cumi', 'kepiting', 'kerang', 'telur', 'bakso'
+  ];
+  
+  /// List of dairy products for category auto-detection
+  static List<String> dairyList = [
+    'susu', 'keju', 'mentega', 'yogurt', 'krim', 'es krim', 'susu bubuk', 'susu kental manis'
+  ];
+  
+  /// List of spices for category auto-detection
+  static List<String> spicesList = [
+    'lada', 'garam', 'ketumbar', 'jintan', 'pala', 'kayu manis', 'vanili',
+    'cengkeh', 'kunyit', 'jahe', 'lengkuas', 'daun salam', 'daun jeruk', 'serai',
+    'cabai bubuk', 'kari', 'kapulaga', 'merica', 'adas', 'kemiri'
   ];
 }

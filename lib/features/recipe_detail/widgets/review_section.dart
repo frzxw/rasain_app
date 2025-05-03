@@ -2,10 +2,31 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
+import '../../../core/widgets/custom_button.dart';
+
+class Review {
+  final String id;
+  final String userName;
+  final String userImage;
+  final double rating;
+  final String comment;
+  final String date;
+  final List<String>? images;
+  
+  Review({
+    required this.id,
+    required this.userName,
+    required this.userImage,
+    required this.rating,
+    required this.comment,
+    required this.date,
+    this.images,
+  });
+}
 
 class ReviewSection extends StatefulWidget {
   final Recipe recipe;
-  final Function(double) onRateRecipe;
+  final Function(double, String) onRateRecipe;
   
   const ReviewSection({
     Key? key,
@@ -20,7 +41,60 @@ class ReviewSection extends StatefulWidget {
 class _ReviewSectionState extends State<ReviewSection> {
   double _userRating = 0;
   bool _hasRated = false;
+  bool _showAllReviews = false;
   final TextEditingController _reviewController = TextEditingController();
+  List<Review> _dummyReviews = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadDummyReviews();
+  }
+  
+  void _loadDummyReviews() {
+    // Populate with sample reviews
+    _dummyReviews = [
+      Review(
+        id: '1',
+        userName: 'Sarah Johnson',
+        userImage: 'https://randomuser.me/api/portraits/women/44.jpg',
+        rating: 5.0,
+        comment: 'Resep ini luar biasa enak! Rasanya sempurna dan sangat mudah dibuat. Keluarga saya menyukainya dan meminta tambahan.',
+        date: '2 hari yang lalu',
+        images: [
+          'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
+        ],
+      ),
+      Review(
+        id: '2',
+        userName: 'Michael Lee',
+        userImage: 'https://randomuser.me/api/portraits/men/32.jpg',
+        rating: 4.0,
+        comment: 'Resep yang sangat baik secara keseluruhan. Saya menambahkan sedikit lebih banyak bawang putih dan cabai untuk rasa ekstra.',
+        date: '1 minggu yang lalu',
+      ),
+      Review(
+        id: '3',
+        userName: 'Amanda Patel',
+        userImage: 'https://randomuser.me/api/portraits/women/67.jpg',
+        rating: 5.0,
+        comment: 'Sempurna untuk makan malam keluarga! Semua orang menyukainya dan resepnya sangat mudah diikuti.',
+        date: '2 minggu yang lalu',
+        images: [
+          'https://images.unsplash.com/photo-1613092332665-20392ce8cd11?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
+          'https://images.unsplash.com/photo-1599020792689-9fde458e7e76?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
+        ],
+      ),
+      Review(
+        id: '4',
+        userName: 'David Wilson',
+        userImage: 'https://randomuser.me/api/portraits/men/10.jpg',
+        rating: 3.0,
+        comment: 'Rasanya lumayan, tapi menurut saya butuh sedikit lebih banyak garam dan lada. Mungkin akan saya coba lagi dengan beberapa modifikasi.',
+        date: '3 minggu yang lalu',
+      ),
+    ];
+  }
   
   @override
   void dispose() {
@@ -43,7 +117,7 @@ class _ReviewSectionState extends State<ReviewSection> {
         
         const SizedBox(height: AppSizes.marginL),
         
-        // Review List (would be implemented with actual review data)
+        // Review List with real or sample review data
         _buildReviewsList(context),
       ],
     );
@@ -80,7 +154,7 @@ class _ReviewSectionState extends State<ReviewSection> {
             _buildStarRating(widget.recipe.rating),
             const SizedBox(height: AppSizes.marginXS),
             Text(
-              '${widget.recipe.reviewCount} ${widget.recipe.reviewCount == 1 ? 'review' : 'reviews'}',
+              '${widget.recipe.reviewCount} ${widget.recipe.reviewCount == 1 ? 'ulasan' : 'ulasan'}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -90,7 +164,7 @@ class _ReviewSectionState extends State<ReviewSection> {
         
         const Spacer(),
         
-        // Rating Distribution (simplified for this implementation)
+        // Rating Distribution
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -191,7 +265,7 @@ class _ReviewSectionState extends State<ReviewSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Add Your Review',
+          'Tambahkan Ulasan Anda',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSizes.marginM),
@@ -221,13 +295,28 @@ class _ReviewSectionState extends State<ReviewSection> {
           ),
         ),
         
+        // Rating description text based on selected rating
+        if (_userRating > 0)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(top: AppSizes.paddingS),
+              child: Text(
+                _getRatingDescription(_userRating),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
+        
         const SizedBox(height: AppSizes.marginM),
         
         // Review Text Input
         TextField(
           controller: _reviewController,
           decoration: const InputDecoration(
-            hintText: 'Write your review...',
+            hintText: 'Bagikan pendapat Anda tentang resep ini...',
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(
               horizontal: AppSizes.paddingM,
@@ -235,6 +324,33 @@ class _ReviewSectionState extends State<ReviewSection> {
             ),
           ),
           maxLines: 3,
+        ),
+        
+        const SizedBox(height: AppSizes.marginS),
+        
+        // Photo attachment option
+        Row(
+          children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.photo_camera),
+              label: const Text('Tambahkan Foto'),
+              onPressed: () {
+                // Add photo functionality would be implemented here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Fitur tambah foto akan segera hadir'),
+                  ),
+                );
+              },
+            ),
+            const Spacer(),
+            Text(
+              'Foto membantu pengguna lain!',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
         
         const SizedBox(height: AppSizes.marginM),
@@ -248,51 +364,71 @@ class _ReviewSectionState extends State<ReviewSection> {
                 horizontal: AppSizes.paddingL,
                 vertical: AppSizes.paddingM,
               ),
+              backgroundColor: AppColors.primary,
             ),
-            child: const Text('Submit Review'),
+            child: const Text('Kirim Ulasan'),
           ),
         ),
       ],
     );
   }
 
+  String _getRatingDescription(double rating) {
+    if (rating == 5) return 'Sangat Bagus!';
+    if (rating == 4) return 'Bagus';
+    if (rating == 3) return 'Biasa Saja';
+    if (rating == 2) return 'Kurang Bagus';
+    return 'Kecewa';
+  }
+
   Widget _buildReviewsList(BuildContext context) {
-    // This would be replaced with actual review data in a real app
+    final reviews = _dummyReviews;
+    final displayReviews = _showAllReviews ? reviews : reviews.take(2).toList();
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Reviews',
+          'Ulasan Terbaru',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: AppSizes.marginM),
         
-        widget.recipe.reviewCount > 0
+        reviews.isNotEmpty
             ? Column(
                 children: [
-                  _buildReviewItem(
-                    userName: 'Sarah Johnson',
-                    rating: 5.0,
-                    date: '2 days ago',
-                    comment: 'This recipe was absolutely amazing! The flavors were perfect and it was so easy to make. My family loved it and asked for seconds.',
-                  ),
-                  const SizedBox(height: AppSizes.marginM),
-                  _buildReviewItem(
-                    userName: 'Michael Lee',
-                    rating: 4.0,
-                    date: '1 week ago',
-                    comment: 'Very good recipe overall. I added a bit more garlic and some chili flakes for extra flavor.',
-                  ),
+                  ...displayReviews.map((review) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSizes.marginM),
+                    child: _buildReviewItem(review),
+                  )),
                   
                   // Show More Reviews Button
-                  if (widget.recipe.reviewCount > 2)
+                  if (reviews.length > 2 && !_showAllReviews)
                     Padding(
-                      padding: const EdgeInsets.only(top: AppSizes.paddingM),
-                      child: TextButton(
-                        onPressed: () {
-                          // Show more reviews
-                        },
-                        child: Text('View All ${widget.recipe.reviewCount} Reviews'),
+                      padding: const EdgeInsets.only(top: AppSizes.paddingS),
+                      child: Center(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllReviews = true;
+                            });
+                          },
+                          child: Text('Lihat Semua ${reviews.length} Ulasan'),
+                        ),
+                      ),
+                    )
+                  else if (_showAllReviews)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSizes.paddingS),
+                      child: Center(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() {
+                              _showAllReviews = false;
+                            });
+                          },
+                          child: const Text('Sembunyikan'),
+                        ),
                       ),
                     ),
                 ],
@@ -302,12 +438,7 @@ class _ReviewSectionState extends State<ReviewSection> {
     );
   }
 
-  Widget _buildReviewItem({
-    required String userName,
-    required double rating,
-    required String date,
-    required String comment,
-  }) {
+  Widget _buildReviewItem(Review review) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
@@ -320,36 +451,151 @@ class _ReviewSectionState extends State<ReviewSection> {
         children: [
           // User Info and Rating
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                userName,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+              // User Avatar
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(review.userImage),
+                backgroundColor: AppColors.surface,
               ),
-              Text(
-                date,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+              
+              const SizedBox(width: AppSizes.marginM),
+              
+              // User Name and Rating
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.userName,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _buildStarRating(review.rating),
+                        const SizedBox(width: AppSizes.marginS),
+                        Text(
+                          review.date,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           
-          const SizedBox(height: AppSizes.marginXS),
-          
-          // Star Rating
-          _buildStarRating(rating),
-          
-          const SizedBox(height: AppSizes.marginS),
+          const SizedBox(height: AppSizes.marginM),
           
           // Review Comment
           Text(
-            comment,
+            review.comment,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          
+          // Review Images
+          if (review.images != null && review.images!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSizes.marginM),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: review.images!.map((imageUrl) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSizes.paddingS),
+                      child: InkWell(
+                        onTap: () {
+                          // Show full-screen image
+                          _showFullScreenImage(context, imageUrl);
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                          child: Image.network(
+                            imageUrl,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: AppSizes.marginS),
+          
+          // Helpful button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.thumb_up_outlined, size: AppSizes.iconS),
+                label: const Text('Membantu'),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Terima kasih atas tanggapan Anda!'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingS,
+                    vertical: 0,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Image
+            InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 3,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+              ),
+            ),
+            
+            // Close button
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -371,14 +617,14 @@ class _ReviewSectionState extends State<ReviewSection> {
           ),
           const SizedBox(height: AppSizes.marginM),
           Text(
-            'No reviews yet',
+            'Belum ada ulasan',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.marginS),
           Text(
-            'Be the first to review this recipe',
+            'Jadilah yang pertama mengulas resep ini',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -390,8 +636,19 @@ class _ReviewSectionState extends State<ReviewSection> {
   }
 
   void _submitReview() {
+    if (_reviewController.text.trim().isEmpty && _userRating <= 0) {
+      // Show error for empty submission
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon berikan rating dan ulasan Anda'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    
     // Call the callback to rate the recipe
-    widget.onRateRecipe(_userRating);
+    widget.onRateRecipe(_userRating, _reviewController.text.trim());
     
     // Reset form and update state
     setState(() {
@@ -402,7 +659,7 @@ class _ReviewSectionState extends State<ReviewSection> {
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Thank you for your review!'),
+        content: Text('Terima kasih atas ulasan Anda!'),
         backgroundColor: AppColors.success,
       ),
     );

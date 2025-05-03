@@ -128,7 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: AppColors.textPrimary,
                   ),
                   onPressed: () {
-                    // Show notifications
+                    // Navigate to notifications screen
+                    GoRouter.of(context).push('/notifications');
                   },
                 ),
               ),
