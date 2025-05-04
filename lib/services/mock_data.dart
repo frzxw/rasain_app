@@ -26,7 +26,7 @@ class MockData {
           'quantity': '2',
           'unit': 'piring',
           'price': 'Rp5.000',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/1.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/1.png',
         },
         {
           'id': '2',
@@ -34,7 +34,7 @@ class MockData {
           'quantity': '5',
           'unit': 'siung',
           'price': 'Rp2.000',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/2.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/2.png',
         },
         {
           'id': '3',
@@ -42,7 +42,7 @@ class MockData {
           'quantity': '3',
           'unit': 'siung',
           'price': 'Rp1.500',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/3.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/3.png',
         },
         {
           'id': '4',
@@ -50,7 +50,7 @@ class MockData {
           'quantity': '4',
           'unit': 'buah',
           'price': 'Rp2.500',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/6.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/6.png',
         },
         {
           'id': '5',
@@ -58,7 +58,7 @@ class MockData {
           'quantity': '2',
           'unit': 'butir',
           'price': 'Rp3.000',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/4.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/4.png',
         },
         {
           'id': '6',
@@ -66,7 +66,7 @@ class MockData {
           'quantity': '2',
           'unit': 'sdm',
           'price': 'Rp1.000',
-          'image_url': 'public/assets/images/menu_recipe/nasgor/5.png',
+          'image_url': 'public/assets/images/ingredient/nasgor/5.png',
         },
       ],
       instructions: [
@@ -112,7 +112,7 @@ class MockData {
           'quantity': '1',
           'unit': 'kg',
           'price': 'Rp140.000',
-          'image_url': 'public/assets/images/menu_recipe/rendang/1.png',
+          'image_url': 'public/assets/images/ingredient/rendang/1.png',
         },
         {
           'id': '8',
@@ -120,7 +120,7 @@ class MockData {
           'quantity': '2',
           'unit': 'liter',
           'price': 'Rp25.000',
-          'image_url': 'public/assets/images/menu_recipe/rendang/2.png',
+          'image_url': 'public/assets/images/ingredient/rendang/2.png',
         },
         {
           'id': '9',
@@ -128,7 +128,7 @@ class MockData {
           'quantity': '1',
           'unit': 'paket',
           'price': 'Rp15.000',
-          'image_url': 'public/assets/images/menu_recipe/rendang/3.png',
+          'image_url': 'public/assets/images/ingredient/rendang/3.png',
         },
       ],
       instructions: [
@@ -181,7 +181,7 @@ class MockData {
           'quantity': '1',
           'unit': 'ekor',
           'price': 'Rp65.000',
-          'image_url': 'public/assets/images/menu_recipe/soto_lamongan/1.png',
+          'image_url': 'public/assets/images/ingredient/soto_lamongan/1.png',
         },
         {
           'id': '11',
@@ -189,7 +189,7 @@ class MockData {
           'quantity': '3',
           'unit': 'ruas',
           'price': 'Rp2.000',
-          'image_url': 'public/assets/images/menu_recipe/soto_lamongan/2.png',
+          'image_url': 'public/assets/images/ingredient/soto_lamongan/2.png',
         },
         {
           'id': '12',
@@ -197,7 +197,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp10.000',
-          'image_url': 'public/assets/images/menu_recipe/soto_lamongan/3.png',
+          'image_url': 'public/assets/images/ingredient/soto_lamongan/3.png',
         },
       ],
       instructions: [
@@ -232,7 +232,7 @@ class MockData {
           'quantity': '250',
           'unit': 'gram',
           'price': 'Rp5.000',
-          'image_url': 'public/assets/images/menu_recipe/martabak/1.png',
+          'image_url': 'public/assets/images/ingredient/martabak/1.png',
         },
         {
           'id': '14',
@@ -240,7 +240,7 @@ class MockData {
           'quantity': '150',
           'unit': 'gram',
           'price': 'Rp3.000',
-          'image_url': 'public/assets/images/menu_recipe/martabak/2.png',
+          'image_url': 'public/assets/images/ingredient/martabak/2.png',
         },
         {
           'id': '15',
@@ -248,7 +248,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp10.000',
-          'image_url': 'public/assets/images/menu_recipe/martabak/3.png',
+          'image_url': 'public/assets/images/ingredient/martabak/3.png',
         },
         {
           'id': '16',
@@ -256,7 +256,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp15.000',
-          'image_url': 'public/assets/images/menu_recipe/martabak/4.png',
+          'image_url': 'public/assets/images/ingredient/martabak/4.png',
         },
       ],
       instructions: [
@@ -309,7 +309,7 @@ class MockData {
           'quantity': '500',
           'unit': 'gram',
           'price': 'Rp35.000',
-          'image_url': 'public/assets/images/menu_recipe/sate_madura/1.png',
+          'image_url': 'public/assets/images/ingredient/sate_madura/1.png',
         },
         {
           'id': '18',
@@ -317,7 +317,7 @@ class MockData {
           'quantity': '200',
           'unit': 'gram',
           'price': 'Rp8.000',
-          'image_url': 'public/assets/images/menu_recipe/sate_madura/2.png',
+          'image_url': 'public/assets/images/ingredient/sate_madura/2.png',
         },
         {
           'id': '19',
@@ -325,7 +325,7 @@ class MockData {
           'quantity': '5',
           'unit': 'sdm',
           'price': 'Rp3.000',
-          'image_url': 'public/assets/images/menu_recipe/sate_madura/3.png',
+          'image_url': 'public/assets/images/ingredient/sate_madura/3.png',
         },
       ],
       instructions: [
@@ -366,7 +366,7 @@ class MockData {
           'quantity': '100',
           'unit': 'gram',
           'price': 'Rp2.000',
-          'image_url': 'public/assets/images/menu_recipe/gado_gado/1.png',
+          'image_url': 'public/assets/images/ingredient/gado_gado/1.png',
         },
         {
           'id': '21',
@@ -374,7 +374,7 @@ class MockData {
           'quantity': '2',
           'unit': 'buah',
           'price': 'Rp5.000',
-          'image_url': 'public/assets/images/menu_recipe/gado_gado/2.png',
+          'image_url': 'public/assets/images/ingredient/gado_gado/2.png',
         },
         {
           'id': '22',
@@ -382,7 +382,7 @@ class MockData {
           'quantity': '150',
           'unit': 'gram',
           'price': 'Rp7.000',
-          'image_url': 'public/assets/images/menu_recipe/gado_gado/3.png',
+          'image_url': 'public/assets/images/ingredient/gado_gado/3.png',
         },
       ],
       instructions: [
@@ -416,7 +416,7 @@ class MockData {
           'quantity': '500',
           'unit': 'gram',
           'price': 'Rp60.000',
-          'image_url': 'public/assets/images/menu_recipe/bakso/1.png',
+          'image_url': 'public/assets/images/ingredient/bakso/1.png',
         },
       ],
       instructions: [
@@ -578,7 +578,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
       content:
           'Hari ini saya coba resep rendang daging sapi pertama kali dan hasilnya enak banget! Bumbu meresap sampai ke dalam dan dagingnya empuk. Siapa yang mau resepnya?',
-      imageUrl: 'public/assets/images/komunitas/5.png',
+      imageUrl: 'public/assets/images/community/5.png',
       taggedIngredients: ['Daging Sapi', 'Santan', 'Bumbu Rendang'],
       category: 'Makanan Utama',
       likeCount: 45,
@@ -593,7 +593,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 1)),
       content:
           'Tips untuk membuat sambal yang tidak pahit: jangan sampai biji cabai ikut dihaluskan, dan tumis sampai matang dengan api sedang. Ini sambal bawang buatan saya, pedas nikmat!',
-      imageUrl: 'public/assets/images/komunitas/1.png',
+      imageUrl: 'public/assets/images/community/1.png',
       taggedIngredients: ['Cabai Rawit', 'Bawang Merah', 'Bawang Putih'],
       category: 'Tips Memasak',
       likeCount: 78,
@@ -608,7 +608,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 3)),
       content:
           'Ada yang pernah coba membuat es cendol sendiri di rumah? Saya baru coba resep dari nenek dan hasilnya mirip yang dijual di jalan. Segarnya pas untuk cuaca panas Jakarta!',
-      imageUrl: 'public/assets/images/komunitas/2.png',
+      imageUrl: 'public/assets/images/community/2.png',
       taggedIngredients: [
         'Tepung Hunkwe',
         'Daun Pandan',
@@ -628,7 +628,7 @@ class MockData {
       timestamp: DateTime.now().subtract(const Duration(days: 5)),
       content:
           'Berbagi kebahagiaan bersama keluarga dengan masak nasi tumpeng mini untuk ulang tahun istri. Tumpeng kuning dengan lauk pauk tradisional lengkap.',
-      imageUrl: 'public/assets/images/komunitas/3.png',
+      imageUrl: 'public/assets/images/community/3.png',
       taggedIngredients: ['Beras', 'Kunyit', 'Ayam', 'Telur'],
       category: 'Tradisional',
       likeCount: 56,
