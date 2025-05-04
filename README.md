@@ -42,7 +42,7 @@ Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai r
 
 ---
 
-- **Flutter** (versi terbaru)
+- **Flutter** (versi 3.29.3)
 - **Dart**
 - **State Management:** Provider
 - **Navigation:** GoRouter
@@ -55,7 +55,7 @@ Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai r
 ### **Clone Repository**
 
 ```bash
-git clone https://github.com/username/rasain_app.git
+git clone https://github.com/frzxw/rasain_app.git
 cd rasain_app
 ```
 

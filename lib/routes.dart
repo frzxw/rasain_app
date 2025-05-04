@@ -6,9 +6,20 @@ import 'features/chat/chat_screen.dart';
 import 'features/community/community_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/recipe_detail/recipe_detail_screen.dart';
-import 'features/welcome_screen/welcome_screen.dart';
+import 'features/notifications/notifications_screen.dart'; // Added notifications screen
 import 'core/widgets/bottom_nav.dart';
 
+// App routes constants to use throughout the app
+class AppRoutes {
+  static const String home = '/';
+  static const String pantry = '/pantry';
+  static const String chat = '/chat';
+  static const String community = '/community';
+  static const String profile = '/profile';
+  static const String notifications = '/notifications';
+  static const String recipeDetail = '/recipe';
+}
+  
 // Creating a key for the scaffold to control the bottom navigation
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -71,9 +82,16 @@ GoRouter createRouter() {
         path: '/recipe/:id',
         name: 'recipe_detail',
         builder: (context, state) {
-          final recipeId = state.extra as String? ?? '';
+          // Use params() method instead of pathParameters property
+          final recipeId = state.params['id'] ?? '';
           return RecipeDetailScreen(recipeId: recipeId);
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

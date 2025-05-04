@@ -6,6 +6,7 @@ import 'auth_service.dart';
 import 'recipe_service.dart';
 import 'pantry_service.dart';
 import 'chat_service.dart';
+import 'notification_service.dart'; // Added notification service
 import 'mock_data.dart';
 
 /// Helper class to initialize all services with the Indonesian mock data
@@ -25,6 +26,9 @@ class ServicesInitializer {
       ),
       ChangeNotifierProvider(
         create: (_) => ChatService(),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => NotificationService(), // Added notification service provider
       ),
     ];
   }
@@ -46,6 +50,10 @@ class ServicesInitializer {
     // Initialize chat service
     final chatService = Provider.of<ChatService>(context, listen: false);
     await chatService.initialize();
+    
+    // Initialize notification service
+    final notificationService = Provider.of<NotificationService>(context, listen: false);
+    await notificationService.initialize();
 
     debugPrint('All services initialized with Indonesian mock data');
   }

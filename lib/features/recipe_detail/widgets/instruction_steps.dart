@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+// import 'package:video_player/video_player.dart'; // Remove VideoPlayer import
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/custom_button.dart';
 
 class InstructionSteps extends StatefulWidget {
-  final List<String> instructions;
+  final List<Map<String, dynamic>> instructions;
   
   const InstructionSteps({
     Key? key,
@@ -18,6 +20,7 @@ class InstructionSteps extends StatefulWidget {
 class _InstructionStepsState extends State<InstructionSteps> {
   Set<int> _expandedSteps = {};
   bool _expandAll = false;
+  // Remove VideoPlayerController map
 
   @override
   void initState() {
@@ -25,7 +28,16 @@ class _InstructionStepsState extends State<InstructionSteps> {
     // Initially expand first step
     if (widget.instructions.isNotEmpty) {
       _expandedSteps = {0};
+      // Remove video controller initialization
     }
+  }
+  
+  // Remove _initializeVideoControllers method
+
+  @override
+  void dispose() {
+    // Remove video controller disposal
+    super.dispose();
   }
 
   @override
@@ -83,6 +95,9 @@ class _InstructionStepsState extends State<InstructionSteps> {
 
   Widget _buildInstructionStep(int index) {
     final isExpanded = _expandedSteps.contains(index) || _expandAll;
+    final step = widget.instructions[index];
+    final String instructionText = step['text'] ?? '';
+    final String? videoUrl = step['videoUrl'];
     
     return Card(
       margin: const EdgeInsets.only(bottom: AppSizes.marginM),
@@ -104,8 +119,10 @@ class _InstructionStepsState extends State<InstructionSteps> {
             setState(() {
               if (expanded) {
                 _expandedSteps.add(index);
+                // Remove video controller actions
               } else {
                 _expandedSteps.remove(index);
+                // Remove video controller actions
               }
             });
           },
@@ -142,10 +159,10 @@ class _InstructionStepsState extends State<InstructionSteps> {
               
               const SizedBox(width: AppSizes.marginM),
               
-              // Step Title (first 20 characters of instruction)
+              // Step Title
               Expanded(
                 child: Text(
-                  _getStepTitle(widget.instructions[index]),
+                  _getStepTitle(instructionText),
                   style: TextStyle(
                     fontWeight: isExpanded ? FontWeight.w600 : FontWeight.normal,
                     color: isExpanded ? AppColors.primary : AppColors.textPrimary,
@@ -154,6 +171,14 @@ class _InstructionStepsState extends State<InstructionSteps> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              
+              // Video indicator icon
+              if (videoUrl != null && videoUrl.isNotEmpty)
+                const Icon(
+                  Icons.videocam,
+                  color: AppColors.highlight,
+                  size: AppSizes.iconS,
+                ),
             ],
           ),
           children: [
@@ -163,15 +188,108 @@ class _InstructionStepsState extends State<InstructionSteps> {
                 right: AppSizes.paddingL,
                 bottom: AppSizes.paddingL,
               ),
-              child: Text(
-                widget.instructions[index],
-                style: Theme.of(context).textTheme.bodyMedium,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Instruction text
+                  Text(
+                    instructionText,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  
+                  // Video player (if video URL exists)
+                  if (videoUrl != null && videoUrl.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSizes.paddingM),
+                      child: _buildVideoPlayer(videoUrl),
+                    ),
+                  
+                  // "Jump to Next Step" button for better navigation
+                  if (index < widget.instructions.length - 1)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSizes.paddingM),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.arrow_downward),
+                          label: const Text('Next Step'),
+                          onPressed: () {
+                            setState(() {
+                              _expandedSteps.remove(index);
+                              _expandedSteps.add(index + 1);
+                              
+                              // Ensure the next step is visible
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                Scrollable.ensureVisible(
+                                  context,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              });
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+  
+  Widget _buildVideoPlayer(String videoUrl) {
+    // Remove VideoPlayer implementation
+    return Column(
+      children: [
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+          ),
+          child: const Center(
+            child: Icon(Icons.videocam, size: 50, color: AppColors.textSecondary),
+          ),
+        ),
+        TextButton.icon(
+          icon: const Icon(Icons.open_in_new),
+          label: const Text('Watch Video'),
+          onPressed: () {
+            _openVideoFullscreen(videoUrl);
+          },
+        ),
+      ],
+    );
+  }
+  
+  Future<void> _openVideoFullscreen(String videoUrl) async {
+    try {
+      final Uri url = Uri.parse(videoUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open video link'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening video: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   String _getStepTitle(String instruction) {

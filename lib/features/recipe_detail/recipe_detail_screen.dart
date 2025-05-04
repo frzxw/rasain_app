@@ -10,10 +10,12 @@ import 'widgets/review_section.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
+  final String? recipeSlug; // Added support for recipe slug
   
   const RecipeDetailScreen({
     Key? key,
     required this.recipeId,
+    this.recipeSlug,
   }) : super(key: key);
 
   @override
@@ -21,6 +23,9 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
+  int _currentStep = 0; // For tracking current instruction step
+  bool _cookingMode = false; // Flag for step-by-step cooking mode
+  
   @override
   void initState() {
     super.initState();
@@ -52,7 +57,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             return _buildErrorState();
           }
           
-          return _buildRecipeContent(context, recipe, recipeService);
+          return _cookingMode && recipe.instructions != null && recipe.instructions!.isNotEmpty
+              ? _buildCookingMode(context, recipe, recipeService)
+              : _buildRecipeContent(context, recipe, recipeService);
         },
       ),
     );
@@ -82,6 +89,32 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
+            // Share Button
+            IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
+                ),
+                child: const Icon(
+                  Icons.share,
+                  color: Colors.white,
+                  size: AppSizes.iconM,
+                ),
+              ),
+              onPressed: () {
+                // Share functionality would be implemented here
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Membagikan resep: ${recipe.name}'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            
             // Bookmark Button
             IconButton(
               icon: Container(
@@ -183,7 +216,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 
                 // Ingredients Section
                 Text(
-                  'Ingredients',
+                  'Bahan-bahan',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: AppSizes.marginM),
@@ -193,9 +226,29 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: AppSizes.marginL),
                 
                 // Instructions Section
-                Text(
-                  'Instructions',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Langkah-langkah',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    if (recipe.instructions != null && recipe.instructions!.isNotEmpty)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Mode Memasak'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _cookingMode = true;
+                            _currentStep = 0;
+                          });
+                        },
+                      ),
+                  ],
                 ),
                 const SizedBox(height: AppSizes.marginM),
                 if (recipe.instructions != null)
@@ -205,13 +258,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 
                 // Review Section
                 Text(
-                  'Reviews & Ratings',
+                  'Ulasan & Rating',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: AppSizes.marginM),
                 ReviewSection(
                   recipe: recipe,
-                  onRateRecipe: (rating) => recipeService.rateRecipe(recipe.id, rating),
+                  onRateRecipe: (rating, comment) => recipeService.rateRecipe(recipe.id, rating),
                 ),
                 
                 const SizedBox(height: AppSizes.marginXL),
@@ -220,6 +273,217 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+  
+  Widget _buildCookingMode(
+    BuildContext context,
+    Recipe recipe,
+    RecipeService recipeService,
+  ) {
+    final steps = recipe.instructions!;
+    final currentStep = steps[_currentStep];
+    final stepText = currentStep['text'] ?? '';
+    final videoUrl = currentStep['videoUrl'];
+    
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.paddingM),
+        child: Column(
+          children: [
+            // Header with navigation
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    setState(() {
+                      _cookingMode = false;
+                    });
+                  },
+                ),
+                Text(
+                  'Langkah ${_currentStep + 1}/${steps.length}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                if (_currentStep > 0)
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios),
+                    onPressed: () {
+                      setState(() {
+                        _currentStep--;
+                      });
+                    },
+                  ),
+                if (_currentStep < steps.length - 1)
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios),
+                    onPressed: () {
+                      setState(() {
+                        _currentStep++;
+                      });
+                    },
+                  ),
+              ],
+            ),
+            
+            const Divider(),
+            
+            // Step content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Recipe name as reference
+                    Text(
+                      recipe.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: AppSizes.marginM),
+                    
+                    // Step number
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${_currentStep + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: AppSizes.marginM),
+                    
+                    // Step instruction
+                    Text(
+                      stepText,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    
+                    const SizedBox(height: AppSizes.marginL),
+                    
+                    // Video if available
+                    if (videoUrl != null && videoUrl.isNotEmpty)
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        color: AppColors.surface,
+                        child: Center(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Putar Video'),
+                            onPressed: () {
+                              // Launch video in external player or expand in app
+                            },
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Bottom navigation
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (_currentStep > 0)
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text('Sebelumnya'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.surface,
+                        foregroundColor: AppColors.textPrimary,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _currentStep--;
+                        });
+                      },
+                    )
+                  else
+                    const SizedBox.shrink(),
+                    
+                  _currentStep < steps.length - 1
+                      ? ElevatedButton.icon(
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('Selanjutnya'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _currentStep++;
+                            });
+                          },
+                        )
+                      : ElevatedButton.icon(
+                          icon: const Icon(Icons.check),
+                          label: const Text('Selesai'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _cookingMode = false;
+                            });
+                            
+                            // Show dialog inviting to rate the recipe
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Selamat!'),
+                                content: const Text(
+                                  'Anda telah berhasil menyelesaikan resep ini. Bagaimana hasilnya? Beri rating untuk resep ini?'
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Nanti'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      // Scroll to review section
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        Scrollable.ensureVisible(
+                                          context,
+                                          duration: const Duration(milliseconds: 300),
+                                          curve: Curves.easeInOut,
+                                        );
+                                      });
+                                    },
+                                    child: const Text('Beri Rating'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -246,7 +510,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               _buildInfoItem(
                 context,
                 icon: Icons.access_time,
-                label: 'Cook Time',
+                label: 'Waktu Masak',
                 value: recipe.cookTime!,
               ),
             
@@ -255,7 +519,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               _buildInfoItem(
                 context,
                 icon: Icons.people_outline,
-                label: 'Servings',
+                label: 'Porsi',
                 value: '${recipe.servings}',
               ),
             
@@ -264,7 +528,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               _buildInfoItem(
                 context,
                 icon: Icons.attach_money,
-                label: 'Est. Cost',
+                label: 'Estimasi Biaya',
                 value: recipe.estimatedCost!,
               ),
           ],
@@ -334,13 +598,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              'Recipe not found',
+              'Resep tidak ditemukan',
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              'The recipe you\'re looking for might have been removed or is unavailable.',
+              'Resep yang Anda cari mungkin telah dihapus atau tidak tersedia.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -350,7 +614,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ElevatedButton.icon(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back),
-              label: const Text('Go Back'),
+              label: const Text('Kembali'),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 class Recipe {
   final String id;
   final String name;
+  final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
   final int reviewCount;
@@ -8,7 +9,7 @@ class Recipe {
   final String? cookTime;
   final int? servings;
   final List<Map<String, dynamic>>? ingredients;
-  final List<String>? instructions;
+  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -16,6 +17,7 @@ class Recipe {
   Recipe({
     required this.id,
     required this.name,
+    this.slug,
     this.imageUrl,
     required this.rating,
     required this.reviewCount,
@@ -33,6 +35,7 @@ class Recipe {
     return Recipe(
       id: json['id'],
       name: json['name'],
+      slug: json['slug'] ?? json['name'].toString().toLowerCase().replaceAll(' ', '-'),
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
       reviewCount: json['review_count'],
@@ -42,7 +45,13 @@ class Recipe {
       ingredients: json['ingredients'] != null ? 
         List<Map<String, dynamic>>.from(json['ingredients']) : null,
       instructions: json['instructions'] != null ?
-        List<String>.from(json['instructions']) : null,
+        (json['instructions'] is List<String> ?
+          // Convert string instructions to map format with only 'text' field
+          List<Map<String, dynamic>>.from(
+            (json['instructions'] as List).map((step) => {'text': step, 'videoUrl': null})
+          )
+          : List<Map<String, dynamic>>.from(json['instructions'])
+        ) : null,
       description: json['description'],
       categories: json['categories'] != null ?
         List<String>.from(json['categories']) : null,
@@ -54,6 +63,7 @@ class Recipe {
     return {
       'id': id,
       'name': name,
+      'slug': slug ?? name.toLowerCase().replaceAll(' ', '-'),
       'image_url': imageUrl,
       'rating': rating,
       'review_count': reviewCount,
@@ -72,6 +82,7 @@ class Recipe {
   Recipe copyWith({
     String? id,
     String? name,
+    String? slug,
     String? imageUrl,
     double? rating,
     int? reviewCount,
@@ -79,7 +90,7 @@ class Recipe {
     String? cookTime,
     int? servings,
     List<Map<String, dynamic>>? ingredients,
-    List<String>? instructions,
+    List<Map<String, dynamic>>? instructions,
     String? description,
     List<String>? categories,
     bool? isSaved,
@@ -87,6 +98,7 @@ class Recipe {
     return Recipe(
       id: id ?? this.id,
       name: name ?? this.name,
+      slug: slug ?? this.slug,
       imageUrl: imageUrl ?? this.imageUrl,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
