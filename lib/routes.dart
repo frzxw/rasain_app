@@ -8,6 +8,7 @@ import 'features/profile/profile_screen.dart';
 import 'features/recipe_detail/recipe_detail_screen.dart';
 import 'features/notifications/notifications_screen.dart'; // Added notifications screen
 import 'core/widgets/bottom_nav.dart';
+import 'features/welcome_screen/welcome_screen.dart';
 
 // App routes constants to use throughout the app
 class AppRoutes {
