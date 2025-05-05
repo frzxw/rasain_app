@@ -135,11 +135,7 @@ class SavedRecipeList extends StatelessWidget {
                         if (recipe.estimatedCost != null)
                           Row(
                             children: [
-                              const Icon(
-                                Icons.attach_money,
-                                size: AppSizes.iconXS,
-                                color: AppColors.textSecondary,
-                              ),
+                              
                               const SizedBox(width: 4),
                               Text(
                                 'Est. ${recipe.estimatedCost}',

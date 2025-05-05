@@ -373,11 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.only(top: AppSizes.paddingS),
                         child: Row(
                           children: [
-                            const Icon(
-                              Icons.attach_money,
-                              size: AppSizes.iconS,
-                              color: AppColors.textSecondary,
-                            ),
+ 
                             const SizedBox(width: 4),
                             Text(
                               'Est. Rp ${recipe.estimatedCost}',

@@ -37,14 +37,10 @@ class IngredientList extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: AppSizes.paddingM),
           child: Row(
             children: [
-              const Icon(
-                Icons.attach_money,
-                size: AppSizes.iconS,
-                color: AppColors.textSecondary,
-              ),
+
               const SizedBox(width: 4),
               Text(
-                'Total Est. Cost: ${_calculateTotalCost()}',
+                'Total Estimasi : ${_calculateTotalCost()}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.success,
@@ -83,23 +79,25 @@ class IngredientList extends StatelessWidget {
     );
   }
 
-  String _calculateTotalCost() {
-    double totalCost = 0.0;
-    
-    for (final ingredient in ingredients) {
-      if (ingredient['price'] != null) {
-        // Extract numeric value from price string (e.g., "$2.99" -> 2.99)
-        final priceString = ingredient['price'].toString();
-        final numericPrice = double.tryParse(
-          priceString.replaceAll(RegExp(r'[^\d.]'), '')
-        ) ?? 0.0;
-        
-        totalCost += numericPrice;
-      }
+String _calculateTotalCost() {
+  double totalCost = 0.0;
+  
+  for (final ingredient in ingredients) {
+    if (ingredient['price'] != null) {
+      // Extract numeric value from price string (e.g., "$2.99" -> 2.99)
+      final priceString = ingredient['price'].toString();
+      final numericPrice = double.tryParse(
+        priceString.replaceAll(RegExp(r'[^\d.]'), '') // Menghapus simbol selain angka dan titik
+      ) ?? 0.0;
+      
+      totalCost += numericPrice;
     }
-    
-    return '\$${totalCost.toStringAsFixed(2)}';
   }
+  
+  // Format sebagai Rupiah (rp) dengan 3 angka di belakang koma
+  return 'Rp ${totalCost.toStringAsFixed(3)}';
+}
+
 
   Widget _buildEmptyState(BuildContext context) {
     return Container(

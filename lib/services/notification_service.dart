@@ -202,15 +202,7 @@ class NotificationService extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000&auto=format&fit=crop',
     ));
     
-    // Review notification
-    _notifications.add(AppNotification(
-      id: '4',
-      title: 'Ulasan Baru',
-      message: 'Sarah memberikan resep Anda bintang 5! Klik untuk melihat ulasannya.',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      type: NotificationType.review,
-      relatedItemId: 'recipe-456',
-    ));
+
     
     // Achievement notification
     _notifications.add(AppNotification(

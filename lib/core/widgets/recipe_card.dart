@@ -151,11 +151,6 @@ class RecipeCard extends StatelessWidget {
                     if (showEstimatedCost && recipe.estimatedCost != null)
                       Row(
                         children: [
-                          const Icon(
-                            Icons.attach_money,
-                            size: AppSizes.iconXS,
-                            color: AppColors.textSecondary,
-                          ),
                           const SizedBox(width: 2),
                           Text(
                             'Est. ${recipe.estimatedCost}',

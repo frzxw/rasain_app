@@ -506,7 +506,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       decoration: const InputDecoration(
                         hintText: 'e.g. 15000',
                         prefixIcon: Icon(
-                          Icons.attach_money,
+                          Icons.currency_exchange,
                           size: AppSizes.iconS,
                           color: AppColors.textSecondary,
                         ),

@@ -527,7 +527,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             if (recipe.estimatedCost != null)
               _buildInfoItem(
                 context,
-                icon: Icons.attach_money,
+                icon: Icons.currency_exchange,
                 label: 'Estimasi Biaya',
                 value: recipe.estimatedCost!,
               ),
