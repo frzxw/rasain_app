@@ -128,12 +128,34 @@ class _ProfileMenuState extends State<ProfileMenu> {
           
           // App Info
           Center(
+<<<<<<< Updated upstream
             child: Text(
               'Rasain v1.0.0',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 12,
               ),
+=======
+            child: Column(
+              children: [
+                Text(
+                  'Rasain v1.0.0',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '© 2025 Rasain App',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+>>>>>>> Stashed changes
             ),
           ),
         ],
