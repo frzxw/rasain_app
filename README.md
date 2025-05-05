@@ -16,14 +16,22 @@ Proyek ini dikembangkan oleh kelompok 24 sebagai bagian dari tugas 3 pada mata k
 - 2309245 Hasbi Haqqul Fikri
 - 2308163 Putra Hadiyanto Nugroho
 
-
----
-
 ## Deskripsi Aplikasi
 
 ---
 
 Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai resep masakan Indonesia dengan detail lengkap. Aplikasi ini dirancang dengan pendekatan dwibahasa, menggunakan kode Bahasa Inggris untuk kolaborasi pengembang global sambil menampilkan konten kuliner dalam Bahasa Indonesia.
+
+## Demo Video
+
+---
+
+<div align="center">
+    <a href="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4">
+        <img src="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4" alt="Demo Video" style="max-width: 100%; height: auto;">
+    </a>
+</div>
+
 
 ## Fitur Utama
 
