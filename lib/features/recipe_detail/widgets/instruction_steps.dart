@@ -9,9 +9,9 @@ class InstructionSteps extends StatefulWidget {
   final List<Map<String, dynamic>> instructions;
   
   const InstructionSteps({
-    Key? key,
+    super.key,
     required this.instructions,
-  }) : super(key: key);
+  });
 
   @override
   State<InstructionSteps> createState() => _InstructionStepsState();

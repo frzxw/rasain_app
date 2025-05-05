@@ -8,9 +8,9 @@ class IngredientList extends StatelessWidget {
   final List<Map<String, dynamic>> ingredients;
   
   const IngredientList({
-    Key? key,
+    super.key,
     required this.ingredients,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

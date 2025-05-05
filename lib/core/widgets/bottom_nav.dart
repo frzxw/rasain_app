@@ -30,6 +30,7 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
     // Get index from current location
     final GoRouter router = GoRouter.of(context);
     final String location = router.location;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     _currentIndex = _getIndexFromLocation(location);
 
@@ -49,9 +50,9 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
           currentIndex: _currentIndex,
           onTap: (index) => _onItemTapped(index, router),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
           selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
+          unselectedItemColor: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
           selectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,

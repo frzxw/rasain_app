@@ -29,10 +29,10 @@ class ReviewSection extends StatefulWidget {
   final Function(double, String) onRateRecipe;
   
   const ReviewSection({
-    Key? key,
+    super.key,
     required this.recipe,
     required this.onRateRecipe,
-  }) : super(key: key);
+  });
 
   @override
   State<ReviewSection> createState() => _ReviewSectionState();

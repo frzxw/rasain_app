@@ -8,11 +8,11 @@ class CategorySlider extends StatelessWidget {
   final ValueChanged<String> onCategorySelected;
   
   const CategorySlider({
-    Key? key,
+    super.key,
     required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

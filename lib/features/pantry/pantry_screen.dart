@@ -13,7 +13,7 @@ import 'widgets/pantry_input_form.dart';
 import 'widgets/pantry_suggestions.dart';
 
 class PantryScreen extends StatefulWidget {
-  const PantryScreen({Key? key}) : super(key: key);
+  const PantryScreen({super.key});
 
   @override
   State<PantryScreen> createState() => _PantryScreenState();

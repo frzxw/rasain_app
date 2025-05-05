@@ -11,7 +11,7 @@ import 'widgets/recipe_carousel.dart';
 import 'widgets/whats_cooking_stream.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme-aware background
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

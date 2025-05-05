@@ -13,11 +13,11 @@ class PantryInputForm extends StatefulWidget {
   final VoidCallback onCancel;
   
   const PantryInputForm({
-    Key? key,
+    super.key,
     this.item,
     required this.onSave,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<PantryInputForm> createState() => _PantryInputFormState();
@@ -737,7 +737,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
       final price = _priceController.text.isNotEmpty
-          ? '\Rp${_priceController.text}'
+          ? 'Rp${_priceController.text}'
           : null;
           
       final quantity = _quantityController.text.trim().isNotEmpty

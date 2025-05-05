@@ -9,10 +9,10 @@ class WhatsCookingStream extends StatelessWidget {
   final bool isLoading;
   
   const WhatsCookingStream({
-    Key? key,
+    super.key,
     required this.recipes,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

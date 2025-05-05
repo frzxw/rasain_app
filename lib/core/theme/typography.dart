@@ -3,73 +3,118 @@ import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
 
 class AppTypography {
-  static TextTheme getTextTheme() {
+  static TextTheme getTextTheme({bool isDark = false}) {
+    // Select text colors based on theme mode
+    final textPrimary = isDark ? Colors.white : AppColors.textPrimary;
+    final textSecondary = isDark ? Colors.white70 : AppColors.textSecondary;
+    
     return TextTheme(
-      // Headings
-      displayLarge: GoogleFonts.inter(
+      // Display styles - Large titles and hero text
+      displayLarge: GoogleFonts.playfairDisplay(
+        fontSize: 32,
+        height: 1.2,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+        letterSpacing: -0.5,
+      ),
+      displayMedium: GoogleFonts.playfairDisplay(
         fontSize: 28,
+        height: 1.2,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
+        color: textPrimary,
         letterSpacing: -0.5,
       ),
-      displayMedium: GoogleFonts.inter(
-        fontSize: 26,
-        fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.5,
-      ),
-      displaySmall: GoogleFonts.inter(
+      displaySmall: GoogleFonts.playfairDisplay(
         fontSize: 24,
+        height: 1.2,
         fontWeight: FontWeight.bold,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.5,
-      ),
-      
-      // Subheadings
-      headlineMedium: GoogleFonts.inter(
-        fontSize: 22,
-        fontWeight: FontWeight.w600, // Semi-Bold
-        color: AppColors.textPrimary,
+        color: textPrimary,
         letterSpacing: -0.25,
       ),
-      headlineSmall: GoogleFonts.inter(
+      
+      // Headline styles - Section headers
+      headlineLarge: GoogleFonts.montserrat(
+        fontSize: 22,
+        height: 1.3,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+        letterSpacing: -0.1,
+      ),
+      headlineMedium: GoogleFonts.montserrat(
         fontSize: 20,
-        fontWeight: FontWeight.w600, // Semi-Bold
-        color: AppColors.textPrimary,
+        height: 1.3,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+        letterSpacing: -0.1,
+      ),
+      headlineSmall: GoogleFonts.montserrat(
+        fontSize: 18,
+        height: 1.3,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
       ),
       
-      // Body text
-      bodyLarge: GoogleFonts.inter(
+      // Title styles - Article titles, dialog titles
+      titleLarge: GoogleFonts.montserrat(
+        fontSize: 18,
+        height: 1.4,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      titleMedium: GoogleFonts.montserrat(
         fontSize: 16,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textPrimary,
+        height: 1.4,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
       ),
-      bodyMedium: GoogleFonts.inter(
+      titleSmall: GoogleFonts.montserrat(
         fontSize: 14,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textPrimary,
-      ),
-      bodySmall: GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.normal,
-        color: AppColors.textSecondary,
+        height: 1.4,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
       ),
       
-      // Labels & Captions
-      labelLarge: GoogleFonts.inter(
+      // Body text styles
+      bodyLarge: GoogleFonts.nunito(
+        fontSize: 16,
+        height: 1.5,
+        fontWeight: FontWeight.normal,
+        color: textPrimary,
+      ),
+      bodyMedium: GoogleFonts.nunito(
         fontSize: 14,
-        fontWeight: FontWeight.w600, // Semi-Bold
-        color: AppColors.textPrimary,
+        height: 1.5,
+        fontWeight: FontWeight.normal,
+        color: textPrimary,
       ),
-      labelMedium: GoogleFonts.inter(
+      bodySmall: GoogleFonts.nunito(
         fontSize: 12,
-        fontWeight: FontWeight.w600, // Semi-Bold
-        color: AppColors.textPrimary,
+        height: 1.5,
+        fontWeight: FontWeight.normal,
+        color: textSecondary,
       ),
-      labelSmall: GoogleFonts.inter(
-        fontSize: 10,
-        fontWeight: FontWeight.w600, // Semi-Bold
-        color: AppColors.textSecondary,
+      
+      // Label styles for components like buttons, inputs
+      labelLarge: GoogleFonts.montserrat(
+        fontSize: 14,
+        height: 1.4,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+        color: textPrimary,
+      ),
+      labelMedium: GoogleFonts.montserrat(
+        fontSize: 12,
+        height: 1.4,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.5,
+        color: textPrimary,
+      ),
+      labelSmall: GoogleFonts.montserrat(
+        fontSize: 11,
+        height: 1.4,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 0.5,
+        color: textSecondary,
       ),
     );
   }

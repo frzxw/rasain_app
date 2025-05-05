@@ -1,19 +1,22 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import '../core/theme/theme_service.dart';
 import 'auth_service.dart';
 import 'recipe_service.dart';
 import 'pantry_service.dart';
 import 'chat_service.dart';
 import 'notification_service.dart'; // Added notification service
-import 'mock_data.dart';
 
 /// Helper class to initialize all services with the Indonesian mock data
 class ServicesInitializer {
   /// Create and initialize all service providers for the app
   static List<SingleChildWidget> getProviders() {
     return [
+      ChangeNotifierProvider(
+        create: (_) => ThemeService(),
+        lazy: false,
+      ),
       ChangeNotifierProvider(
         create: (_) => AuthService(),
         lazy: false,

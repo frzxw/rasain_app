@@ -11,12 +11,12 @@ class RecipeCarousel extends StatelessWidget {
   final double cardHeight;
   
   const RecipeCarousel({
-    Key? key,
+    super.key,
     required this.recipes,
     this.isLoading = false,
     this.cardWidth = 280, // Wider card to match WhatsCoookingStream style
     this.cardHeight = 320, // Taller card to match WhatsCoookingStream style
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

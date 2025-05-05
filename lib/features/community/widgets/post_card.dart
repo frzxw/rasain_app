@@ -11,12 +11,12 @@ class PostCard extends StatelessWidget {
   final VoidCallback onShare;
   
   const PostCard({
-    Key? key,
+    super.key,
     required this.post,
     required this.onLike,
     required this.onComment,
     required this.onShare,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

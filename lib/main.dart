@@ -6,6 +6,8 @@ import 'services/auth_service.dart';
 import 'services/recipe_service.dart';
 import 'services/pantry_service.dart';
 import 'services/chat_service.dart';
+import 'services/notification_service.dart';
+import 'core/theme/theme_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +18,11 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
+  // Create service instances to manage app state
+  final themeService = ThemeService();
+  final authService = AuthService();
+  
+  // Set system UI overlay style for light mode
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -29,10 +35,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider.value(value: themeService),
+        ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider(create: (_) => RecipeService()),
         ChangeNotifierProvider(create: (_) => PantryService()),
         ChangeNotifierProvider(create: (_) => ChatService()),
+        ChangeNotifierProvider(create: (_) => NotificationService()),
       ],
       child: const RasainApp(),
     ),

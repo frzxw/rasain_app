@@ -13,10 +13,10 @@ class RecipeDetailScreen extends StatefulWidget {
   final String? recipeSlug; // Added support for recipe slug
   
   const RecipeDetailScreen({
-    Key? key,
+    super.key,
     required this.recipeId,
     this.recipeSlug,
-  }) : super(key: key);
+  });
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -39,7 +39,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<RecipeService>(
         builder: (context, recipeService, _) {
           final recipe = recipeService.currentRecipe;

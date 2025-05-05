@@ -9,10 +9,10 @@ class NotificationIcon extends StatelessWidget {
   final double size;
   
   const NotificationIcon({
-    Key? key,
+    super.key,
     this.color,
     this.size = 24.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
