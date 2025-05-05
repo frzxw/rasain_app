@@ -78,6 +78,8 @@ class _InstructionStepsState extends State<InstructionSteps> {
             label: 'Start Cooking',
             icon: Icons.play_arrow,
             variant: ButtonVariant.primary,
+             textStyle: TextStyle(color: const Color.fromARGB(255, 255, 255, 255)),
+                        
             onPressed: () {
               // This could start a guided cooking mode or timer
               ScaffoldMessenger.of(context).showSnackBar(

@@ -694,6 +694,8 @@ class _PantryInputFormState extends State<PantryInputForm> {
                         label: widget.item != null ? 'Update' : 'Tambah',
                         onPressed: _handleSave,
                         variant: ButtonVariant.primary,
+                        textStyle: TextStyle(color: const Color.fromARGB(255, 255, 255, 255)),
+                        
                       ),
                     ),
                   ],

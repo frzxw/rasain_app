@@ -157,6 +157,7 @@ class WelcomeScreen extends StatelessWidget {
           icon: icon,
           iconAtEnd: false,
           variant: ButtonVariant.primary,
+          textStyle: const TextStyle(color: Colors.white), // Tambahkan ini
         ),
         Padding(
           padding: const EdgeInsets.only(
