@@ -10,7 +10,7 @@ import 'widgets/saved_recipe_list.dart';
 import 'widgets/profile_menu.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const CustomAppBar(
         title: 'Profile',
       ),
@@ -120,12 +120,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final authService = Provider.of<AuthService>(context, listen: false);
                 await authService.logout();
               },
-              onUpdateSettings: (notifications, language, darkMode) async {
+              onUpdateSettings: (notifications, language, _) async {
                 final authService = Provider.of<AuthService>(context, listen: false);
                 await authService.updateSettings(
                   notificationsEnabled: notifications,
                   language: language,
-                  darkModeEnabled: darkMode,
+                  darkModeEnabled: false, // Always false since we removed dark mode
                 );
               },
             ),

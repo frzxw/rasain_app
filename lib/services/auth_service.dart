@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../core/theme/theme_service.dart';
 import '../models/user_profile.dart';
 import 'mock_api_service.dart';
 
@@ -61,6 +63,7 @@ class AuthService extends ChangeNotifier {
       if (response['user'] != null) {
         _currentUser = UserProfile.fromJson(response['user']);
         _isAuthenticated = true;
+        
         notifyListeners();
         return true;
       } else {
@@ -167,7 +170,8 @@ class AuthService extends ChangeNotifier {
       final updatedSettings = {
         'is_notifications_enabled': notificationsEnabled ?? _currentUser!.isNotificationsEnabled,
         'language': language ?? _currentUser!.language,
-        'is_dark_mode_enabled': darkModeEnabled ?? _currentUser!.isDarkModeEnabled,
+        // We'll still store the preference in the API but won't use it in the app
+        'is_dark_mode_enabled': false,
       };
       
       final response = await _apiService.put(

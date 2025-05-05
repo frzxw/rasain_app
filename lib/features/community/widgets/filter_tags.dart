@@ -8,11 +8,11 @@ class FilterTags extends StatelessWidget {
   final ValueChanged<String> onTagSelected;
   
   const FilterTags({
-    Key? key,
+    super.key,
     required this.tags,
     required this.selectedTag,
     required this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

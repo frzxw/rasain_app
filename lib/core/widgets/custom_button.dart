@@ -25,7 +25,8 @@ class CustomButton extends StatelessWidget {
   final bool isLoading;
   final bool isFullWidth;
   final bool disabled;
-  
+  final TextStyle? textStyle;
+
   const CustomButton({
     super.key,
     required this.label,
@@ -37,6 +38,7 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.isFullWidth = false,
     this.disabled = false,
+    this.textStyle,
   });
 
   @override
@@ -65,7 +67,7 @@ class CustomButton extends StatelessWidget {
           ),
           child: _buildButtonContent(context, AppColors.onPrimary),
         );
-      
+
       case ButtonVariant.secondary:
         return ElevatedButton(
           onPressed: disabled || isLoading ? null : onPressed,
@@ -81,7 +83,7 @@ class CustomButton extends StatelessWidget {
           ),
           child: _buildButtonContent(context, AppColors.textPrimary),
         );
-      
+
       case ButtonVariant.outline:
         return OutlinedButton(
           onPressed: disabled || isLoading ? null : onPressed,
@@ -98,7 +100,7 @@ class CustomButton extends StatelessWidget {
           ),
           child: _buildButtonContent(context, AppColors.primary),
         );
-      
+
       case ButtonVariant.text:
         return TextButton(
           onPressed: disabled || isLoading ? null : onPressed,
@@ -126,12 +128,12 @@ class CustomButton extends StatelessWidget {
       );
     }
 
-    final TextStyle textStyle = _getTextStyleForSize(context);
-    
+    final TextStyle mergedTextStyle = _getTextStyleForSize(context);
+
     if (icon == null) {
       return Text(
         label,
-        style: textStyle,
+        style: mergedTextStyle,
         textAlign: TextAlign.center,
       );
     }
@@ -141,14 +143,14 @@ class CustomButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: iconAtEnd
           ? [
-              Text(label, style: textStyle),
+              Text(label, style: mergedTextStyle),
               SizedBox(width: size == ButtonSize.small ? 4 : 8),
               Icon(icon, size: _getIconSize()),
             ]
           : [
               Icon(icon, size: _getIconSize()),
               SizedBox(width: size == ButtonSize.small ? 4 : 8),
-              Text(label, style: textStyle),
+              Text(label, style: mergedTextStyle),
             ],
     );
   }
@@ -189,17 +191,22 @@ class CustomButton extends StatelessWidget {
       fontWeight: FontWeight.w600,
       color: disabled ? AppColors.textSecondary : null,
     );
-    
+
+    // Gabungkan textStyle yang diterima dengan baseStyle
+    final mergedStyle = textStyle != null 
+      ? textStyle!.merge(baseStyle)
+      : baseStyle;
+
     switch (size) {
       case ButtonSize.small:
-        return Theme.of(context).textTheme.labelMedium?.merge(baseStyle) ??
-            baseStyle.copyWith(fontSize: 12);
+        return Theme.of(context).textTheme.labelMedium?.merge(mergedStyle) ?? 
+               mergedStyle.copyWith(fontSize: 12);
       case ButtonSize.medium:
-        return Theme.of(context).textTheme.labelLarge?.merge(baseStyle) ??
-            baseStyle.copyWith(fontSize: 14);
+        return Theme.of(context).textTheme.labelLarge?.merge(mergedStyle) ?? 
+               mergedStyle.copyWith(fontSize: 14);
       case ButtonSize.large:
-        return Theme.of(context).textTheme.bodyLarge?.merge(baseStyle) ??
-            baseStyle.copyWith(fontSize: 16);
+        return Theme.of(context).textTheme.bodyLarge?.merge(mergedStyle) ?? 
+               mergedStyle.copyWith(fontSize: 16);
     }
   }
 

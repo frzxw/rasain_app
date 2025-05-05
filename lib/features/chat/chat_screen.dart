@@ -4,7 +4,6 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
 import '../../services/chat_service.dart';
-import '../../models/chat_message.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_input_box.dart';
 
@@ -37,7 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: 'Virtual Cooking Assistant',
         actions: [

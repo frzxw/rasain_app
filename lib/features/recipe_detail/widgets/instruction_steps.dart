@@ -9,9 +9,9 @@ class InstructionSteps extends StatefulWidget {
   final List<Map<String, dynamic>> instructions;
   
   const InstructionSteps({
-    Key? key,
+    super.key,
     required this.instructions,
-  }) : super(key: key);
+  });
 
   @override
   State<InstructionSteps> createState() => _InstructionStepsState();
@@ -78,6 +78,8 @@ class _InstructionStepsState extends State<InstructionSteps> {
             label: 'Start Cooking',
             icon: Icons.play_arrow,
             variant: ButtonVariant.primary,
+             textStyle: TextStyle(color: const Color.fromARGB(255, 255, 255, 255)),
+                        
             onPressed: () {
               // This could start a guided cooking mode or timer
               ScaffoldMessenger.of(context).showSnackBar(

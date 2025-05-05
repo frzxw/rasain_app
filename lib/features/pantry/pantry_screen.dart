@@ -13,7 +13,7 @@ import 'widgets/pantry_input_form.dart';
 import 'widgets/pantry_suggestions.dart';
 
 class PantryScreen extends StatefulWidget {
-  const PantryScreen({Key? key}) : super(key: key);
+  const PantryScreen({super.key});
 
   @override
   State<PantryScreen> createState() => _PantryScreenState();
@@ -120,34 +120,36 @@ class _PantryScreenState extends State<PantryScreen> {
     );
   }
 
-  Widget _buildQuickAddSection() {
-    return Row(
-      children: [
-        Expanded(
-          child: CustomButton(
-            label: 'Add Manually',
-            icon: Icons.edit_outlined,
-            onPressed: () {
-              setState(() {
-                _showInputForm = true;
-                _editingItem = null;
-              });
-            },
-            variant: ButtonVariant.outline,
-          ),
+Widget _buildQuickAddSection() {
+  return Row(
+    children: [
+      Expanded(
+        child: CustomButton(
+          label: 'Add Manually',
+          icon: Icons.edit_outlined,
+          onPressed: () {
+            setState(() {
+              _showInputForm = true;
+              _editingItem = null;
+            });
+          },
+          variant: ButtonVariant.outline,
+          textStyle: TextStyle(color: const Color.fromARGB(255, 197, 49, 49)), // Ubah teks menjadi putih
         ),
-        const SizedBox(width: AppSizes.marginM),
-        Expanded(
-          child: CustomButton(
-            label: 'Scan Item',
-            icon: Icons.camera_alt_outlined,
-            onPressed: _handleCameraInput,
-            variant: ButtonVariant.primary,
-          ),
+      ),
+      const SizedBox(width: AppSizes.marginM),
+      Expanded(
+        child: CustomButton(
+          label: 'Scan Item',
+          icon: Icons.camera_alt_outlined,
+          onPressed: _handleCameraInput,
+          variant: ButtonVariant.primary,
+          textStyle: TextStyle(color: Colors.white), // Ubah teks menjadi putih
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildIngredientsList(PantryService pantryService) {
     final pantryItems = pantryService.pantryItems;
