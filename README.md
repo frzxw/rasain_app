@@ -27,9 +27,9 @@ Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai r
 ---
 
 <div align="center">
-    <a href="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4">
-        <img src="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4" alt="Demo Video" style="max-width: 100%; height: auto;">
-    </a>
+    <video src="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4" controls style="max-width: 100%; height: auto;">
+        Your browser does not support the video tag.
+    </video>
 </div>
 
 
