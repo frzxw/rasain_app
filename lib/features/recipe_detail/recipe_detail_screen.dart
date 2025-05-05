@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../services/recipe_service.dart';
@@ -11,7 +12,7 @@ import 'widgets/review_section.dart';
 class RecipeDetailScreen extends StatefulWidget {
   final String recipeId;
   final String? recipeSlug; // Added support for recipe slug
-  
+
   const RecipeDetailScreen({
     super.key,
     required this.recipeId,
@@ -25,7 +26,7 @@ class RecipeDetailScreen extends StatefulWidget {
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   int _currentStep = 0; // For tracking current instruction step
   bool _cookingMode = false; // Flag for step-by-step cooking mode
-  
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +45,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         builder: (context, recipeService, _) {
           final recipe = recipeService.currentRecipe;
           final isLoading = recipeService.isLoading;
-          
+
           if (isLoading && recipe == null) {
             return const Center(
               child: CircularProgressIndicator(
@@ -52,12 +53,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
             );
           }
-          
+
           if (recipe == null) {
             return _buildErrorState();
           }
-          
-          return _cookingMode && recipe.instructions != null && recipe.instructions!.isNotEmpty
+
+          return _cookingMode &&
+                  recipe.instructions != null &&
+                  recipe.instructions!.isNotEmpty
               ? _buildCookingMode(context, recipe, recipeService)
               : _buildRecipeContent(context, recipe, recipeService);
         },
@@ -84,9 +87,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 color: Colors.black26,
                 borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
               ),
-              child: const Icon(Icons.arrow_back_ios, size: AppSizes.iconS),
+               child: const Icon(
+                Icons.arrow_back_ios,
+                size: AppSizes.iconS,
+                color: Colors.white,
+              ),
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              // Check if we can go back in history
+              try {
+                context.pop();
+              } catch (e) {
+                // If we can't pop, try to explicitly navigate to welcome screen
+                context.go('/welcome');
+              }
+            },
           ),
           actions: [
             // Share Button
@@ -114,7 +129,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               },
             ),
             const SizedBox(width: 8),
-            
+
             // Bookmark Button
             IconButton(
               icon: Container(
@@ -139,41 +154,39 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 // Recipe Image
                 recipe.imageUrl != null
                     ? Image.network(
-                        recipe.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.primary,
-                          child: const Icon(
-                            Icons.restaurant,
-                            color: Colors.white,
-                            size: 64,
+                      recipe.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (_, __, ___) => Container(
+                            color: AppColors.primary,
+                            child: const Icon(
+                              Icons.restaurant,
+                              color: Colors.white,
+                              size: 64,
+                            ),
                           ),
-                        ),
-                      )
+                    )
                     : Container(
-                        color: AppColors.primary,
-                        child: const Icon(
-                          Icons.restaurant,
-                          color: Colors.white,
-                          size: 64,
-                        ),
+                      color: AppColors.primary,
+                      child: const Icon(
+                        Icons.restaurant,
+                        color: Colors.white,
+                        size: 64,
                       ),
-                
+                    ),
+
                 // Gradient Overlay
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black54,
-                      ],
+                      colors: [Colors.transparent, Colors.black54],
                       stops: [0.7, 1.0],
                     ),
                   ),
                 ),
-                
+
                 // Recipe Title at Bottom
                 Positioned(
                   left: AppSizes.paddingM,
@@ -201,7 +214,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ),
           ),
         ),
-        
+
         // Recipe Content
         SliverToBoxAdapter(
           child: Padding(
@@ -211,9 +224,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               children: [
                 // Recipe Summary
                 _buildRecipeSummary(context, recipe),
-                
+
                 const SizedBox(height: AppSizes.marginL),
-                
+
                 // Ingredients Section
                 Text(
                   'Bahan-bahan',
@@ -222,9 +235,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: AppSizes.marginM),
                 if (recipe.ingredients != null)
                   IngredientList(ingredients: recipe.ingredients!),
-                
+
                 const SizedBox(height: AppSizes.marginL),
-                
+
                 // Instructions Section
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -233,7 +246,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       'Langkah-langkah',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    if (recipe.instructions != null && recipe.instructions!.isNotEmpty)
+                    if (recipe.instructions != null &&
+                        recipe.instructions!.isNotEmpty)
                       ElevatedButton.icon(
                         icon: const Icon(Icons.play_arrow),
                         label: const Text('Mode Memasak'),
@@ -253,9 +267,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: AppSizes.marginM),
                 if (recipe.instructions != null)
                   InstructionSteps(instructions: recipe.instructions!),
-                
+
                 const SizedBox(height: AppSizes.marginL),
-                
+
                 // Review Section
                 Text(
                   'Ulasan & Rating',
@@ -264,9 +278,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 const SizedBox(height: AppSizes.marginM),
                 ReviewSection(
                   recipe: recipe,
-                  onRateRecipe: (rating, comment) => recipeService.rateRecipe(recipe.id, rating),
+                  onRateRecipe:
+                      (rating, comment) =>
+                          recipeService.rateRecipe(recipe.id, rating),
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginXL),
               ],
             ),
@@ -275,7 +291,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       ],
     );
   }
-  
+
   Widget _buildCookingMode(
     BuildContext context,
     Recipe recipe,
@@ -285,7 +301,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     final currentStep = steps[_currentStep];
     final stepText = currentStep['text'] ?? '';
     final videoUrl = currentStep['videoUrl'];
-    
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -327,9 +343,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   ),
               ],
             ),
-            
+
             const Divider(),
-            
+
             // Step content
             Expanded(
               child: SingleChildScrollView(
@@ -343,9 +359,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Step number
                     Container(
                       width: 50,
@@ -365,17 +381,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Step instruction
                     Text(
                       stepText,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginL),
-                    
+
                     // Video if available
                     if (videoUrl != null && videoUrl.isNotEmpty)
                       Container(
@@ -396,7 +412,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ),
             ),
-            
+
             // Bottom navigation
             Container(
               padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
@@ -419,65 +435,69 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     )
                   else
                     const SizedBox.shrink(),
-                    
+
                   _currentStep < steps.length - 1
                       ? ElevatedButton.icon(
-                          icon: const Icon(Icons.arrow_forward),
-                          label: const Text('Selanjutnya'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _currentStep++;
-                            });
-                          },
-                        )
-                      : ElevatedButton.icon(
-                          icon: const Icon(Icons.check),
-                          label: const Text('Selesai'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.success,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _cookingMode = false;
-                            });
-                            
-                            // Show dialog inviting to rate the recipe
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Selamat!'),
-                                content: const Text(
-                                  'Anda telah berhasil menyelesaikan resep ini. Bagaimana hasilnya? Beri rating untuk resep ini?'
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Nanti'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      // Scroll to review section
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        Scrollable.ensureVisible(
-                                          context,
-                                          duration: const Duration(milliseconds: 300),
-                                          curve: Curves.easeInOut,
-                                        );
-                                      });
-                                    },
-                                    child: const Text('Beri Rating'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                        icon: const Icon(Icons.arrow_forward),
+                        label: const Text('Selanjutnya'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
                         ),
+                        onPressed: () {
+                          setState(() {
+                            _currentStep++;
+                          });
+                        },
+                      )
+                      : ElevatedButton.icon(
+                        icon: const Icon(Icons.check),
+                        label: const Text('Selesai'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _cookingMode = false;
+                          });
+
+                          // Show dialog inviting to rate the recipe
+                          showDialog(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('Selamat!'),
+                                  content: const Text(
+                                    'Anda telah berhasil menyelesaikan resep ini. Bagaimana hasilnya? Beri rating untuk resep ini?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Nanti'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        // Scroll to review section
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                              Scrollable.ensureVisible(
+                                                context,
+                                                duration: const Duration(
+                                                  milliseconds: 300,
+                                                ),
+                                                curve: Curves.easeInOut,
+                                              );
+                                            });
+                                      },
+                                      child: const Text('Beri Rating'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                        },
+                      ),
                 ],
               ),
             ),
@@ -500,7 +520,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-        
+
         // Recipe Info Row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -513,7 +533,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 label: 'Waktu Masak',
                 value: recipe.cookTime!,
               ),
-            
+
             // Servings
             if (recipe.servings != null)
               _buildInfoItem(
@@ -522,7 +542,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 label: 'Porsi',
                 value: '${recipe.servings}',
               ),
-            
+
             // Estimated Cost
             if (recipe.estimatedCost != null)
               _buildInfoItem(
@@ -533,7 +553,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
           ],
         ),
-        
+
         // Categories
         if (recipe.categories != null && recipe.categories!.isNotEmpty)
           Padding(
@@ -541,14 +561,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             child: Wrap(
               spacing: AppSizes.marginS,
               runSpacing: AppSizes.marginS,
-              children: recipe.categories!.map((category) {
-                return Chip(
-                  label: Text(category),
-                  backgroundColor: AppColors.surface,
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
+              children:
+                  recipe.categories!.map((category) {
+                    return Chip(
+                      label: Text(category),
+                      backgroundColor: AppColors.surface,
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
             ),
           ),
       ],
@@ -563,23 +584,16 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: AppColors.textSecondary,
-          size: AppSizes.iconM,
-        ),
+        Icon(icon, color: AppColors.textSecondary, size: AppSizes.iconM),
         const SizedBox(height: AppSizes.marginS),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(value, style: Theme.of(context).textTheme.titleMedium),
       ],
     );
   }
@@ -605,14 +619,22 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             const SizedBox(height: AppSizes.marginS),
             Text(
               'Resep yang Anda cari mungkin telah dihapus atau tidak tersedia.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginL),
             ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Check if we can go back in history
+                try {
+                  context.pop();
+                } catch (e) {
+                  // If we can't pop, try to explicitly navigate to welcome screen
+                  context.go('/welcome');
+                }
+              },
               icon: const Icon(Icons.arrow_back),
               label: const Text('Kembali'),
             ),

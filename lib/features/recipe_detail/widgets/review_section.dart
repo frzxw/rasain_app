@@ -81,8 +81,7 @@ class _ReviewSectionState extends State<ReviewSection> {
         comment: 'Sempurna untuk makan malam keluarga! Semua orang menyukainya dan resepnya sangat mudah diikuti.',
         date: '2 minggu yang lalu',
         images: [
-          'https://images.unsplash.com/photo-1613092332665-20392ce8cd11?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
-          'https://images.unsplash.com/photo-1599020792689-9fde458e7e76?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
+          'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60'
         ],
       ),
       Review(

@@ -11,7 +11,7 @@ class PantryInputForm extends StatefulWidget {
   final PantryItem? item;
   final Function(PantryItem) onSave;
   final VoidCallback onCancel;
-  
+
   const PantryInputForm({
     super.key,
     this.item,
@@ -25,35 +25,58 @@ class PantryInputForm extends StatefulWidget {
 
 class _PantryInputFormState extends State<PantryInputForm> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _unitController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   DateTime? _expirationDate;
   String _selectedCategory = 'Other';
   String _storageLocation = 'Pantry'; // New: Storage location
   bool _isSearching = false; // For ingredient search
   List<String> _filteredIngredients = []; // For ingredient search results
-  
+
   // Ingredient tracking
   int _totalQuantity = 1;
   bool _lowStockAlert = false;
   bool _expirationAlert = true;
-  
+
   final List<String> _categories = [
-    'Vegetables', 'Fruits', 'Meat', 'Dairy', 
-    'Grains', 'Spices', 'Bakery', 'Canned', 'Other'
+    'Vegetables',
+    'Fruits',
+    'Meat',
+    'Dairy',
+    'Grains',
+    'Spices',
+    'Bakery',
+    'Canned',
+    'Other',
   ];
-  
+
   final List<String> _storageLocations = [
-    'Pantry', 'Refrigerator', 'Freezer', 'Spice Rack', 'Counter', 'Other'
+    'Pantry',
+    'Refrigerator',
+    'Freezer',
+    'Spice Rack',
+    'Counter',
+    'Other',
   ];
-  
+
   final List<String> _commonUnits = [
-    'kg', 'g', 'lbs', 'oz', 'pcs', 'pack', 'bottle', 'cup', 'tbsp', 'tsp', 'L', 'ml'
+    'kg',
+    'g',
+    'lbs',
+    'oz',
+    'pcs',
+    'pack',
+    'bottle',
+    'cup',
+    'tbsp',
+    'tsp',
+    'L',
+    'ml',
   ];
 
   @override
@@ -61,7 +84,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
     super.initState();
     if (widget.item != null) {
       _nameController.text = widget.item!.name;
-      
+
       // Parse quantity and unit
       if (widget.item!.quantity != null) {
         final parts = widget.item!.quantity!.split(' ');
@@ -72,17 +95,28 @@ class _PantryInputFormState extends State<PantryInputForm> {
           }
         }
       }
-      
-      _priceController.text = widget.item!.price?.replaceAll(RegExp(r'[^\d.]'), '') ?? '';
+
+      _priceController.text =
+          widget.item!.price?.replaceAll(RegExp(r'[^\d.]'), '') ?? '';
       _unitController.text = widget.item!.unit ?? '';
       _expirationDate = widget.item!.expirationDate;
-      _selectedCategory = widget.item!.category ?? 'Other';
-      _storageLocation = widget.item!.storageLocation ?? 'Pantry';
+
+      // Validate category against available options
+      final category = widget.item!.category ?? 'Other';
+      _selectedCategory = _categories.contains(category) ? category : 'Other';
+
+      // Validate storage location against available options
+      final storageLocation = widget.item!.storageLocation ?? 'Pantry';
+      _storageLocation =
+          _storageLocations.contains(storageLocation)
+              ? storageLocation
+              : 'Pantry';
+
       _totalQuantity = widget.item!.totalQuantity ?? 1;
       _lowStockAlert = widget.item!.lowStockAlert ?? false;
       _expirationAlert = widget.item!.expirationAlert ?? true;
     }
-    
+
     // Load common ingredients for search
     _filteredIngredients = MockData.commonIngredients;
   }
@@ -102,10 +136,13 @@ class _PantryInputFormState extends State<PantryInputForm> {
       if (query.isEmpty) {
         _filteredIngredients = MockData.commonIngredients;
       } else {
-        _filteredIngredients = MockData.commonIngredients
-            .where((ingredient) => 
-                ingredient.toLowerCase().contains(query.toLowerCase()))
-            .toList();
+        _filteredIngredients =
+            MockData.commonIngredients
+                .where(
+                  (ingredient) =>
+                      ingredient.toLowerCase().contains(query.toLowerCase()),
+                )
+                .toList();
       }
     });
   }
@@ -134,6 +171,14 @@ class _PantryInputFormState extends State<PantryInputForm> {
                 // Header
                 Row(
                   children: [
+                    // Back button
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: widget.onCancel,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: AppSizes.marginS),
                     Text(
                       widget.item != null ? 'Edit Bahan' : 'Tambah Bahan Baru',
                       style: Theme.of(context).textTheme.headlineSmall,
@@ -155,9 +200,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginL),
-                
+
                 // Ingredient Name with Search
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,9 +249,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                         return null;
                       },
                     ),
-                    
+
                     // Ingredient Search Results
-                    if (_isSearching) 
+                    if (_isSearching)
                       Container(
                         height: 200,
                         margin: const EdgeInsets.only(top: AppSizes.marginS),
@@ -215,44 +260,59 @@ class _PantryInputFormState extends State<PantryInputForm> {
                           borderRadius: BorderRadius.circular(AppSizes.radiusS),
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: _filteredIngredients.isEmpty
-                            ? const Center(
-                                child: Text('Tidak ada bahan ditemukan'),
-                              )
-                            : ListView.builder(
-                                itemCount: _filteredIngredients.length,
-                                itemBuilder: (context, index) {
-                                  final ingredient = _filteredIngredients[index];
-                                  return ListTile(
-                                    title: Text(ingredient),
-                                    onTap: () {
-                                      setState(() {
-                                        _nameController.text = ingredient;
-                                        _isSearching = false;
-                                        
-                                        // Auto-set category based on ingredient
-                                        if (MockData.fruitsList.contains(ingredient.toLowerCase())) {
-                                          _selectedCategory = 'Fruits';
-                                        } else if (MockData.vegetablesList.contains(ingredient.toLowerCase())) {
-                                          _selectedCategory = 'Vegetables';
-                                        } else if (MockData.meatList.contains(ingredient.toLowerCase())) {
-                                          _selectedCategory = 'Meat';
-                                        } else if (MockData.dairyList.contains(ingredient.toLowerCase())) {
-                                          _selectedCategory = 'Dairy';
-                                        } else if (MockData.spicesList.contains(ingredient.toLowerCase())) {
-                                          _selectedCategory = 'Spices';
-                                        }
-                                      });
-                                    },
-                                  );
-                                },
-                              ),
+                        child:
+                            _filteredIngredients.isEmpty
+                                ? const Center(
+                                  child: Text('Tidak ada bahan ditemukan'),
+                                )
+                                : ListView.builder(
+                                  itemCount: _filteredIngredients.length,
+                                  itemBuilder: (context, index) {
+                                    final ingredient =
+                                        _filteredIngredients[index];
+                                    return ListTile(
+                                      title: Text(ingredient),
+                                      onTap: () {
+                                        setState(() {
+                                          _nameController.text = ingredient;
+                                          _isSearching = false;
+
+                                          // Auto-set category based on ingredient
+                                          if (MockData.fruitsList.contains(
+                                            ingredient.toLowerCase(),
+                                          )) {
+                                            _selectedCategory = 'Fruits';
+                                          } else if (MockData.vegetablesList
+                                              .contains(
+                                                ingredient.toLowerCase(),
+                                              )) {
+                                            _selectedCategory = 'Vegetables';
+                                          } else if (MockData.meatList.contains(
+                                            ingredient.toLowerCase(),
+                                          )) {
+                                            _selectedCategory = 'Meat';
+                                          } else if (MockData.dairyList
+                                              .contains(
+                                                ingredient.toLowerCase(),
+                                              )) {
+                                            _selectedCategory = 'Dairy';
+                                          } else if (MockData.spicesList
+                                              .contains(
+                                                ingredient.toLowerCase(),
+                                              )) {
+                                            _selectedCategory = 'Spices';
+                                          }
+                                        });
+                                      },
+                                    );
+                                  },
+                                ),
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Quantity and Unit (Row)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +338,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                             ),
                             keyboardType: TextInputType.number,
                             inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*'),
+                              ),
                             ],
                           ),
                         ],
@@ -297,7 +359,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                           const SizedBox(height: AppSizes.marginS),
                           Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusS,
+                              ),
                               border: Border.all(color: AppColors.border),
                             ),
                             child: Row(
@@ -339,9 +403,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Storage Location
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,47 +437,50 @@ class _PantryInputFormState extends State<PantryInputForm> {
                               _storageLocation = newValue!;
                             });
                           },
-                          items: _storageLocations.map<DropdownMenuItem<String>>((String value) {
-                            IconData icon;
-                            switch (value) {
-                              case 'Refrigerator':
-                                icon = Icons.kitchen;
-                                break;
-                              case 'Freezer':
-                                icon = Icons.ac_unit;
-                                break;
-                              case 'Spice Rack':
-                                icon = Icons.restaurant;
-                                break;
-                              case 'Counter':
-                                icon = Icons.countertops;
-                                break;
-                              case 'Other':
-                                icon = Icons.more_horiz;
-                                break;
-                              case 'Pantry':
-                              default:
-                                icon = Icons.kitchen_outlined;
-                            }
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Row(
-                                children: [
-                                  Icon(icon, size: AppSizes.iconS),
-                                  const SizedBox(width: AppSizes.marginS),
-                                  Text(value),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                          items:
+                              _storageLocations.map<DropdownMenuItem<String>>((
+                                String value,
+                              ) {
+                                IconData icon;
+                                switch (value) {
+                                  case 'Refrigerator':
+                                    icon = Icons.kitchen;
+                                    break;
+                                  case 'Freezer':
+                                    icon = Icons.ac_unit;
+                                    break;
+                                  case 'Spice Rack':
+                                    icon = Icons.restaurant;
+                                    break;
+                                  case 'Counter':
+                                    icon = Icons.countertops;
+                                    break;
+                                  case 'Other':
+                                    icon = Icons.more_horiz;
+                                    break;
+                                  case 'Pantry':
+                                  default:
+                                    icon = Icons.kitchen_outlined;
+                                }
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    children: [
+                                      Icon(icon, size: AppSizes.iconS),
+                                      const SizedBox(width: AppSizes.marginS),
+                                      Text(value),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                         ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Expiration Date
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,12 +508,15 @@ class _PantryInputFormState extends State<PantryInputForm> {
                           children: [
                             Text(
                               _expirationDate != null
-                                  ? DateFormat('dd MMM yyyy').format(_expirationDate!)
+                                  ? DateFormat(
+                                    'dd MMM yyyy',
+                                  ).format(_expirationDate!)
                                   : 'Pilih Tanggal (Opsional)',
                               style: TextStyle(
-                                color: _expirationDate != null
-                                    ? AppColors.textPrimary
-                                    : AppColors.textSecondary,
+                                color:
+                                    _expirationDate != null
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
                               ),
                             ),
                             Row(
@@ -489,9 +559,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Price
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,14 +587,16 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d*'),
+                        ),
                       ],
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Category Dropdown
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,55 +628,58 @@ class _PantryInputFormState extends State<PantryInputForm> {
                               _selectedCategory = newValue!;
                             });
                           },
-                          items: _categories.map<DropdownMenuItem<String>>((String value) {
-                            IconData icon;
-                            switch (value) {
-                              case 'Vegetables':
-                                icon = Icons.eco;
-                                break;
-                              case 'Fruits':
-                                icon = Icons.apple;
-                                break;
-                              case 'Meat':
-                                icon = Icons.food_bank;
-                                break;
-                              case 'Dairy':
-                                icon = Icons.egg;
-                                break;
-                              case 'Grains':
-                                icon = Icons.grain;
-                                break;
-                              case 'Spices':
-                                icon = Icons.spa;
-                                break;
-                              case 'Bakery':
-                                icon = Icons.bakery_dining;
-                                break;
-                              case 'Canned':
-                                icon = Icons.inventory;
-                                break;
-                              default:
-                                icon = Icons.category;
-                            }
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Row(
-                                children: [
-                                  Icon(icon, size: AppSizes.iconS),
-                                  const SizedBox(width: AppSizes.marginS),
-                                  Text(value),
-                                ],
-                              ),
-                            );
-                          }).toList(),
+                          items:
+                              _categories.map<DropdownMenuItem<String>>((
+                                String value,
+                              ) {
+                                IconData icon;
+                                switch (value) {
+                                  case 'Vegetables':
+                                    icon = Icons.eco;
+                                    break;
+                                  case 'Fruits':
+                                    icon = Icons.apple;
+                                    break;
+                                  case 'Meat':
+                                    icon = Icons.food_bank;
+                                    break;
+                                  case 'Dairy':
+                                    icon = Icons.egg;
+                                    break;
+                                  case 'Grains':
+                                    icon = Icons.grain;
+                                    break;
+                                  case 'Spices':
+                                    icon = Icons.spa;
+                                    break;
+                                  case 'Bakery':
+                                    icon = Icons.bakery_dining;
+                                    break;
+                                  case 'Canned':
+                                    icon = Icons.inventory;
+                                    break;
+                                  default:
+                                    icon = Icons.category;
+                                }
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    children: [
+                                      Icon(icon, size: AppSizes.iconS),
+                                      const SizedBox(width: AppSizes.marginS),
+                                      Text(value),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                         ),
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginM),
-                
+
                 // Inventory tracking options
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,7 +689,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppSizes.marginS),
-                    
+
                     // Total quantity tracking
                     Row(
                       children: [
@@ -623,20 +698,23 @@ class _PantryInputFormState extends State<PantryInputForm> {
                         Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: AppColors.border),
-                            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.remove),
-                                onPressed: _totalQuantity > 1 
-                                    ? () {
-                                        setState(() {
-                                          _totalQuantity--;
-                                        });
-                                      }
-                                    : null,
+                                onPressed:
+                                    _totalQuantity > 1
+                                        ? () {
+                                          setState(() {
+                                            _totalQuantity--;
+                                          });
+                                        }
+                                        : null,
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               ),
@@ -658,9 +736,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginS),
-                    
+
                     // Low stock alert
                     CheckboxListTile(
                       title: const Text('Ingatkan saat stok menipis'),
@@ -675,9 +753,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: AppSizes.marginXL),
-                
+
                 // Button Row
                 Row(
                   children: [
@@ -694,8 +772,9 @@ class _PantryInputFormState extends State<PantryInputForm> {
                         label: widget.item != null ? 'Update' : 'Tambah',
                         onPressed: _handleSave,
                         variant: ButtonVariant.primary,
-                        textStyle: TextStyle(color: const Color.fromARGB(255, 255, 255, 255)),
-                        
+                        textStyle: TextStyle(
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                        ),
                       ),
                     ),
                   ],
@@ -711,7 +790,8 @@ class _PantryInputFormState extends State<PantryInputForm> {
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _expirationDate ?? DateTime.now().add(const Duration(days: 7)),
+      initialDate:
+          _expirationDate ?? DateTime.now().add(const Duration(days: 7)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
       builder: (context, child) {
@@ -728,7 +808,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _expirationDate = picked;
@@ -738,30 +818,35 @@ class _PantryInputFormState extends State<PantryInputForm> {
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
-      final price = _priceController.text.isNotEmpty
-          ? 'Rp${_priceController.text}'
-          : null;
-          
-      final quantity = _quantityController.text.trim().isNotEmpty
-          ? _unitController.text.trim().isNotEmpty
-              ? '${_quantityController.text.trim()} ${_unitController.text.trim()}'
-              : _quantityController.text.trim()
-          : null;
-      
+      final price =
+          _priceController.text.isNotEmpty
+              ? 'Rp${_priceController.text}'
+              : null;
+
+      final quantity =
+          _quantityController.text.trim().isNotEmpty
+              ? _unitController.text.trim().isNotEmpty
+                  ? '${_quantityController.text.trim()} ${_unitController.text.trim()}'
+                  : _quantityController.text.trim()
+              : null;
+
       final PantryItem item = PantryItem(
         id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text.trim(),
         quantity: quantity,
         expirationDate: _expirationDate,
         price: price,
-        unit: _unitController.text.trim().isNotEmpty ? _unitController.text.trim() : null,
+        unit:
+            _unitController.text.trim().isNotEmpty
+                ? _unitController.text.trim()
+                : null,
         category: _selectedCategory != 'Other' ? _selectedCategory : null,
         storageLocation: _storageLocation,
         totalQuantity: _totalQuantity,
         lowStockAlert: _lowStockAlert,
         expirationAlert: _expirationAlert,
       );
-      
+
       widget.onSave(item);
     }
   }

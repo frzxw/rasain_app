@@ -127,12 +127,6 @@ class _ProfileMenuState extends State<ProfileMenu> {
           Center(
             child: Column(
               children: [
-                Image.asset(
-                  'public/assets/images/logo.png',
-                  height: 30,
-                  width: 30,
-                ),
-                const SizedBox(height: 8),
                 Text(
                   'Rasain v1.0.0',
                   style: TextStyle(
