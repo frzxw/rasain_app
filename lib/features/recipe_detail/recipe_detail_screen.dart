@@ -87,7 +87,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 color: Colors.black26,
                 borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
               ),
-               child: const Icon(
+              child: const Icon(
                 Icons.arrow_back_ios,
                 size: AppSizes.iconS,
                 color: Colors.white,
@@ -266,7 +266,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
                 const SizedBox(height: AppSizes.marginM),
                 if (recipe.instructions != null)
-                  InstructionSteps(instructions: recipe.instructions!),
+                  InstructionSteps(
+                    instructions: recipe.instructions!,
+                    onStartCooking: () {
+                      setState(() {
+                        _cookingMode = true;
+                        _currentStep = 0;
+                      });
+                    },
+                  ),
 
                 const SizedBox(height: AppSizes.marginL),
 
