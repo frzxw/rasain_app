@@ -35,10 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize recipe data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Initialize recipe data from Supabase
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final recipeService = Provider.of<RecipeService>(context, listen: false);
-      recipeService.initialize();
+      
+      // Load all required data for the home screen
+      await recipeService.initialize();
+      
+      // Add some debug print statements to verify data is loading
+      debugPrint('✅ Popular Recipes: ${recipeService.popularRecipes.length}');
+      debugPrint('✅ Pantry Recipes: ${recipeService.pantryRecipes.length}');
+      debugPrint('✅ What\'s New Recipes: ${recipeService.whatsNewRecipes.length}');
     });
   }
   
@@ -166,9 +173,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // Recommended Recipes (new section)
             _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(
-              builder: (context, recipeService, _) {
+            Consumer<RecipeService>(              builder: (context, recipeService, _) {
                 final recommendedRecipes = recipeService.recommendedRecipes;
+                
+                // Check if there's an error
+                if (recipeService.error != null && recommendedRecipes.isEmpty) {
+                  return _buildErrorWidget(recipeService.error!);
+                }
+                
                 return RecipeCarousel(
                   recipes: recommendedRecipes,
                   isLoading: recipeService.isLoading && recommendedRecipes.isEmpty,
@@ -181,9 +193,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // Top Highlights Carousel
             _buildSectionTitle('Hidangan Populer'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(
-              builder: (context, recipeService, _) {
+            Consumer<RecipeService>(              builder: (context, recipeService, _) {
                 final popularRecipes = recipeService.popularRecipes;
+                
+                // Check if there's an error
+                if (recipeService.error != null && popularRecipes.isEmpty) {
+                  return _buildErrorWidget(recipeService.error!);
+                }
+                
                 return RecipeCarousel(
                   recipes: popularRecipes,
                   isLoading: recipeService.isLoading && popularRecipes.isEmpty,
@@ -196,9 +213,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // From Your Pantry Carousel
             _buildSectionTitle('Dari Dapur Anda'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(
-              builder: (context, recipeService, _) {
+            Consumer<RecipeService>(              builder: (context, recipeService, _) {
                 final pantryRecipes = recipeService.pantryRecipes;
+                
+                // Check if there's an error
+                if (recipeService.error != null && pantryRecipes.isEmpty) {
+                  return _buildErrorWidget(recipeService.error!);
+                }
+                
                 return RecipeCarousel(
                   recipes: pantryRecipes,
                   isLoading: recipeService.isLoading && pantryRecipes.isEmpty,
@@ -211,9 +233,14 @@ class _HomeScreenState extends State<HomeScreen> {
             // What's Cooking Stream
             _buildSectionTitle('Masak Apa Hari Ini?'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(
-              builder: (context, recipeService, _) {
+            Consumer<RecipeService>(              builder: (context, recipeService, _) {
                 final recipes = recipeService.whatsNewRecipes;
+                
+                // Check if there's an error
+                if (recipeService.error != null && recipes.isEmpty) {
+                  return _buildErrorWidget(recipeService.error!);
+                }
+                
                 return WhatsCookingStream(
                   recipes: recipes,
                   isLoading: recipeService.isLoading && recipes.isEmpty,
@@ -391,16 +418,29 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
-  Future<void> _refreshHomeData() async {
+    Future<void> _refreshHomeData() async {
     final recipeService = Provider.of<RecipeService>(context, listen: false);
-    await Future.wait([
-      recipeService.fetchPopularRecipes(),
-      recipeService.fetchPantryRecipes(),
-      recipeService.fetchWhatsNewRecipes(),
-      recipeService.fetchRecommendedRecipes(),
-    ]);
-  }
+    try {
+      await Future.wait([
+        recipeService.fetchPopularRecipes(),
+        recipeService.fetchPantryRecipes(),
+        recipeService.fetchWhatsNewRecipes(),
+        recipeService.fetchRecommendedRecipes(),
+      ]);
+      debugPrint('✅ Home data refreshed successfully from Supabase');
+      debugPrint('✅ Popular Recipes: ${recipeService.popularRecipes.length}');
+      debugPrint('✅ Pantry Recipes: ${recipeService.pantryRecipes.length}');
+      debugPrint('✅ What\'s New Recipes: ${recipeService.whatsNewRecipes.length}');
+      debugPrint('✅ Recommended Recipes: ${recipeService.recommendedRecipes.length}');
+    } catch (e) {
+      debugPrint('❌ Error refreshing home data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to refresh data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }  }
   
   void _handleSearch(String query) async {
     if (query.trim().isEmpty) {
@@ -477,5 +517,39 @@ class _HomeScreenState extends State<HomeScreen> {
         _isSearching = false;
       });
     }
+  }
+
+  Widget _buildErrorWidget(String errorMessage) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 60,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load recipes',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _refreshHomeData,
+            child: Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 }

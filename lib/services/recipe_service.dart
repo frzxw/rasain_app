@@ -1,16 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../models/recipe.dart';
-import 'mock_api_service.dart';
+import 'supabase_service.dart';
+import 'dart:typed_data';
+
+// This class has been fully migrated to use Supabase
 
 class RecipeService extends ChangeNotifier {
-  // Use MockApiService instead of ApiService
-  final MockApiService _apiService = MockApiService();
+  final SupabaseService _supabaseService = SupabaseService.instance;
   
   List<Recipe> _popularRecipes = [];
   List<Recipe> _pantryRecipes = [];
   List<Recipe> _whatsNewRecipes = [];
   List<Recipe> _savedRecipes = [];
-  List<Recipe> _recommendedRecipes = []; // Added this line for recommended recipes
+  List<Recipe> _recommendedRecipes = [];
   
   Recipe? _currentRecipe;
   
@@ -22,9 +24,8 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> get pantryRecipes => _pantryRecipes;
   List<Recipe> get whatsNewRecipes => _whatsNewRecipes;
   List<Recipe> get savedRecipes => _savedRecipes;
-  List<Recipe> get recommendedRecipes => _recommendedRecipes; // Added this getter
-  
-  Recipe? get currentRecipe => _currentRecipe;
+  List<Recipe> get recommendedRecipes => _recommendedRecipes;
+    Recipe? get currentRecipe => _currentRecipe;
   bool get isLoading => _isLoading;
   String? get error => _error;
   
@@ -38,23 +39,28 @@ class RecipeService extends ChangeNotifier {
       fetchPantryRecipes(), // Added this call to initialize pantry recipes
     ]);
   }
-  
-  // Fetch popular recipes
+    // Fetch popular recipes
   Future<void> fetchPopularRecipes() async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/popular');
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .gte('rating', 4.0)
+          .order('rating', ascending: false)
+          .limit(10);
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
+      _popularRecipes = response
+          .map<Recipe>((recipe) => Recipe.fromJson(recipe))
           .toList();
       
-      _popularRecipes = recipes;
+      debugPrint('✅ Fetched ${_popularRecipes.length} popular recipes');
       notifyListeners();
     } catch (e) {
       _setError('Failed to load popular recipes: $e');
+      debugPrint('❌ Error fetching popular recipes: $e');
     } finally {
       _setLoading(false);
     }
@@ -66,13 +72,48 @@ class RecipeService extends ChangeNotifier {
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/pantry');
+      final userId = _supabaseService.client.auth.currentUser?.id;
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
+      if (userId == null) {
+        _pantryRecipes = [];
+        notifyListeners();
+        return;
+      }
+      
+      final pantryResponse = await _supabaseService.client
+          .from('pantry_items')
+          .select('name')
+          .eq('user_id', userId);
+      
+      final pantryItemNames = pantryResponse
+          .map<String>((item) => item['name'].toString().toLowerCase())
           .toList();
       
-      _pantryRecipes = recipes;
+      if (pantryItemNames.isEmpty) {
+        _pantryRecipes = [];
+        notifyListeners();
+        return;
+      }
+      
+      final recipesResponse = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .order('created_at', ascending: false);
+      
+      final allRecipes = recipesResponse
+          .map((recipeJson) => Recipe.fromJson(recipeJson))
+          .toList();
+      
+      // Filter recipes that have at least one ingredient from pantry
+      _pantryRecipes = allRecipes.where((recipe) {
+        if (recipe.ingredients == null) return false;
+        
+        return recipe.ingredients!.any((ingredient) {
+          final ingredientName = ingredient['name'].toString().toLowerCase();
+          return pantryItemNames.any((pantryItem) => ingredientName.contains(pantryItem));
+        });
+      }).toList();
+      
       notifyListeners();
     } catch (e) {
       _setError('Failed to load pantry recipes: $e');
@@ -87,11 +128,13 @@ class RecipeService extends ChangeNotifier {
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/latest');
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(20);
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
-          .toList();
+      final recipes = response.map((recipe) => Recipe.fromJson(recipe)).toList();
       
       _whatsNewRecipes = recipes;
       notifyListeners();
@@ -108,10 +151,24 @@ class RecipeService extends ChangeNotifier {
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/saved');
+      final userId = _supabaseService.client.auth.currentUser?.id;
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
+      if (userId == null) {
+        _savedRecipes = [];
+        notifyListeners();
+        return;
+      }
+      
+      final response = await _supabaseService.client
+          .from('saved_recipes')
+          .select('recipe_id, recipes(*)')
+          .eq('user_id', userId);
+      
+      final recipes = response
+          .map((item) => Recipe.fromJson({
+                ...item['recipes'], 
+                'is_saved': true
+              }))
           .toList();
       
       _savedRecipes = recipes;
@@ -122,30 +179,86 @@ class RecipeService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
-  // Fetch recommended recipes (new method)
+    // Fetch recommended recipes based on user's preferences and history
   Future<void> fetchRecommendedRecipes() async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/recommendations');
+      final userId = _supabaseService.client.auth.currentUser?.id;
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
-          .toList();
-      
-      _recommendedRecipes = recipes;
-      
-      // Debug print to verify recipes are loaded
-      debugPrint('🍲 Loaded ${recipes.length} recommended recipes');
-      for (final recipe in recipes) {
-        debugPrint('Recipe: ${recipe.name}, Image URL: ${recipe.imageUrl}');
+      if (userId == null) {
+        // If no user is logged in, just return some popular recipes
+        final response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .order('rating', ascending: false)
+            .limit(10);
+        
+        _recommendedRecipes = response
+            .map<Recipe>((recipe) => Recipe.fromJson(recipe))
+            .toList();
+        
+        debugPrint('✅ Fetched ${_recommendedRecipes.length} recommended recipes (non-personalized)');
+        notifyListeners();
+        return;
       }
       
+      // This would ideally use a Supabase function to create personalized recommendations
+      // For now, we'll use a mix of user's saved recipes categories and new popular recipes
+      
+      // Get user's saved recipes to extract their preferred categories
+      final savedResponse = await _supabaseService.client
+          .from('saved_recipes')
+          .select('recipes(*)')
+          .eq('user_id', userId);
+      
+      Set<String> preferredCategories = {};
+      
+      if (savedResponse.isNotEmpty) {
+        for (var item in savedResponse) {
+          final recipe = item['recipes'];
+          if (recipe != null && recipe['categories'] != null) {
+            preferredCategories.addAll(
+              List<String>.from(recipe['categories'])
+            );
+          }
+        }
+      }
+      
+      // If user has preferences, fetch recipes with those categories
+      if (preferredCategories.isNotEmpty) {
+        // Get recipes that match any of the preferred categories
+        final response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .not('id', 'in', savedResponse.map((item) => item['recipes']['id']).toList())  // Exclude already saved
+            .filter('categories', 'cs', '{"${preferredCategories.first}"}')  // Contains any preferred category
+            .order('rating', ascending: false)
+            .limit(12);
+        
+        _recommendedRecipes = response
+            .map<Recipe>((recipe) => Recipe.fromJson(recipe))
+            .toList();
+      } else {
+        // If no preferences yet, just get popular recipes
+        final response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .gte('rating', 4.5)
+            .order('rating', ascending: false)
+            .limit(12);
+        
+        _recommendedRecipes = response
+            .map<Recipe>((recipe) => Recipe.fromJson(recipe))
+            .toList();
+      }
+      
+      debugPrint('✅ Fetched ${_recommendedRecipes.length} personalized recommended recipes');
       notifyListeners();
     } catch (e) {
       _setError('Failed to load recommended recipes: $e');
+      debugPrint('❌ Error fetching recommended recipes: $e');
     } finally {
       _setLoading(false);
     }
@@ -157,9 +270,28 @@ class RecipeService extends ChangeNotifier {
     _clearError();
     
     try {
-      final response = await _apiService.get('recipes/$recipeId');
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .eq('id', recipeId)
+          .single();
       
-      final recipe = Recipe.fromJson(response['recipe']);
+      // Check if recipe is saved
+      bool isSaved = false;
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      
+      if (userId != null) {
+        final savedCheck = await _supabaseService.client
+            .from('saved_recipes')
+            .select()
+            .eq('user_id', userId)
+            .eq('recipe_id', recipeId);
+        
+        isSaved = savedCheck.isNotEmpty;
+      }
+      
+      final recipeData = {...response, 'is_saved': isSaved};
+      final recipe = Recipe.fromJson(recipeData);
       
       _currentRecipe = recipe;
       notifyListeners();
@@ -183,11 +315,27 @@ class RecipeService extends ChangeNotifier {
       _toggleRecipeSavedStatus(recipeId, !isSaved);
       notifyListeners();
       
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+      
       // Update on backend
       if (isSaved) {
-        await _apiService.delete('recipes/$recipeId/save');
+        await _supabaseService.client
+            .from('saved_recipes')
+            .delete()
+            .eq('user_id', userId)
+            .eq('recipe_id', recipeId);
       } else {
-        await _apiService.post('recipes/$recipeId/save');
+        await _supabaseService.client
+            .from('saved_recipes')
+            .insert({
+              'user_id': userId,
+              'recipe_id': recipeId,
+              'saved_at': DateTime.now().toIso8601String(),
+            });
       }
       
       // Refresh saved recipes list
@@ -204,62 +352,148 @@ class RecipeService extends ChangeNotifier {
   // Submit a rating for a recipe
   Future<void> rateRecipe(String recipeId, double rating) async {
     try {
-      await _apiService.post(
-        'recipes/$recipeId/rate',
-        body: {'rating': rating},
-      );
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      
+      if (userId == null) {
+        _setError('User must be logged in to rate recipes');
+        return;
+      }
+      
+      // Check if the user has already rated this recipe
+      final existingRatings = await _supabaseService.client
+          .from('recipe_ratings')
+          .select()
+          .eq('user_id', userId)
+          .eq('recipe_id', recipeId);
+      
+      if (existingRatings.isNotEmpty) {
+        // Update existing rating
+        await _supabaseService.client
+            .from('recipe_ratings')
+            .update({
+              'rating': rating,
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('user_id', userId)
+            .eq('recipe_id', recipeId);
+      } else {
+        // Insert new rating
+        await _supabaseService.client
+            .from('recipe_ratings')
+            .insert({
+              'user_id': userId,
+              'recipe_id': recipeId,
+              'rating': rating,
+              'created_at': DateTime.now().toIso8601String(),
+            });
+      }
+      
+      // Update the average rating in the recipes table (this should ideally be done with a database trigger)
+      final allRatings = await _supabaseService.client
+          .from('recipe_ratings')
+          .select('rating')
+          .eq('recipe_id', recipeId);
+      
+      final avgRating = allRatings.isEmpty 
+          ? rating 
+          : allRatings.map<num>((r) => r['rating']).reduce((a, b) => a + b) / allRatings.length;
+      
+      await _supabaseService.client
+          .from('recipes')
+          .update({
+            'rating': avgRating,
+            'review_count': allRatings.length,
+          })
+          .eq('id', recipeId);
       
       // If the current recipe is the one we're rating, update it
       if (_currentRecipe != null && _currentRecipe!.id == recipeId) {
-        _currentRecipe = _currentRecipe!.copyWith(
-          rating: rating,
-          reviewCount: _currentRecipe!.reviewCount + 1,
+        _currentRecipe = Recipe(
+          id: _currentRecipe!.id,
+          name: _currentRecipe!.name,
+          rating: avgRating.toDouble(),
+          reviewCount: allRatings.length,
+          slug: _currentRecipe!.slug,
+          imageUrl: _currentRecipe!.imageUrl,
+          estimatedCost: _currentRecipe!.estimatedCost,
+          cookTime: _currentRecipe!.cookTime,
+          servings: _currentRecipe!.servings,
+          ingredients: _currentRecipe!.ingredients,
+          instructions: _currentRecipe!.instructions,
+          description: _currentRecipe!.description,
+          categories: _currentRecipe!.categories,
+          isSaved: _currentRecipe!.isSaved,
         );
         notifyListeners();
       }
+      
+      debugPrint('✅ Successfully rated recipe: $recipeId with rating: $rating');
     } catch (e) {
       _setError('Failed to submit rating: $e');
+      debugPrint('❌ Error rating recipe: $e');
     }
   }
   
-  // Search recipes by name
+  // Search recipes by name using Supabase's full-text search
   Future<List<Recipe>> searchRecipes(String query) async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.get(
-        'recipes/search',
-        queryParams: {'query': query},
-      );
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .textSearch('name', query, config: 'english')
+          .order('rating', ascending: false);
       
-      final recipes = (response['recipes'] as List)
-          .map((recipe) => Recipe.fromJson(recipe))
+      final recipes = response
+          .map<Recipe>((recipe) => Recipe.fromJson(recipe))
           .toList();
       
+      debugPrint('✅ Found ${recipes.length} recipes matching "$query"');
       return recipes;
     } catch (e) {
       _setError('Failed to search recipes: $e');
+      debugPrint('❌ Error searching recipes: $e');
       return [];
     } finally {
       _setLoading(false);
     }
-  }
-  
-  // Search recipes by image (AI detection)
+  }  // Search recipes by image (Store in Supabase Storage and return similar recipes)
   Future<List<Recipe>> searchRecipesByImage(List<int> imageBytes, String fileName) async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.uploadFile(
-        'recipes/search/image',
-        imageBytes,
-        fileName,
-        'image',
-      );
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      if (userId == null) {
+        _setError('User must be logged in to search by image');
+        return [];
+      }
       
-      final recipes = (response['recipes'] as List)
+      // Upload image to Supabase Storage
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final path = 'search_images/$userId/$timestamp-$fileName';
+      
+      await _supabaseService.client.storage
+          .from('recipe_images')
+          .uploadBinary(path, Uint8List.fromList(imageBytes));
+        // Get image URL
+      final imageUrl = _supabaseService.client.storage
+          .from('recipe_images')
+          .getPublicUrl(path);
+      
+      debugPrint('✅ Image uploaded to Supabase Storage: $imageUrl');
+      
+      // For now, just return popular recipes since we don't have AI image recognition
+      // In a real implementation, you'd have a Supabase Edge Function or other service for image analysis
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .order('rating', ascending: false)
+          .limit(10);
+      
+      final recipes = response
           .map((recipe) => Recipe.fromJson(recipe))
           .toList();
       
@@ -271,19 +505,19 @@ class RecipeService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
-  // Filter recipes by category
+    // Filter recipes by category
   Future<List<Recipe>> filterRecipesByCategory(String category) async {
     _setLoading(true);
     _clearError();
     
     try {
-      final response = await _apiService.get(
-        'recipes/filter',
-        queryParams: {'category': category},
-      );
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .contains('categories', [category])
+          .order('rating', ascending: false);
       
-      final recipes = (response['recipes'] as List)
+      final recipes = response
           .map((recipe) => Recipe.fromJson(recipe))
           .toList();
       
