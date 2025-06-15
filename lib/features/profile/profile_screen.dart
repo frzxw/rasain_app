@@ -297,7 +297,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
   void _showLoginDialog(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
@@ -305,180 +304,411 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Masuk'), // Changed to Indonesian
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Surel',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan email Anda'; // Changed to Indonesian
-                    }
-                    return null;
-                  },
+      barrierDismissible: false, // Prevent dismissing during loading
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Consumer<AuthService>(
+          builder: (context, authService, _) => AlertDialog(
+            title: const Text('Masuk'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan email Anda';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Format email tidak valid';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSizes.marginM),
+                    TextFormField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Kata Sandi',
+                        prefixIcon: Icon(Icons.lock_outlined),
+                      ),
+                      obscureText: true,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan password Anda';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (authService.error != null) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                authService.error!,
+                                style: TextStyle(color: AppColors.error, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (authService.isLoading) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Masuk...', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: AppSizes.marginM),
-                TextFormField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi',
-                    prefixIcon: Icon(Icons.lock_outlined),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan password Anda'; // Changed to Indonesian
-                    }
-                    return null;
-                  },
-                ),
-              ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: authService.isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => _showPasswordResetDialog(context, emailController.text),
+                child: const Text('Lupa Password?'),
+              ),
+              ElevatedButton(
+                onPressed: authService.isLoading ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    final success = await authService.login(
+                      emailController.text.trim(),
+                      passwordController.text,
+                    );
+                    
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Berhasil masuk!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Masuk'),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'), // Changed to Indonesian
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context);
-                
-                // Attempt login
-                final authService = Provider.of<AuthService>(context, listen: false);
-                final success = await authService.login(
-                  emailController.text.trim(),
-                  passwordController.text,
-                );
-                
-                if (!success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(authService.error ?? 'Login gagal. Silakan coba lagi.'), // Changed to Indonesian
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Masuk'), // Changed to Indonesian
-          ),
-        ],
       ),
     );
   }
-
   void _showRegisterDialog(BuildContext context) {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Buat Akun'), // Changed to Indonesian
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama', // Changed to Indonesian
-                    prefixIcon: Icon(Icons.person_outlined),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan nama Anda'; // Changed to Indonesian
-                    }
-                    return null;
-                  },
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Consumer<AuthService>(
+          builder: (context, authService, _) => AlertDialog(
+            title: const Text('Buat Akun'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama',
+                        prefixIcon: Icon(Icons.person_outlined),
+                      ),
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan nama Anda';
+                        }
+                        if (value.length < 2) {
+                          return 'Nama minimal 2 karakter';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSizes.marginM),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan email Anda';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Format email tidak valid';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSizes.marginM),
+                    TextFormField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Kata Sandi',
+                        prefixIcon: Icon(Icons.lock_outlined),
+                      ),
+                      obscureText: true,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan password';
+                        }
+                        if (value.length < 6) {
+                          return 'Password minimal 6 karakter';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSizes.marginM),
+                    TextFormField(
+                      controller: confirmPasswordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Konfirmasi Kata Sandi',
+                        prefixIcon: Icon(Icons.lock_outlined),
+                      ),
+                      obscureText: true,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Konfirmasi password Anda';
+                        }
+                        if (value != passwordController.text) {
+                          return 'Password tidak cocok';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (authService.error != null) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                authService.error!,
+                                style: TextStyle(color: AppColors.error, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (authService.isLoading) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Mendaftar...', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: AppSizes.marginM),
-                TextFormField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan email Anda'; // Changed to Indonesian
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSizes.marginM),
-                TextFormField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kata Sandi',
-                    prefixIcon: Icon(Icons.lock_outlined),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Masukkan password'; // Changed to Indonesian
-                    }
-                    if (value.length < 6) {
-                      return 'Password minimal 6 karakter'; // Changed to Indonesian
-                    }
-                    return null;
-                  },
-                ),
-              ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: authService.isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: authService.isLoading ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    final success = await authService.register(
+                      nameController.text.trim(),
+                      emailController.text.trim(),
+                      passwordController.text,
+                    );
+                    
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Akun berhasil dibuat! Silakan cek email untuk verifikasi.'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Daftar'),
+              ),
+            ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'), // Changed to Indonesian
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context);
-                
-                // Attempt registration
-                final authService = Provider.of<AuthService>(context, listen: false);
-                final success = await authService.register(
-                  nameController.text.trim(),
-                  emailController.text.trim(),
-                  passwordController.text,
-                );
-                
-                if (!success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(authService.error ?? 'Pendaftaran gagal. Silakan coba lagi.'), // Changed to Indonesian
-                      backgroundColor: AppColors.error,
+      ),
+    );
+  }
+
+  void _showPasswordResetDialog(BuildContext context, String? email) {
+    final TextEditingController emailController = TextEditingController(text: email);
+    final formKey = GlobalKey<FormState>();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Consumer<AuthService>(
+          builder: (context, authService, _) => AlertDialog(
+            title: const Text('Reset Password'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Masukkan email Anda untuk menerima link reset password.',
+                      style: TextStyle(fontSize: 14),
                     ),
-                  );
-                }
-              }
-            },
-            child: const Text('Daftar'), // Changed to Indonesian
+                    const SizedBox(height: AppSizes.marginM),
+                    TextFormField(
+                      controller: emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      enabled: !authService.isLoading,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Masukkan email Anda';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Format email tidak valid';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (authService.error != null) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      Container(
+                        padding: const EdgeInsets.all(AppSizes.paddingS),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                authService.error!,
+                                style: TextStyle(color: AppColors.error, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (authService.isLoading) ...[
+                      const SizedBox(height: AppSizes.marginM),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Mengirim...', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: authService.isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: authService.isLoading ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    final success = await authService.resetPassword(emailController.text.trim());
+                    
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Link reset password telah dikirim ke email Anda.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Kirim'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

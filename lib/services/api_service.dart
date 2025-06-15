@@ -1,23 +1,31 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../core/config/supabase_config.dart';
 
 class ApiService {
-  // Base URL from environment variable with fallback
+  // Base URL from Supabase
   final String baseUrl;
   
   // Headers to be included with each request
-  final Map<String, String> headers;
-  
-  ApiService({
-    String? apiUrl,
-    String? apiKey,
-  }) : 
-    baseUrl = apiUrl ?? const String.fromEnvironment('API_URL', defaultValue: 'https://api.rasain.app/v1'),
-    headers = {
+  Map<String, String> get headers {
+    final supabase = SupabaseConfig.client;
+    final session = supabase.auth.currentSession;
+    
+    final Map<String, String> headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${apiKey ?? const String.fromEnvironment('API_KEY', defaultValue: '')}',
+      'apikey': SupabaseConfig.supabaseAnonKey,
     };
+    
+    // Add authorization header if user is authenticated
+    if (session?.accessToken != null) {
+      headers['Authorization'] = 'Bearer ${session!.accessToken}';
+    }
+    
+    return headers;
+  }
+  
+  ApiService() : baseUrl = '${SupabaseConfig.supabaseUrl}/rest/v1';
   
   // Generic GET request
   Future<Map<String, dynamic>> get(String endpoint, {Map<String, dynamic>? queryParams}) async {
@@ -108,9 +116,9 @@ class ApiService {
       final uri = Uri.parse('$baseUrl/$endpoint');
       
       final request = http.MultipartRequest('POST', uri);
-      
-      request.headers.addAll({
+        request.headers.addAll({
         'Authorization': headers['Authorization'] ?? '',
+        'apikey': headers['apikey'] ?? '',
       });
       
       request.files.add(

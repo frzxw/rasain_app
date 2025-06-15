@@ -59,7 +59,7 @@ class AppTheme {
       ),
       
       // Card Theme with refined styling
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
@@ -258,7 +258,7 @@ class AppTheme {
       ),
       
       // Dialog with modern styling
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.background,
         elevation: 3,
         shape: RoundedRectangleBorder(

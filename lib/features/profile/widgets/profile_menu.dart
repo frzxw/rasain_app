@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/user_profile.dart';
-import '../../../core/widgets/custom_button.dart';
+import '../../../services/auth_service.dart';
 
 class ProfileMenu extends StatefulWidget {
   final UserProfile user;
@@ -340,37 +341,50 @@ class _ProfileMenuState extends State<ProfileMenu> {
       color: AppColors.divider,
     );
   }
-
   // Rest of the dialog methods remain the same
   void _confirmLogout() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar?'),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      barrierDismissible: false,
+      builder: (context) => Consumer<AuthService>(
+        builder: (context, authService, _) => AlertDialog(
+          title: const Text('Keluar'),
+          content: authService.isLoading 
+            ? const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 16),
+                  Text('Keluar...'),
+                ],
+              )
+            : const Text('Apakah Anda yakin ingin keluar?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onLogout();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
+          actions: authService.isLoading ? [] : [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),            TextButton(
+              onPressed: () {
+                widget.onLogout();
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+              ),
+              child: const Text('Keluar'),
             ),
-            child: const Text('Keluar'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
-
   // Keep existing password and account deletion dialog methods
   Future<void> _showChangePasswordDialog(BuildContext context) async {
     final TextEditingController currentPasswordController = TextEditingController();
@@ -380,157 +394,263 @@ class _ProfileMenuState extends State<ProfileMenu> {
     
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ubah Password'), // Changed to Indonesian
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Current Password
-              TextFormField(
-                controller: currentPasswordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password Saat Ini', // Changed to Indonesian
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Masukkan password saat ini'; // Changed to Indonesian
-                  }
-                  return null;
-                },
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Consumer<AuthService>(
+          builder: (context, authService, _) => AlertDialog(
+            title: const Text('Ubah Password'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Current Password
+                  TextFormField(
+                    controller: currentPasswordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Password Saat Ini',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    obscureText: true,
+                    enabled: !authService.isLoading,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Masukkan password saat ini';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: AppSizes.marginM),
+                  
+                  // New Password
+                  TextFormField(
+                    controller: newPasswordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Password Baru',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    obscureText: true,
+                    enabled: !authService.isLoading,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Masukkan password baru';
+                      }
+                      if (value.length < 6) {
+                        return 'Password minimal 6 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: AppSizes.marginM),
+                  
+                  // Confirm New Password
+                  TextFormField(
+                    controller: confirmPasswordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Konfirmasi Password Baru',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    obscureText: true,
+                    enabled: !authService.isLoading,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Konfirmasi password baru Anda';
+                      }
+                      if (value != newPasswordController.text) {
+                        return 'Password tidak cocok';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  if (authService.error != null) ...[
+                    const SizedBox(height: AppSizes.marginM),
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.paddingS),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              authService.error!,
+                              style: TextStyle(color: AppColors.error, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  
+                  if (authService.isLoading) ...[
+                    const SizedBox(height: AppSizes.marginM),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Mengubah password...', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-              
-              const SizedBox(height: AppSizes.marginM),
-              
-              // New Password
-              TextFormField(
-                controller: newPasswordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password Baru', // Changed to Indonesian
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Masukkan password baru'; // Changed to Indonesian
-                  }
-                  if (value.length < 6) {
-                    return 'Password minimal 6 karakter'; // Changed to Indonesian
-                  }
-                  return null;
-                },
+            ),
+            actions: [
+              TextButton(
+                onPressed: authService.isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Batal'),
               ),
-              
-              const SizedBox(height: AppSizes.marginM),
-              
-              // Confirm New Password
-              TextFormField(
-                controller: confirmPasswordController,
-                decoration: const InputDecoration(
-                  labelText: 'Konfirmasi Password Baru', // Changed to Indonesian
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Konfirmasi password baru Anda'; // Changed to Indonesian
+              ElevatedButton(
+                onPressed: authService.isLoading ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    final success = await authService.changePassword(
+                      currentPasswordController.text,
+                      newPasswordController.text,
+                    );
+                    
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Password berhasil diubah'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
                   }
-                  if (value != newPasswordController.text) {
-                    return 'Password tidak cocok'; // Changed to Indonesian
-                  }
-                  return null;
                 },
+                child: const Text('Ubah Password'),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'), // Changed to Indonesian
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                // Password change logic would be implemented here
-                Navigator.pop(context);
-                
-                // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password berhasil diubah'), // Changed to Indonesian
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              }
-            },
-            child: const Text('Ubah Password'), // Changed to Indonesian
-          ),
-        ],
       ),
     );
   }
-
   Future<void> _showDeleteAccountDialog(BuildContext context) async {
     final TextEditingController passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Akun'), // Changed to Indonesian
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus secara permanen.', // Changed to Indonesian
-                style: TextStyle(color: AppColors.error),
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Consumer<AuthService>(
+          builder: (context, authService, _) => AlertDialog(
+            title: const Text('Hapus Akun'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus secara permanen.',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                  
+                  const SizedBox(height: AppSizes.marginM),
+                  
+                  // Password Confirmation
+                  TextFormField(
+                    controller: passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Masukkan Password untuk Konfirmasi',
+                      prefixIcon: Icon(Icons.lock_outline),
+                    ),
+                    obscureText: true,
+                    enabled: !authService.isLoading,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Masukkan password Anda untuk konfirmasi';
+                      }
+                      return null;
+                    },
+                  ),
+                  
+                  if (authService.error != null) ...[
+                    const SizedBox(height: AppSizes.marginM),
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.paddingS),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: AppColors.error, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              authService.error!,
+                              style: TextStyle(color: AppColors.error, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  
+                  if (authService.isLoading) ...[
+                    const SizedBox(height: AppSizes.marginM),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Menghapus akun...', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ],
               ),
-              
-              const SizedBox(height: AppSizes.marginM),
-              
-              // Password Confirmation
-              TextFormField(
-                controller: passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Masukkan Password untuk Konfirmasi', // Changed to Indonesian
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Masukkan password Anda untuk konfirmasi'; // Changed to Indonesian
+            ),
+            actions: [
+              TextButton(
+                onPressed: authService.isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: authService.isLoading ? null : () async {
+                  if (formKey.currentState!.validate()) {
+                    final success = await authService.deleteAccount(passwordController.text);
+                    
+                    if (success && context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Akun berhasil dihapus'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      // The auth service will handle logout automatically
+                    }
                   }
-                  return null;
                 },
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                ),
+                child: const Text('Hapus Akun'),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'), // Changed to Indonesian
-          ),
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                // Account deletion logic would be implemented here
-                Navigator.pop(context);
-                widget.onLogout(); // Log out after deletion
-              }
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
-            child: const Text('Hapus Akun'), // Changed to Indonesian
-          ),
-        ],
       ),
     );
   }

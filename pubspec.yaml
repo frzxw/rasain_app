@@ -43,9 +43,8 @@ dependencies:
   flutter_svg: ^2.0.9
   cached_network_image: ^3.3.1
   shimmer: ^3.0.0
-
   # Supabase
-  supabase_flutter: ^2.3.1
+  supabase_flutter: ^2.3.4
   flutter_dotenv: ^5.1.0
 
   # State Management
@@ -84,7 +83,6 @@ flutter:  # The following line ensures that the Material Icons font is
   
   assets:
     - public/assets/images/
-    - assets/.env
     - .env
 
   # To add assets to your application, add an assets section, like this:
