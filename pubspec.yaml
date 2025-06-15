@@ -53,12 +53,12 @@ dependencies:
   # Navigation
 
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   shared_preferences: ^2.2.2
   http: ^1.1.2
   path_provider: ^2.1.2
   url_launcher: ^6.3.1
-  connectivity_plus: ^5.0.2
+  connectivity_plus: ^6.1.4
   video_player: ^2.9.5
   timeago: ^3.7.0
 
@@ -83,7 +83,6 @@ flutter:
   # the material Icons class.  uses-material-design: true
   assets:
     - public/assets/images/
-    - assets/.env
     - .env
 
   # To add assets to your application, add an assets section, like this:
