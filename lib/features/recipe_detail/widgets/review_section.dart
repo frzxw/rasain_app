@@ -2,27 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
-import '../../../core/widgets/custom_button.dart';
-
-class Review {
-  final String id;
-  final String userName;
-  final String userImage;
-  final double rating;
-  final String comment;
-  final String date;
-  final List<String>? images;
-  
-  Review({
-    required this.id,
-    required this.userName,
-    required this.userImage,
-    required this.rating,
-    required this.comment,
-    required this.date,
-    this.images,
-  });
-}
+import '../../../services/recipe_service.dart';
 
 class ReviewSection extends StatefulWidget {
   final Recipe recipe;
@@ -43,56 +23,34 @@ class _ReviewSectionState extends State<ReviewSection> {
   bool _hasRated = false;
   bool _showAllReviews = false;
   final TextEditingController _reviewController = TextEditingController();
-  List<Review> _dummyReviews = [];
+  List<Map<String, dynamic>> _reviews = [];
+  bool _isLoadingReviews = true;
+  final RecipeService _recipeService = RecipeService();
   
   @override
   void initState() {
     super.initState();
-    _loadDummyReviews();
+    _loadReviews();
   }
   
-  void _loadDummyReviews() {
-    // Populate with sample reviews
-    _dummyReviews = [
-      Review(
-        id: '1',
-        userName: 'Sarah Johnson',
-        userImage: 'https://randomuser.me/api/portraits/women/44.jpg',
-        rating: 5.0,
-        comment: 'Resep ini luar biasa enak! Rasanya sempurna dan sangat mudah dibuat. Keluarga saya menyukainya dan meminta tambahan.',
-        date: '2 hari yang lalu',
-        images: [
-          'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60',
-        ],
-      ),
-      Review(
-        id: '2',
-        userName: 'Michael Lee',
-        userImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-        rating: 4.0,
-        comment: 'Resep yang sangat baik secara keseluruhan. Saya menambahkan sedikit lebih banyak bawang putih dan cabai untuk rasa ekstra.',
-        date: '1 minggu yang lalu',
-      ),
-      Review(
-        id: '3',
-        userName: 'Amanda Patel',
-        userImage: 'https://randomuser.me/api/portraits/women/67.jpg',
-        rating: 5.0,
-        comment: 'Sempurna untuk makan malam keluarga! Semua orang menyukainya dan resepnya sangat mudah diikuti.',
-        date: '2 minggu yang lalu',
-        images: [
-          'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8aW5kb25lc2lhbiUyMGZvb2R8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60'
-        ],
-      ),
-      Review(
-        id: '4',
-        userName: 'David Wilson',
-        userImage: 'https://randomuser.me/api/portraits/men/10.jpg',
-        rating: 3.0,
-        comment: 'Rasanya lumayan, tapi menurut saya butuh sedikit lebih banyak garam dan lada. Mungkin akan saya coba lagi dengan beberapa modifikasi.',
-        date: '3 minggu yang lalu',
-      ),
-    ];
+  void _loadReviews() async {
+    setState(() {
+      _isLoadingReviews = true;
+    });
+    
+    try {
+      final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);
+      setState(() {
+        _reviews = reviews;
+        _isLoadingReviews = false;
+      });
+      debugPrint('✅ Loaded ${reviews.length} reviews for recipe ${widget.recipe.id}');
+    } catch (e) {
+      debugPrint('❌ Error loading reviews: $e');
+      setState(() {
+        _isLoadingReviews = false;
+      });
+    }
   }
   
   @override
@@ -379,9 +337,24 @@ class _ReviewSectionState extends State<ReviewSection> {
     if (rating == 2) return 'Kurang Bagus';
     return 'Kecewa';
   }
-
   Widget _buildReviewsList(BuildContext context) {
-    final reviews = _dummyReviews;
+    if (_isLoadingReviews) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ulasan Terbaru',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ],
+      );
+    }
+
+    final reviews = _reviews;
     final displayReviews = _showAllReviews ? reviews : reviews.take(2).toList();
     
     return Column(
@@ -437,7 +410,31 @@ class _ReviewSectionState extends State<ReviewSection> {
     );
   }
 
-  Widget _buildReviewItem(Review review) {
+  Widget _buildReviewItem(Map<String, dynamic> review) {
+    final rating = review['rating']?.toDouble() ?? 0.0;
+    final reviewText = review['review_text'] ?? 'Tidak ada komentar';
+    final createdAt = review['created_at'] ?? '';
+    final userId = review['user_id'] ?? '';
+    
+    // Format date
+    String formattedDate = 'Tidak diketahui';
+    if (createdAt.isNotEmpty) {
+      try {
+        final dateTime = DateTime.parse(createdAt);
+        final now = DateTime.now();
+        final difference = now.difference(dateTime);
+        
+        if (difference.inDays > 0) {
+          formattedDate = '${difference.inDays} hari yang lalu';
+        } else if (difference.inHours > 0) {
+          formattedDate = '${difference.inHours} jam yang lalu';
+        } else {
+          formattedDate = '${difference.inMinutes} menit yang lalu';
+        }
+      } catch (e) {
+        formattedDate = createdAt;
+      }
+    }
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
@@ -450,12 +447,17 @@ class _ReviewSectionState extends State<ReviewSection> {
         children: [
           // User Info and Rating
           Row(
-            children: [
-              // User Avatar
+            children: [              // User Avatar (placeholder since we don't have user profile data yet)
               CircleAvatar(
                 radius: 20,
-                backgroundImage: NetworkImage(review.userImage),
-                backgroundColor: AppColors.surface,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                child: Text(
+                  userId.isNotEmpty ? userId[0].toUpperCase() : 'U',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               
               const SizedBox(width: AppSizes.marginM),
@@ -466,17 +468,17 @@ class _ReviewSectionState extends State<ReviewSection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review.userName,
+                      'User ${userId.length > 8 ? userId.substring(0, 8) : userId}',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Row(
                       children: [
-                        _buildStarRating(review.rating),
+                        _buildStarRating(rating),
                         const SizedBox(width: AppSizes.marginS),
                         Text(
-                          review.date,
+                          formattedDate,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -493,112 +495,12 @@ class _ReviewSectionState extends State<ReviewSection> {
           
           // Review Comment
           Text(
-            review.comment,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          
-          // Review Images
-          if (review.images != null && review.images!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSizes.marginM),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: review.images!.map((imageUrl) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: AppSizes.paddingS),
-                      child: InkWell(
-                        onTap: () {
-                          // Show full-screen image
-                          _showFullScreenImage(context, imageUrl);
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                          child: Image.network(
-                            imageUrl,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          
-          const SizedBox(height: AppSizes.marginS),
-          
-          // Helpful button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.thumb_up_outlined, size: AppSizes.iconS),
-                label: const Text('Membantu'),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Terima kasih atas tanggapan Anda!'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingS,
-                    vertical: 0,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ],
+            reviewText,            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],
       ),
     );
   }
-
-  void _showFullScreenImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Image
-            InteractiveViewer(
-              panEnabled: true,
-              minScale: 0.5,
-              maxScale: 3,
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.contain,
-              ),
-            ),
-            
-            // Close button
-            Positioned(
-              top: 40,
-              right: 20,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 30,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyReviewsState(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -633,8 +535,7 @@ class _ReviewSectionState extends State<ReviewSection> {
       ),
     );
   }
-
-  void _submitReview() {
+  void _submitReview() async {
     if (_reviewController.text.trim().isEmpty && _userRating <= 0) {
       // Show error for empty submission
       ScaffoldMessenger.of(context).showSnackBar(
@@ -646,21 +547,41 @@ class _ReviewSectionState extends State<ReviewSection> {
       return;
     }
     
-    // Call the callback to rate the recipe
-    widget.onRateRecipe(_userRating, _reviewController.text.trim());
-    
-    // Reset form and update state
-    setState(() {
-      _hasRated = true;
-      _reviewController.clear();
-    });
-    
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Terima kasih atas ulasan Anda!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+    try {
+      // Submit review to Supabase
+      await _recipeService.submitRecipeReview(
+        widget.recipe.id,
+        _userRating,
+        _reviewController.text.trim(),
+      );
+      
+      // Call the callback to rate the recipe (for updating local state)
+      widget.onRateRecipe(_userRating, _reviewController.text.trim());
+      
+      // Reload reviews to show the new one
+      _loadReviews();
+      
+      // Reset form and update state
+      setState(() {
+        _hasRated = true;
+        _reviewController.clear();
+        _userRating = 0;
+      });
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Terima kasih atas ulasan Anda!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengirim ulasan: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );    }
   }
 }

@@ -137,28 +137,6 @@ class MockData {
               'Haluskan semua bumbu rendang (bawang merah, bawang putih, cabai, lengkuas, serai, dll).',
           'videoUrl': null,
         },
-        {
-          'text': 'Tumis bumbu halus hingga harum dan matang.',
-          'videoUrl': null,
-        },
-        {
-          'text': 'Masukkan daging sapi, aduk rata dengan bumbu.',
-          'videoUrl': null,
-        },
-        {
-          'text':
-              'Tuang santan, masak dengan api kecil sambil sesekali diaduk.',
-          'videoUrl': null,
-        },
-        {
-          'text':
-              'Masak hingga santan menyusut dan daging empuk (sekitar 3-4 jam).',
-          'videoUrl': null,
-        },
-        {
-          'text': 'Rendang siap disajikan dengan nasi putih hangat.',
-          'videoUrl': null,
-        },
       ],
       isSaved: false,
     ),
@@ -583,41 +561,6 @@ class MockData {
       category: 'Makanan Utama',
       likeCount: 45,
       commentCount: 12,
-      isLiked: true,
-    ),
-    CommunityPost(
-      id: '2',
-      userId: '4',
-      userName: 'Dewi Lestari',
-      userImageUrl: 'https://i.pravatar.cc/300?img=9',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      content:
-          'Tips untuk membuat sambal yang tidak pahit: jangan sampai biji cabai ikut dihaluskan, dan tumis sampai matang dengan api sedang. Ini sambal bawang buatan saya, pedas nikmat!',
-      imageUrl: 'public/assets/images/community/1.png',
-      taggedIngredients: ['Cabai Rawit', 'Bawang Merah', 'Bawang Putih'],
-      category: 'Tips Memasak',
-      likeCount: 78,
-      commentCount: 23,
-      isLiked: false,
-    ),
-    CommunityPost(
-      id: '3',
-      userId: '1',
-      userName: 'Budi Santoso',
-      userImageUrl: 'https://i.pravatar.cc/300?img=1',
-      timestamp: DateTime.now().subtract(const Duration(days: 3)),
-      content:
-          'Ada yang pernah coba membuat es cendol sendiri di rumah? Saya baru coba resep dari nenek dan hasilnya mirip yang dijual di jalan. Segarnya pas untuk cuaca panas Jakarta!',
-      imageUrl: 'public/assets/images/community/2.png',
-      taggedIngredients: [
-        'Tepung Hunkwe',
-        'Daun Pandan',
-        'Gula Merah',
-        'Santan',
-      ],
-      category: 'Minuman',
-      likeCount: 34,
-      commentCount: 8,
       isLiked: true,
     ),
     CommunityPost(
