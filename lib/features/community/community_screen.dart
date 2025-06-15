@@ -4,7 +4,7 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
-import '../../services/mock_api_service.dart';
+import '../../services/data_service.dart';
 import '../../models/community_post.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
@@ -19,17 +19,22 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   // Updated with Indonesian cuisine categories
   final List<String> _tags = [
-    'Semua', 'Makanan Utama', 'Pedas', 'Tradisional', 'Sup', 
-    'Daging', 'Manis', 'Minuman'
+    'Semua',
+    'Makanan Utama',
+    'Pedas',
+    'Tradisional',
+    'Sup',
+    'Daging',
+    'Manis',
+    'Minuman',
   ];
-  
+
   String _selectedTag = 'Semua';
   bool _isLoading = false;
   List<CommunityPost> _posts = [];
   String? _error;
-  
-  // Mock API service for post loading
-  final MockApiService _apiService = MockApiService();
+  // Data service for community posts
+  final DataService _dataService = DataService();
 
   @override
   void initState() {
@@ -39,24 +44,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _loadPosts() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
     try {
-      final response = await _apiService.get(
-        'community/posts',
-        queryParams: _selectedTag != 'All' ? {'tag': _selectedTag} : null,
-      );
-      
-      final posts = (response['posts'] as List)
-          .map((post) => CommunityPost.fromJson(post))
-          .toList();
-      
+      final posts = await _dataService.getCommunityPosts();
+
+      // Filter posts by tag if needed
+      final filteredPosts =
+          _selectedTag == 'Semua'
+              ? posts
+              : posts.where((post) => post.category == _selectedTag).toList();
+
       setState(() {
-        _posts = posts;
+        _posts = filteredPosts;
         _isLoading = false;
       });
     } catch (e) {
@@ -71,9 +74,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const CustomAppBar(
-        title: 'Community',
-      ),
+      appBar: const CustomAppBar(title: 'Community'),
       body: Column(
         children: [
           // Filter Tags
@@ -93,35 +94,38 @@ class _CommunityScreenState extends State<CommunityScreen> {
               },
             ),
           ),
-          
+
           // Post List
           Expanded(
-            child: _isLoading && _posts.isEmpty
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  )
-                : _error != null
+            child:
+                _isLoading && _posts.isEmpty
+                    ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
+                      ),
+                    )
+                    : _error != null
                     ? _buildErrorState()
                     : _posts.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadPosts,
-                            color: AppColors.primary,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(AppSizes.paddingM),
-                              itemCount: _posts.length,
-                              itemBuilder: (context, index) {
-                                return PostCard(
-                                  post: _posts[index],
-                                  onLike: () => _handleLikePost(_posts[index]),
-                                  onComment: () => _showComments(_posts[index]),
-                                  onShare: () => _sharePost(_posts[index]),
-                                );
-                              },
-                            ),
-                          ),
+                    ? _buildEmptyState()
+                    : RefreshIndicator(
+                      onRefresh: _loadPosts,
+                      color: AppColors.primary,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(AppSizes.paddingM),
+                        itemCount: _posts.length,
+                        itemBuilder: (context, index) {
+                          return PostCard(
+                            post: _posts[index],
+                            onLike: () => _handleLikePost(_posts[index]),
+                            onComment: () => _showComments(_posts[index]),
+                            onShare: () => _sharePost(_posts[index]),
+                          );
+                        },
+                      ),
+                    ),
           ),
         ],
       ),
@@ -154,9 +158,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             const SizedBox(height: AppSizes.marginS),
             Text(
               _error ?? 'Gagal memuat postingan',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginL),
@@ -197,9 +201,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
               _selectedTag == 'Semua'
                   ? 'Jadilah yang pertama berbagi pengalaman memasak Anda!'
                   : 'Coba kategori lain atau jadilah yang pertama posting di sini',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginL),
@@ -217,11 +221,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _handleLikePost(CommunityPost post) async {
     try {
-      await _apiService.post(
-        'community/posts/${post.id}/like',
-        body: {'is_liked': !post.isLiked},
-      );
-      
+      // For now, just update locally (in a real app, this would call Supabase)
+      // await _supabaseService.togglePostLike(post.id, !post.isLiked);
+
       // Optimistically update the post in the UI
       final index = _posts.indexWhere((p) => p.id == post.id);
       if (index != -1) {
@@ -298,7 +300,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     left: AppSizes.paddingM,
                     right: AppSizes.paddingM,
                     top: AppSizes.paddingM,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.paddingM,
+                    bottom:
+                        MediaQuery.of(context).viewInsets.bottom +
+                        AppSizes.paddingM,
                   ),
                   child: Row(
                     children: [
@@ -307,7 +311,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           decoration: InputDecoration(
                             hintText: 'Tambahkan komentar...',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusL,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: AppSizes.paddingM,
@@ -318,10 +324,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ),
                       const SizedBox(width: AppSizes.marginM),
                       IconButton(
-                        icon: const Icon(
-                          Icons.send,
-                          color: AppColors.primary,
-                        ),
+                        icon: const Icon(Icons.send, color: AppColors.primary),
                         onPressed: () {
                           // Send comment logic would go here
                           Navigator.pop(context);
@@ -353,19 +356,34 @@ class _CommunityScreenState extends State<CommunityScreen> {
     String? selectedCategory;
     List<String> selectedIngredients = [];
     XFile? selectedImage;
-    
+
     // Updated with Indonesian ingredients
     final availableIngredients = [
-      'Beras', 'Cabai Merah', 'Cabai Rawit', 'Bawang Merah', 'Bawang Putih',
-      'Daging Sapi', 'Ayam', 'Telur', 'Kecap Manis', 'Santan', 'Tempe', 'Terasi'
+      'Beras',
+      'Cabai Merah',
+      'Cabai Rawit',
+      'Bawang Merah',
+      'Bawang Putih',
+      'Daging Sapi',
+      'Ayam',
+      'Telur',
+      'Kecap Manis',
+      'Santan',
+      'Tempe',
+      'Terasi',
     ];
-    
+
     // Updated with Indonesian cuisine categories
     final availableCategories = [
-      'Makanan Utama', 'Pedas', 'Tradisional', 'Sup', 
-      'Daging', 'Manis', 'Minuman'
+      'Makanan Utama',
+      'Pedas',
+      'Tradisional',
+      'Sup',
+      'Daging',
+      'Manis',
+      'Minuman',
     ];
-    
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -400,9 +418,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Post content
                     TextField(
                       controller: contentController,
@@ -412,84 +430,89 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Image Selection
                     Row(
                       children: [
                         selectedImage != null
                             ? Stack(
-                                children: [
-                                  Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                                      color: AppColors.surface,
+                              children: [
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      AppSizes.radiusS,
                                     ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                                      child: Image.asset(
-                                        'path_to_placeholder', // This would be a FutureBuilder with Image.memory in a real app
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(
-                                          Icons.image,
-                                          size: AppSizes.iconL,
-                                          color: AppColors.textSecondary,
-                                        ),
+                                    color: AppColors.surface,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      AppSizes.radiusS,
+                                    ),
+                                    child: Image.asset(
+                                      'path_to_placeholder', // This would be a FutureBuilder with Image.memory in a real app
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (_, __, ___) => const Icon(
+                                            Icons.image,
+                                            size: AppSizes.iconL,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedImage = null;
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.error,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: AppColors.onPrimary,
                                       ),
                                     ),
                                   ),
-                                  Positioned(
-                                    top: 5,
-                                    right: 5,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          selectedImage = null;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.error,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          size: 16,
-                                          color: AppColors.onPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
+                                ),
+                              ],
+                            )
                             : OutlinedButton.icon(
-                                onPressed: () async {
-                                  final ImagePicker picker = ImagePicker();
-                                  final XFile? image = await picker.pickImage(
-                                    source: ImageSource.gallery,
-                                    maxWidth: 1000,
-                                    maxHeight: 1000,
-                                    imageQuality: 85,
-                                  );
-                                  
-                                  if (image != null) {
-                                    setState(() {
-                                      selectedImage = image;
-                                    });
-                                  }
-                                },
-                                icon: const Icon(Icons.image),
-                                label: const Text('Tambah Foto'),
-                              ),
+                              onPressed: () async {
+                                final ImagePicker picker = ImagePicker();
+                                final XFile? image = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                  maxWidth: 1000,
+                                  maxHeight: 1000,
+                                  imageQuality: 85,
+                                );
+
+                                if (image != null) {
+                                  setState(() {
+                                    selectedImage = image;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.image),
+                              label: const Text('Tambah Foto'),
+                            ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Category selection
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
@@ -503,16 +526,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           selectedCategory = value;
                         });
                       },
-                      items: availableCategories.map((category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
+                      items:
+                          availableCategories.map((category) {
+                            return DropdownMenuItem<String>(
+                              value: category,
+                              child: Text(category),
+                            );
+                          }).toList(),
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Ingredient Tags
                     Text(
                       'Tag Bahan-bahan',
@@ -522,26 +546,29 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     Wrap(
                       spacing: AppSizes.marginS,
                       runSpacing: AppSizes.marginS,
-                      children: availableIngredients.map((ingredient) {
-                        final isSelected = selectedIngredients.contains(ingredient);
-                        return FilterChip(
-                          label: Text(ingredient),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                selectedIngredients.add(ingredient);
-                              } else {
-                                selectedIngredients.remove(ingredient);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                      children:
+                          availableIngredients.map((ingredient) {
+                            final isSelected = selectedIngredients.contains(
+                              ingredient,
+                            );
+                            return FilterChip(
+                              label: Text(ingredient),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    selectedIngredients.add(ingredient);
+                                  } else {
+                                    selectedIngredients.remove(ingredient);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginL),
-                    
+
                     // Post Button
                     SizedBox(
                       width: double.infinity,
@@ -553,15 +580,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
                               selectedImage == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Mohon tambahkan teks atau gambar pada postingan Anda'),
+                                content: Text(
+                                  'Mohon tambahkan teks atau gambar pada postingan Anda',
+                                ),
                                 backgroundColor: AppColors.error,
                               ),
                             );
                             return;
                           }
-                          
+
                           // Create post logic would go here
-                          
+
                           Navigator.pop(context, true);
                         },
                         variant: ButtonVariant.primary,
@@ -575,7 +604,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         );
       },
     );
-    
+
     // Refresh posts after creating a new one
     _loadPosts();
   }

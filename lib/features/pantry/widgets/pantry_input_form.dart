@@ -5,7 +5,7 @@ import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../models/pantry_item.dart';
-import '../../../services/mock_data.dart';
+import '../../../services/data_service.dart';
 
 class PantryInputForm extends StatefulWidget {
   final PantryItem? item;
@@ -25,6 +25,7 @@ class PantryInputForm extends StatefulWidget {
 
 class _PantryInputFormState extends State<PantryInputForm> {
   final _formKey = GlobalKey<FormState>();
+  final DataService _dataService = DataService();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
@@ -42,6 +43,13 @@ class _PantryInputFormState extends State<PantryInputForm> {
   int _totalQuantity = 1;
   bool _lowStockAlert = false;
   bool _expirationAlert = true;
+
+  // Cached ingredient lists
+  List<String> _fruitsList = [];
+  List<String> _vegetablesList = [];
+  List<String> _meatList = [];
+  List<String> _dairyList = [];
+  List<String> _spicesList = [];
 
   final List<String> _categories = [
     'Vegetables',
@@ -78,10 +86,11 @@ class _PantryInputFormState extends State<PantryInputForm> {
     'L',
     'ml',
   ];
-
   @override
   void initState() {
     super.initState();
+    _loadIngredientData();
+
     if (widget.item != null) {
       _nameController.text = widget.item!.name;
 
@@ -116,9 +125,48 @@ class _PantryInputFormState extends State<PantryInputForm> {
       _lowStockAlert = widget.item!.lowStockAlert ?? false;
       _expirationAlert = widget.item!.expirationAlert ?? true;
     }
+  }
 
-    // Load common ingredients for search
-    _filteredIngredients = MockData.commonIngredients;
+  Future<void> _loadIngredientData() async {
+    try {
+      final ingredients = await _dataService.getCommonIngredients();
+      final fruits = await _dataService.getFruitsList();
+      final vegetables = await _dataService.getVegetablesList();
+      final meats = await _dataService.getMeatList();
+      final dairy = await _dataService.getDairyList();
+      final spices = await _dataService.getSpicesList();
+
+      if (mounted) {
+        setState(() {
+          _filteredIngredients = ingredients;
+          _fruitsList = fruits;
+          _vegetablesList = vegetables;
+          _meatList = meats;
+          _dairyList = dairy;
+          _spicesList = spices;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading ingredient data: $e');
+      // Set default values if loading fails
+      if (mounted) {
+        setState(() {
+          _filteredIngredients = [
+            'bawang merah',
+            'bawang putih',
+            'tomat',
+            'cabai merah',
+            'cabai rawit',
+            'wortel',
+            'kentang',
+            'daging sapi',
+            'daging ayam',
+            'telur',
+            'ikan',
+          ];
+        });
+      }
+    }
   }
 
   @override
@@ -134,10 +182,11 @@ class _PantryInputFormState extends State<PantryInputForm> {
   void _filterIngredients(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredIngredients = MockData.commonIngredients;
+        // Reset to common ingredients when query is empty
+        _loadIngredientData();
       } else {
         _filteredIngredients =
-            MockData.commonIngredients
+            _filteredIngredients
                 .where(
                   (ingredient) =>
                       ingredient.toLowerCase().contains(query.toLowerCase()),
@@ -278,28 +327,25 @@ class _PantryInputFormState extends State<PantryInputForm> {
                                           _isSearching = false;
 
                                           // Auto-set category based on ingredient
-                                          if (MockData.fruitsList.contains(
+                                          if (_fruitsList.contains(
                                             ingredient.toLowerCase(),
                                           )) {
                                             _selectedCategory = 'Fruits';
-                                          } else if (MockData.vegetablesList
-                                              .contains(
-                                                ingredient.toLowerCase(),
-                                              )) {
+                                          } else if (_vegetablesList.contains(
+                                            ingredient.toLowerCase(),
+                                          )) {
                                             _selectedCategory = 'Vegetables';
-                                          } else if (MockData.meatList.contains(
+                                          } else if (_meatList.contains(
                                             ingredient.toLowerCase(),
                                           )) {
                                             _selectedCategory = 'Meat';
-                                          } else if (MockData.dairyList
-                                              .contains(
-                                                ingredient.toLowerCase(),
-                                              )) {
+                                          } else if (_dairyList.contains(
+                                            ingredient.toLowerCase(),
+                                          )) {
                                             _selectedCategory = 'Dairy';
-                                          } else if (MockData.spicesList
-                                              .contains(
-                                                ingredient.toLowerCase(),
-                                              )) {
+                                          } else if (_spicesList.contains(
+                                            ingredient.toLowerCase(),
+                                          )) {
                                             _selectedCategory = 'Spices';
                                           }
                                         });

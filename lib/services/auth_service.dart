@@ -1,39 +1,46 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../core/theme/theme_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
-import 'mock_api_service.dart';
+import 'supabase_service.dart';
 
 class AuthService extends ChangeNotifier {
-  final MockApiService _apiService = MockApiService();
-  
+  final SupabaseService _supabaseService = SupabaseService.instance;
+
   UserProfile? _currentUser;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _error;
-  
+
   // Getters
   UserProfile? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  
   // Check if user is authenticated
   Future<bool> checkAuth() async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.get('auth/me');
-      
-      if (response['user'] != null) {
-        _currentUser = UserProfile.fromJson(response['user']);
+      final user = _supabaseService.client.auth.currentUser;
+
+      if (user != null) {
+        // Fetch user profile from database
+        final response =
+            await _supabaseService.client
+                .from('user_profiles')
+                .select()
+                .eq('id', user.id)
+                .single();
+
+        _currentUser = UserProfile.fromJson(response);
         _isAuthenticated = true;
       } else {
         _isAuthenticated = false;
         _currentUser = null;
       }
-      
+
       notifyListeners();
       return _isAuthenticated;
     } catch (e) {
@@ -45,25 +52,30 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Login with email and password
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.post(
-        'auth/login',
-        body: {
-          'email': email,
-          'password': password,
-        },
+      final response = await _supabaseService.client.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
-      
-      if (response['user'] != null) {
-        _currentUser = UserProfile.fromJson(response['user']);
+
+      if (response.user != null) {
+        // Fetch user profile from database
+        final profileResponse =
+            await _supabaseService.client
+                .from('user_profiles')
+                .select()
+                .eq('id', response.user!.id)
+                .single();
+
+        _currentUser = UserProfile.fromJson(profileResponse);
         _isAuthenticated = true;
-        
+
         notifyListeners();
         return true;
       } else {
@@ -77,24 +89,35 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Register new account
   Future<bool> register(String name, String email, String password) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.post(
-        'auth/register',
-        body: {
+      final response = await _supabaseService.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        // Create user profile in database
+        final profileData = {
+          'id': response.user!.id,
           'name': name,
           'email': email,
-          'password': password,
-        },
-      );
-      
-      if (response['user'] != null) {
-        _currentUser = UserProfile.fromJson(response['user']);
+          'saved_recipes_count': 0,
+          'posts_count': 0,
+          'is_notifications_enabled': true,
+          'language': 'id',
+          'is_dark_mode_enabled': false,
+          'created_at': DateTime.now().toIso8601String(),
+        };
+
+        await _supabaseService.client.from('user_profiles').insert(profileData);
+
+        _currentUser = UserProfile.fromJson(profileData);
         _isAuthenticated = true;
         notifyListeners();
         return true;
@@ -109,15 +132,15 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Logout
   Future<void> logout() async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      await _apiService.post('auth/logout');
-      
+      await _supabaseService.client.auth.signOut();
+
       _currentUser = null;
       _isAuthenticated = false;
       notifyListeners();
@@ -127,26 +150,29 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Update user profile
   Future<bool> updateProfile(UserProfile updatedProfile) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.put(
-        'auth/profile',
-        body: updatedProfile.toJson(),
-      );
-      
-      if (response['user'] != null) {
-        _currentUser = UserProfile.fromJson(response['user']);
-        notifyListeners();
-        return true;
-      } else {
-        _setError('Profile update failed');
+      if (_currentUser == null) {
+        _setError('No user authenticated');
         return false;
       }
+
+      final response =
+          await _supabaseService.client
+              .from('user_profiles')
+              .update(updatedProfile.toJson())
+              .eq('id', _currentUser!.id)
+              .select()
+              .single();
+
+      _currentUser = UserProfile.fromJson(response);
+      notifyListeners();
+      return true;
     } catch (e) {
       _setError('Profile update failed: $e');
       return false;
@@ -154,7 +180,7 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Update user settings
   Future<bool> updateSettings({
     bool? notificationsEnabled,
@@ -162,31 +188,30 @@ class AuthService extends ChangeNotifier {
     bool? darkModeEnabled,
   }) async {
     if (_currentUser == null) return false;
-    
+
     _setLoading(true);
     _clearError();
-    
+
     try {
       final updatedSettings = {
-        'is_notifications_enabled': notificationsEnabled ?? _currentUser!.isNotificationsEnabled,
+        'is_notifications_enabled':
+            notificationsEnabled ?? _currentUser!.isNotificationsEnabled,
         'language': language ?? _currentUser!.language,
-        // We'll still store the preference in the API but won't use it in the app
-        'is_dark_mode_enabled': false,
+        'is_dark_mode_enabled':
+            darkModeEnabled ?? _currentUser!.isDarkModeEnabled,
       };
-      
-      final response = await _apiService.put(
-        'auth/settings',
-        body: updatedSettings,
-      );
-      
-      if (response['user'] != null) {
-        _currentUser = UserProfile.fromJson(response['user']);
-        notifyListeners();
-        return true;
-      } else {
-        _setError('Settings update failed');
-        return false;
-      }
+
+      final response =
+          await _supabaseService.client
+              .from('user_profiles')
+              .update(updatedSettings)
+              .eq('id', _currentUser!.id)
+              .select()
+              .single();
+
+      _currentUser = UserProfile.fromJson(response);
+      notifyListeners();
+      return true;
     } catch (e) {
       _setError('Settings update failed: $e');
       return false;
@@ -194,27 +219,21 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Change password
-  Future<bool> changePassword(String currentPassword, String newPassword) async {
+  Future<bool> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.post(
-        'auth/password',
-        body: {
-          'current_password': currentPassword,
-          'new_password': newPassword,
-        },
+      await _supabaseService.client.auth.updateUser(
+        UserAttributes(password: newPassword),
       );
-      
-      if (response['success'] == true) {
-        return true;
-      } else {
-        _setError('Password change failed: ${response['message']}');
-        return false;
-      }
+
+      return true;
     } catch (e) {
       _setError('Password change failed: $e');
       return false;
@@ -222,27 +241,31 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Delete account
   Future<bool> deleteAccount(String password) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
-      final response = await _apiService.post(
-        'auth/delete',
-        body: {'password': password},
-      );
-      
-      if (response['success'] == true) {
-        _currentUser = null;
-        _isAuthenticated = false;
-        notifyListeners();
-        return true;
-      } else {
-        _setError('Account deletion failed: ${response['message']}');
+      if (_currentUser == null) {
+        _setError('No user authenticated');
         return false;
       }
+
+      // Delete user profile from database
+      await _supabaseService.client
+          .from('user_profiles')
+          .delete()
+          .eq('id', _currentUser!.id);
+
+      // Sign out user
+      await _supabaseService.client.auth.signOut();
+
+      _currentUser = null;
+      _isAuthenticated = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       _setError('Account deletion failed: $e');
       return false;
@@ -250,19 +273,19 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-  
+
   // Helpers
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
-  
+
   void _setError(String errorMessage) {
     debugPrint(errorMessage);
     _error = errorMessage;
     notifyListeners();
   }
-  
+
   void _clearError() {
     _error = null;
     notifyListeners();
