@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,8 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../services/recipe_service.dart';
 import '../../models/recipe.dart';
+import '../../cubits/recipe/recipe_cubit.dart';
+import '../../cubits/recipe/recipe_state.dart';
 import 'widgets/category_slider.dart';
 import 'widgets/recipe_carousel.dart';
 import 'widgets/whats_cooking_stream.dart';
@@ -27,38 +30,36 @@ class _HomeScreenState extends State<HomeScreen> {
     'Daging',
     'Manis',
   ];
-  
+
   String _selectedCategory = 'All';
   List<Recipe> _searchResults = [];
   bool _isSearching = false;
-  
   @override
   void initState() {
     super.initState();
-    // Initialize recipe data from Supabase
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final recipeService = Provider.of<RecipeService>(context, listen: false);
-      
-      // Load all required data for the home screen
-      await recipeService.initialize();
-      
-      // Add some debug print statements to verify data is loading
-      debugPrint('✅ Popular Recipes: ${recipeService.popularRecipes.length}');
-      debugPrint('✅ Pantry Recipes: ${recipeService.pantryRecipes.length}');
-      debugPrint('✅ What\'s New Recipes: ${recipeService.whatsNewRecipes.length}');
+
+    // Initialize the RecipeCubit if it's in the initial state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final recipeCubit = context.read<RecipeCubit>();
+      if (recipeCubit.state.status == RecipeStatus.initial) {
+        recipeCubit.initialize();
+      }
     });
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Use theme-aware background
+      backgroundColor:
+          Theme.of(
+            context,
+          ).scaffoldBackgroundColor, // Use theme-aware background
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildAppBar() {
     return Padding(
       padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -142,9 +143,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppSizes.marginM),
-          
+
           // Category slider
           CategorySlider(
             categories: _categories,
@@ -160,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildHomeContent() {
     return RefreshIndicator(
       onRefresh: _refreshHomeData,
@@ -173,88 +174,110 @@ class _HomeScreenState extends State<HomeScreen> {
             // Recommended Recipes (new section)
             _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(              builder: (context, recipeService, _) {
-                final recommendedRecipes = recipeService.recommendedRecipes;
-                
-                // Check if there's an error
-                if (recipeService.error != null && recommendedRecipes.isEmpty) {
-                  return _buildErrorWidget(recipeService.error!);
+            BlocBuilder<RecipeCubit, RecipeState>(
+              builder: (context, state) {
+                // Use the state to determine what to show
+                if (state.status == RecipeStatus.loading) {
+                  return RecipeCarousel(recipes: const [], isLoading: true);
+                } else if (state.status == RecipeStatus.error) {
+                  return _buildErrorWidget(
+                    state.errorMessage ?? 'Error loading recipes',
+                  );
                 }
-                
+
                 return RecipeCarousel(
-                  recipes: recommendedRecipes,
-                  isLoading: recipeService.isLoading && recommendedRecipes.isEmpty,
+                  recipes: state.recommendedRecipes,
+                  isLoading: false,
                 );
               },
             ),
-            
+
             const SizedBox(height: AppSizes.marginL),
-            
+
             // Top Highlights Carousel
             _buildSectionTitle('Hidangan Populer'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(              builder: (context, recipeService, _) {
-                final popularRecipes = recipeService.popularRecipes;
-                
-                // Check if there's an error
-                if (recipeService.error != null && popularRecipes.isEmpty) {
-                  return _buildErrorWidget(recipeService.error!);
+            BlocBuilder<RecipeCubit, RecipeState>(
+              builder: (context, state) {
+                // Use the state to determine what to show
+                if (state.status == RecipeStatus.loading) {
+                  return RecipeCarousel(recipes: const [], isLoading: true);
+                } else if (state.status == RecipeStatus.error) {
+                  return _buildErrorWidget(
+                    state.errorMessage ?? 'Error loading recipes',
+                  );
                 }
-                
+
                 return RecipeCarousel(
-                  recipes: popularRecipes,
-                  isLoading: recipeService.isLoading && popularRecipes.isEmpty,
+                  recipes: state.featuredRecipes,
+                  isLoading: false,
                 );
               },
             ),
-            
+
             const SizedBox(height: AppSizes.marginL),
-            
             // From Your Pantry Carousel
             _buildSectionTitle('Dari Dapur Anda'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(              builder: (context, recipeService, _) {
-                final pantryRecipes = recipeService.pantryRecipes;
-                
-                // Check if there's an error
-                if (recipeService.error != null && pantryRecipes.isEmpty) {
-                  return _buildErrorWidget(recipeService.error!);
+            BlocBuilder<RecipeCubit, RecipeState>(
+              builder: (context, state) {
+                // Use the state to determine what to show
+                if (state.status == RecipeStatus.loading) {
+                  return RecipeCarousel(recipes: const [], isLoading: true);
+                } else if (state.status == RecipeStatus.error) {
+                  return _buildErrorWidget(
+                    state.errorMessage ?? 'Error loading recipes',
+                  );
                 }
-                
-                return RecipeCarousel(
-                  recipes: pantryRecipes,
-                  isLoading: recipeService.isLoading && pantryRecipes.isEmpty,
-                );
+
+                // In a real implementation, we would have pantryRecipes in the RecipeState
+                // For now, we'll use a subset of recipes based on categories
+                final pantryRecipes =
+                    state.recipes
+                        .where(
+                          (recipe) =>
+                              recipe.categories?.contains('Dari Dapur') == true,
+                        )
+                        .toList();
+
+                return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
               },
             ),
-            
+
             const SizedBox(height: AppSizes.marginL),
-            
             // What's Cooking Stream
             _buildSectionTitle('Masak Apa Hari Ini?'),
             const SizedBox(height: AppSizes.marginS),
-            Consumer<RecipeService>(              builder: (context, recipeService, _) {
-                final recipes = recipeService.whatsNewRecipes;
-                
-                // Check if there's an error
-                if (recipeService.error != null && recipes.isEmpty) {
-                  return _buildErrorWidget(recipeService.error!);
+            BlocBuilder<RecipeCubit, RecipeState>(
+              builder: (context, state) {
+                // Use the state to determine what to show
+                if (state.status == RecipeStatus.loading) {
+                  return WhatsCookingStream(recipes: const [], isLoading: true);
+                } else if (state.status == RecipeStatus.error) {
+                  return _buildErrorWidget(
+                    state.errorMessage ?? 'Error loading recipes',
+                  );
                 }
-                
+
+                // In RecipeCubit, we'd normally have whatsNewRecipes directly,
+                // but we can also filter from all recipes if needed
                 return WhatsCookingStream(
-                  recipes: recipes,
-                  isLoading: recipeService.isLoading && recipes.isEmpty,
+                  recipes:
+                      state.recipes
+                          .take(5)
+                          .toList(), // Take the first 5 recipes as "What's New"
+                  isLoading: false,
                 );
               },
             ),
-            
+
             const SizedBox(height: AppSizes.marginL),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSearchResults() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,51 +306,48 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: AppSizes.marginS),
         Expanded(
-          child: _searchResults.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.search_off,
-                        size: 48,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(height: AppSizes.marginM),
-                      Text(
-                        'Tidak ada resep ditemukan',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          child:
+              _searchResults.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.search_off,
+                          size: 48,
                           color: AppColors.textSecondary,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: AppSizes.marginM),
+                        Text(
+                          'Tidak ada resep ditemukan',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingM,
+                    ),
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final recipe = _searchResults[index];
+                      return _buildSearchResultItem(recipe);
+                    },
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingM,
-                  ),
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    final recipe = _searchResults[index];
-                    return _buildSearchResultItem(recipe);
-                  },
-                ),
         ),
       ],
     );
   }
-  
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
+      child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
   }
-  
+
   Widget _buildSearchResultItem(Recipe recipe) {
     return Card(
       margin: const EdgeInsets.only(bottom: AppSizes.marginM),
@@ -349,24 +369,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 120,
                 height: 120,
                 color: AppColors.surface,
-                child: recipe.imageUrl != null
-                    ? Image.network(
-                        recipe.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+                child:
+                    recipe.imageUrl != null
+                        ? Image.network(
+                          recipe.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => const Icon(
+                                Icons.restaurant,
+                                color: AppColors.textSecondary,
+                                size: AppSizes.iconL,
+                              ),
+                        )
+                        : const Icon(
                           Icons.restaurant,
                           color: AppColors.textSecondary,
                           size: AppSizes.iconL,
                         ),
-                      )
-                    : const Icon(
-                        Icons.restaurant,
-                        color: AppColors.textSecondary,
-                        size: AppSizes.iconL,
-                      ),
               ),
             ),
-            
+
             // Recipe Info
             Expanded(
               child: Padding(
@@ -400,7 +422,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.only(top: AppSizes.paddingS),
                         child: Row(
                           children: [
- 
                             const SizedBox(width: 4),
                             Text(
                               'Est. Rp ${recipe.estimatedCost}',
@@ -418,20 +439,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-    Future<void> _refreshHomeData() async {
-    final recipeService = Provider.of<RecipeService>(context, listen: false);
+
+  Future<void> _refreshHomeData() async {
     try {
-      await Future.wait([
-        recipeService.fetchPopularRecipes(),
-        recipeService.fetchPantryRecipes(),
-        recipeService.fetchWhatsNewRecipes(),
-        recipeService.fetchRecommendedRecipes(),
-      ]);
-      debugPrint('✅ Home data refreshed successfully from Supabase');
-      debugPrint('✅ Popular Recipes: ${recipeService.popularRecipes.length}');
-      debugPrint('✅ Pantry Recipes: ${recipeService.pantryRecipes.length}');
-      debugPrint('✅ What\'s New Recipes: ${recipeService.whatsNewRecipes.length}');
-      debugPrint('✅ Recommended Recipes: ${recipeService.recommendedRecipes.length}');
+      // Use the RecipeCubit to initialize data instead of RecipeService
+      await context.read<RecipeCubit>().initialize();
+      debugPrint('✅ Home data refreshed successfully using RecipeCubit');
     } catch (e) {
       debugPrint('❌ Error refreshing home data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -440,8 +453,9 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.red,
         ),
       );
-    }  }
-  
+    }
+  }
+
   void _handleSearch(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
@@ -450,37 +464,44 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return;
     }
-    
+
     setState(() {
       _isSearching = true;
     });
-    
-    final recipeService = Provider.of<RecipeService>(context, listen: false);
-    final results = await recipeService.searchRecipes(query);
-    
+
+    // Use RecipeCubit instead of RecipeService directly
+    await context.read<RecipeCubit>().searchRecipes(query);
+
+    // Get results from the RecipeCubit state
+    final state = context.read<RecipeCubit>().state;
+
     setState(() {
-      _searchResults = results;
+      _searchResults = state.recipes;
     });
   }
-  
+
   void _handleCategoryFilter(String category) async {
     if (category == 'All') {
       await _refreshHomeData();
+      setState(() {
+        _isSearching = false;
+      });
       return;
     }
-    
+
     setState(() {
       _isSearching = true;
     });
-    
-    final recipeService = Provider.of<RecipeService>(context, listen: false);
-    final results = await recipeService.filterRecipesByCategory(category);
-    
+
+    // Use RecipeCubit to get recipes by category
+    final recipeCubit = context.read<RecipeCubit>();
+    final results = recipeCubit.getRecipesByCategory(category);
+
     setState(() {
       _searchResults = results;
     });
   }
-  
+
   Future<void> _handleImageSearch() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -489,18 +510,28 @@ class _HomeScreenState extends State<HomeScreen> {
       maxHeight: 1000,
       imageQuality: 85,
     );
-    
+
     if (image == null) return;
-    
+
     setState(() {
       _isSearching = true;
     });
-    
+
     try {
       final bytes = await image.readAsBytes();
+
+      // Here we would call a method in the RecipeCubit to search by image
+      // For now, we'll still use the RecipeService since we haven't implemented this in the Cubit yet
       final recipeService = Provider.of<RecipeService>(context, listen: false);
-      final results = await recipeService.searchRecipesByImage(bytes, image.name);
-      
+      final results = await recipeService.searchRecipesByImage(
+        bytes,
+        image.name,
+      );
+
+      // In a complete implementation, we'd do something like:
+      // await context.read<RecipeCubit>().searchRecipesByImage(bytes, image.name);
+      // final results = context.read<RecipeCubit>().state.recipes;
+
       setState(() {
         _searchResults = results;
       });
@@ -512,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: AppColors.error,
         ),
       );
-      
+
       setState(() {
         _isSearching = false;
       });
@@ -524,18 +555,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 60,
-          ),
+          const Icon(Icons.error_outline, color: Colors.red, size: 60),
           const SizedBox(height: 16),
           Text(
             'Failed to load recipes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
@@ -544,10 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _refreshHomeData,
-            child: Text('Retry'),
-          ),
+          ElevatedButton(onPressed: _refreshHomeData, child: Text('Retry')),
         ],
       ),
     );

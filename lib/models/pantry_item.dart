@@ -1,5 +1,6 @@
 class PantryItem {
   final String id;
+  final String? userId; // Add user_id field
   final String name;
   final String? imageUrl;
   final String? quantity;
@@ -7,7 +8,7 @@ class PantryItem {
   final String? price;
   final String? unit;
   final String? category;
-  
+
   // New fields for enhanced tracking
   final String? storageLocation;
   final int? totalQuantity;
@@ -18,6 +19,7 @@ class PantryItem {
 
   PantryItem({
     required this.id,
+    this.userId,
     required this.name,
     this.imageUrl,
     this.quantity,
@@ -32,16 +34,17 @@ class PantryItem {
     this.purchaseDate,
     this.lastUsedDate,
   });
-
   factory PantryItem.fromJson(Map<String, dynamic> json) {
     return PantryItem(
       id: json['id'],
+      userId: json['user_id'],
       name: json['name'],
       imageUrl: json['image_url'],
       quantity: json['quantity'],
-      expirationDate: json['expiration_date'] != null
-          ? DateTime.parse(json['expiration_date'])
-          : null,
+      expirationDate:
+          json['expiration_date'] != null
+              ? DateTime.parse(json['expiration_date'])
+              : null,
       price: json['price'],
       unit: json['unit'],
       category: json['category'],
@@ -49,18 +52,20 @@ class PantryItem {
       totalQuantity: json['total_quantity'],
       lowStockAlert: json['low_stock_alert'],
       expirationAlert: json['expiration_alert'],
-      purchaseDate: json['purchase_date'] != null
-          ? DateTime.parse(json['purchase_date'])
-          : null,
-      lastUsedDate: json['last_used_date'] != null
-          ? DateTime.parse(json['last_used_date'])
-          : null,
+      purchaseDate:
+          json['purchase_date'] != null
+              ? DateTime.parse(json['purchase_date'])
+              : null,
+      lastUsedDate:
+          json['last_used_date'] != null
+              ? DateTime.parse(json['last_used_date'])
+              : null,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'name': name,
       'image_url': imageUrl,
       'quantity': quantity,
@@ -80,6 +85,7 @@ class PantryItem {
   // Create a copy of pantry item with modifications
   PantryItem copyWith({
     String? id,
+    String? userId,
     String? name,
     String? imageUrl,
     String? quantity,
@@ -96,6 +102,7 @@ class PantryItem {
   }) {
     return PantryItem(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
       quantity: quantity ?? this.quantity,
@@ -111,16 +118,16 @@ class PantryItem {
       lastUsedDate: lastUsedDate ?? this.lastUsedDate,
     );
   }
-  
+
   // Helper method to check if the item is expiring soon (within 3 days)
   bool get isExpiringSoon {
     if (expirationDate == null) return false;
-    
+
     final now = DateTime.now();
     final difference = expirationDate!.difference(now).inDays;
     return difference >= 0 && difference <= 3;
   }
-  
+
   // Helper method to check if the item is low in stock
   bool get isLowStock {
     if (totalQuantity == null) return false;

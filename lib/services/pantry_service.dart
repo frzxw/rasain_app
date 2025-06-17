@@ -79,16 +79,25 @@ class PantryService extends ChangeNotifier {
     _clearError();
 
     try {
+      debugPrint('🔄 PantryService: Adding pantry item: ${item.name}');
       final newItem = await _dataService.addPantryItem(item);
 
       if (newItem != null) {
         _pantryItems.add(newItem);
+        debugPrint('✅ PantryService: Successfully added item: ${newItem.name}');
+        debugPrint(
+          '📊 PantryService: Total items in pantry: ${_pantryItems.length}',
+        );
         notifyListeners();
 
         // Refresh suggested recipes
         await fetchSuggestedRecipes();
+      } else {
+        debugPrint('❌ PantryService: Failed to add item - newItem is null');
+        _setError('Failed to add pantry item - response was null');
       }
     } catch (e) {
+      debugPrint('❌ PantryService: Error adding pantry item: $e');
       _setError('Failed to add pantry item: $e');
     } finally {
       _setLoading(false);

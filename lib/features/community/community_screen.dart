@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
-import '../../services/data_service.dart';
 import '../../models/community_post.dart';
+import '../../cubits/community/community_cubit.dart';
+import '../../cubits/community/community_state.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
 
@@ -17,57 +19,13 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  // Updated with Indonesian cuisine categories
-  final List<String> _tags = [
-    'Semua',
-    'Makanan Utama',
-    'Pedas',
-    'Tradisional',
-    'Sup',
-    'Daging',
-    'Manis',
-    'Minuman',
-  ];
-
-  String _selectedTag = 'Semua';
-  bool _isLoading = false;
-  List<CommunityPost> _posts = [];
-  String? _error;
-  // Data service for community posts
-  final DataService _dataService = DataService();
-
   @override
   void initState() {
     super.initState();
-    _loadPosts();
-  }
-
-  Future<void> _loadPosts() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    // Initialize community posts using CommunityCubit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CommunityCubit>().initialize();
     });
-    try {
-      final posts = await _dataService.getCommunityPosts();
-
-      // Filter posts by tag if needed
-      final filteredPosts =
-          _selectedTag == 'Semua'
-              ? posts
-              : posts.where((post) => post.category == _selectedTag).toList();
-
-      setState(() {
-        _posts = filteredPosts;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load posts. Please try again.';
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -75,59 +33,79 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const CustomAppBar(title: 'Community'),
-      body: Column(
-        children: [
-          // Filter Tags
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingM,
-              vertical: AppSizes.paddingS,
-            ),
-            child: FilterTags(
-              tags: _tags,
-              selectedTag: _selectedTag,
-              onTagSelected: (tag) {
-                setState(() {
-                  _selectedTag = tag;
-                });
-                _loadPosts();
-              },
-            ),
-          ),
+      body: BlocConsumer<CommunityCubit, CommunityState>(
+        listener: (context, state) {
+          // Handle any errors with snackbar or dialog if needed
+          if (state.status == CommunityStatus.error &&
+              state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          return Column(
+            children: [
+              // Filter Tags
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
+                ),
+                child: FilterTags(
+                  tags: state.categories,
+                  selectedTag: state.selectedCategory ?? 'Semua',
+                  onTagSelected: (tag) {
+                    context.read<CommunityCubit>().filterByCategory(tag);
+                  },
+                ),
+              ),
 
-          // Post List
-          Expanded(
-            child:
-                _isLoading && _posts.isEmpty
-                    ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+              // Post List
+              Expanded(
+                child:
+                    state.status == CommunityStatus.loading &&
+                            state.posts.isEmpty
+                        ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        )
+                        : state.status == CommunityStatus.error
+                        ? _buildErrorState(state.errorMessage)
+                        : state.posts.isEmpty
+                        ? _buildEmptyState(state.selectedCategory ?? 'Semua')
+                        : RefreshIndicator(
+                          onRefresh: () async {
+                            return context.read<CommunityCubit>().initialize();
+                          },
+                          color: AppColors.primary,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            itemCount: state.posts.length,
+                            itemBuilder: (context, index) {
+                              final post = state.posts[index];
+                              return PostCard(
+                                post: post,
+                                onLike:
+                                    () => context
+                                        .read<CommunityCubit>()
+                                        .toggleLikePost(post.id),
+                                onComment: () => _showComments(post),
+                                onShare: () => _sharePost(post),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    )
-                    : _error != null
-                    ? _buildErrorState()
-                    : _posts.isEmpty
-                    ? _buildEmptyState()
-                    : RefreshIndicator(
-                      onRefresh: _loadPosts,
-                      color: AppColors.primary,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(AppSizes.paddingM),
-                        itemCount: _posts.length,
-                        itemBuilder: (context, index) {
-                          return PostCard(
-                            post: _posts[index],
-                            onLike: () => _handleLikePost(_posts[index]),
-                            onComment: () => _showComments(_posts[index]),
-                            onShare: () => _sharePost(_posts[index]),
-                          );
-                        },
-                      ),
-                    ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreatePostDialog,
@@ -137,7 +115,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(String? errorMessage) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -157,7 +135,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              _error ?? 'Gagal memuat postingan',
+              errorMessage ?? 'Gagal memuat postingan',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
@@ -167,7 +145,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             CustomButton(
               label: 'Coba Lagi',
               icon: Icons.refresh,
-              onPressed: _loadPosts,
+              onPressed: () => context.read<CommunityCubit>().initialize(),
               variant: ButtonVariant.primary,
             ),
           ],
@@ -176,7 +154,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(String selectedCategory) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -190,15 +168,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              _selectedTag == 'Semua'
+              selectedCategory == 'Semua'
                   ? 'Belum ada postingan'
-                  : 'Belum ada postingan di $_selectedTag',
+                  : 'Belum ada postingan di $selectedCategory',
               style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginS),
             Text(
-              _selectedTag == 'Semua'
+              selectedCategory == 'Semua'
                   ? 'Jadilah yang pertama berbagi pengalaman memasak Anda!'
                   : 'Coba kategori lain atau jadilah yang pertama posting di sini',
               style: Theme.of(
@@ -218,33 +196,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
     );
   }
-
-  Future<void> _handleLikePost(CommunityPost post) async {
-    try {
-      // For now, just update locally (in a real app, this would call Supabase)
-      // await _supabaseService.togglePostLike(post.id, !post.isLiked);
-
-      // Optimistically update the post in the UI
-      final index = _posts.indexWhere((p) => p.id == post.id);
-      if (index != -1) {
-        final updatedPost = post.copyWith(
-          isLiked: !post.isLiked,
-          likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1,
-        );
-        setState(() {
-          _posts[index] = updatedPost;
-        });
-      }
-    } catch (e) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal memperbarui suka. Silakan coba lagi.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
+  // Like functionality is now handled directly by CommunityCubit.toggleLikePost
 
   void _showComments(CommunityPost post) {
     // Implementation for showing comments would go here
@@ -603,9 +555,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           },
         );
       },
-    );
-
-    // Refresh posts after creating a new one
-    _loadPosts();
+    ); // Refresh posts after creating a new one
+    context.read<CommunityCubit>().initialize();
   }
 }

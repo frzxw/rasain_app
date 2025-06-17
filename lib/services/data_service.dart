@@ -4,6 +4,7 @@ import '../models/pantry_item.dart';
 import '../models/user_profile.dart';
 import '../models/community_post.dart';
 import 'supabase_service.dart';
+import 'local_storage_service.dart';
 
 /// Service to handle data operations with Supabase database
 class DataService {
@@ -12,6 +13,7 @@ class DataService {
   DataService._internal();
 
   final SupabaseService _supabaseService = SupabaseService.instance;
+  final LocalStorageService _localStorage = LocalStorageService.instance;
 
   // Cache for frequently accessed data
   List<String>? _cachedKitchenTools;
@@ -82,21 +84,70 @@ class DataService {
   /// Get pantry items from Supabase
   Future<List<PantryItem>> getPantryItems() async {
     try {
-      final data = await _supabaseService.fetchAll('pantry_items');
-      return data.map((json) => PantryItem.fromJson(json)).toList();
+      // Get current user ID
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      debugPrint('👤 DataService: Getting pantry items for user: $userId');
+
+      if (userId == null) {
+        debugPrint(
+          '❌ DataService: User not authenticated, using local storage',
+        );
+        return await _localStorage.loadPantryItems();
+      }
+
+      final data = await _supabaseService.fetchWithFilter(
+        'pantry_items',
+        'user_id',
+        userId,
+      );
+      debugPrint('📦 DataService: Found ${data.length} pantry items for user');
+
+      final items = data.map((json) => PantryItem.fromJson(json)).toList();
+
+      // Save to local storage as backup
+      await _localStorage.savePantryItems(items);
+
+      return items;
     } catch (e) {
-      debugPrint('Error fetching pantry items: $e');
-      return [];
+      debugPrint(
+        '❌ DataService: Error fetching pantry items from Supabase: $e',
+      );
+      debugPrint('🔄 DataService: Falling back to local storage');
+      return await _localStorage.loadPantryItems();
     }
   }
 
   /// Add pantry item to Supabase
   Future<PantryItem?> addPantryItem(PantryItem item) async {
     try {
-      final data = await _supabaseService.insert('pantry_items', item.toJson());
+      debugPrint(
+        '🔄 DataService: Adding pantry item to database: ${item.name}',
+      );
+
+      // Get current user ID
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      debugPrint('� DataService: Current user ID: $userId');
+
+      if (userId == null) {
+        debugPrint(
+          '❌ DataService: User not authenticated, cannot add pantry item',
+        );
+        return null;
+      }
+
+      // Create item data with user_id
+      final itemData = item.toJson();
+      itemData['user_id'] = userId;
+
+      debugPrint('📝 DataService: Item data: $itemData');
+
+      final data = await _supabaseService.insert('pantry_items', itemData);
+      debugPrint('✅ DataService: Successfully inserted item to database');
+      debugPrint('📄 DataService: Response data: $data');
+
       return PantryItem.fromJson(data);
     } catch (e) {
-      debugPrint('Error adding pantry item: $e');
+      debugPrint('❌ DataService: Error adding pantry item: $e');
       return null;
     }
   }

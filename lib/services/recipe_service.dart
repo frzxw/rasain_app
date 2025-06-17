@@ -28,6 +28,7 @@ class RecipeService extends ChangeNotifier {
   Recipe? get currentRecipe => _currentRecipe;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
   // Initialize and load initial data
   Future<void> initialize() async {
     // Test koneksi dengan recipe yang ada di database
@@ -40,6 +41,66 @@ class RecipeService extends ChangeNotifier {
       fetchRecommendedRecipes(),
       fetchPantryRecipes(), // Added this call to initialize pantry recipes
     ]);
+  }
+
+  // Add a recipe to saved recipes
+  Future<void> addToSaved(String recipeId) async {
+    try {
+      final userId = _supabaseService.client.auth.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Update locally
+      _toggleRecipeSavedStatus(recipeId, true);
+      notifyListeners();
+
+      // Insert into saved_recipes table
+      await _supabaseService.client.from('saved_recipes').insert({
+        'user_id': userId,
+        'recipe_id': recipeId,
+        'saved_at': DateTime.now().toIso8601String(),
+      });
+
+      // Refresh saved recipes list
+      await fetchSavedRecipes();
+    } catch (e) {
+      _setError('Failed to save recipe: $e');
+      // Revert the local change if API call failed
+      _toggleRecipeSavedStatus(recipeId, false);
+      notifyListeners();
+    }
+  }
+
+  // Remove a recipe from saved recipes
+  Future<void> removeFromSaved(String recipeId) async {
+    try {
+      final userId = _supabaseService.client.auth.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Update locally
+      _toggleRecipeSavedStatus(recipeId, false);
+      notifyListeners();
+
+      // Delete from saved_recipes table
+      await _supabaseService.client
+          .from('saved_recipes')
+          .delete()
+          .eq('user_id', userId)
+          .eq('recipe_id', recipeId);
+
+      // Refresh saved recipes list
+      await fetchSavedRecipes();
+    } catch (e) {
+      _setError('Failed to unsave recipe: $e');
+      // Revert the local change if API call failed
+      _toggleRecipeSavedStatus(recipeId, true);
+      notifyListeners();
+    }
   }
 
   // Simple test untuk koneksi recipe dengan reviews

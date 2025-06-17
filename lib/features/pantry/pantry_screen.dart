@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
@@ -9,6 +10,8 @@ import '../../core/widgets/ingredient_tile.dart';
 import '../../services/pantry_service.dart';
 import '../../services/data_service.dart';
 import '../../models/pantry_item.dart';
+import '../../cubits/pantry/pantry_cubit.dart';
+import '../../cubits/pantry/pantry_state.dart';
 import 'widgets/pantry_input_form.dart';
 import 'widgets/pantry_suggestions.dart';
 
@@ -29,10 +32,9 @@ class _PantryScreenState extends State<PantryScreen> {
   void initState() {
     super.initState();
     _loadKitchenTools();
-    // Initialize pantry data
+    // Initialize pantry data using PantryCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final pantryService = Provider.of<PantryService>(context, listen: false);
-      pantryService.initialize();
+      context.read<PantryCubit>().initialize();
     });
   }
 
@@ -54,9 +56,15 @@ class _PantryScreenState extends State<PantryScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(title: 'My Pantry'),
-      body: Consumer<PantryService>(
-        builder: (context, pantryService, _) {
-          if (pantryService.isLoading && pantryService.pantryItems.isEmpty) {
+      body: BlocBuilder<PantryCubit, PantryState>(
+        builder: (context, state) {
+          // Keep reference to the pantry service for some operations
+          final pantryService = Provider.of<PantryService>(
+            context,
+            listen: false,
+          );
+
+          if (state.status == PantryStatus.loading && state.items.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -66,7 +74,7 @@ class _PantryScreenState extends State<PantryScreen> {
 
           return _showInputForm
               ? _buildInputForm()
-              : _buildPantryContent(pantryService);
+              : _buildPantryContent(state, pantryService);
         },
       ),
       floatingActionButton:
@@ -85,10 +93,10 @@ class _PantryScreenState extends State<PantryScreen> {
     );
   }
 
-  Widget _buildPantryContent(PantryService pantryService) {
+  Widget _buildPantryContent(PantryState state, PantryService pantryService) {
     return RefreshIndicator(
       onRefresh: () async {
-        await pantryService.initialize();
+        await context.read<PantryCubit>().initialize();
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
@@ -101,10 +109,8 @@ class _PantryScreenState extends State<PantryScreen> {
               // Quick Add Buttons
               _buildQuickAddSection(),
 
-              const SizedBox(height: AppSizes.marginL),
-
-              // Ingredients List
-              _buildIngredientsList(pantryService),
+              const SizedBox(height: AppSizes.marginL), // Ingredients List
+              _buildIngredientsList(state, pantryService),
 
               const SizedBox(height: AppSizes.marginL),
 
@@ -167,8 +173,8 @@ class _PantryScreenState extends State<PantryScreen> {
     );
   }
 
-  Widget _buildIngredientsList(PantryService pantryService) {
-    final pantryItems = pantryService.pantryItems;
+  Widget _buildIngredientsList(PantryState state, PantryService pantryService) {
+    final pantryItems = state.items;
 
     if (pantryItems.isEmpty) {
       return _buildEmptyPantryState();
@@ -304,15 +310,12 @@ class _PantryScreenState extends State<PantryScreen> {
         });
       },
       onSave: (PantryItem item) {
-        final pantryService = Provider.of<PantryService>(
-          context,
-          listen: false,
-        );
+        final pantryCubit = context.read<PantryCubit>();
 
         if (_editingItem != null) {
-          pantryService.updatePantryItem(item);
+          pantryCubit.updatePantryItem(item);
         } else {
-          pantryService.addPantryItem(item);
+          pantryCubit.addPantryItem(item);
         }
 
         setState(() {
@@ -378,7 +381,7 @@ class _PantryScreenState extends State<PantryScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  pantryService.deletePantryItem(item.id);
+                  context.read<PantryCubit>().deletePantryItem(item.id);
                 },
                 style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 child: const Text('Delete'),

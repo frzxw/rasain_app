@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:typed_data';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
-import '../../services/chat_service.dart';
+import '../../cubits/chat/chat_cubit.dart';
+import '../../cubits/chat/chat_state.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_input_box.dart';
 
@@ -16,14 +18,12 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
-
   @override
   void initState() {
     super.initState();
-    // Load chat history
+    // Load chat history using ChatCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chatService = Provider.of<ChatService>(context, listen: false);
-      chatService.initialize();
+      context.read<ChatCubit>().initialize();
     });
   }
 
@@ -50,22 +50,24 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // Chat messages
           Expanded(
-            child: Consumer<ChatService>(
-              builder: (context, chatService, _) {
-                final messages = chatService.messages;
-                
-                if (chatService.isLoading && messages.isEmpty) {
+            child: BlocBuilder<ChatCubit, ChatState>(
+              builder: (context, state) {
+                final messages = state.messages;
+
+                if (state.status == ChatStatus.loading && messages.isEmpty) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
                     ),
                   );
                 }
-                
+
                 if (messages.isEmpty) {
                   return _buildEmptyChatState();
                 }
-                
+
                 // Scroll to bottom when new messages arrive
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
@@ -76,7 +78,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     );
                   }
                 });
-                
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -85,28 +87,39 @@ class _ChatScreenState extends State<ChatScreen> {
                     final message = messages[index];
                     return ChatBubble(
                       message: message,
-                      onRatePositive: () => chatService.rateMessage(message.id, true),
-                      onRateNegative: () => chatService.rateMessage(message.id, false),
+                      onRatePositive:
+                          () => context.read<ChatCubit>().rateMessagePositive(
+                            message.id,
+                          ),
+                      onRateNegative:
+                          () => context.read<ChatCubit>().rateMessageNegative(
+                            message.id,
+                          ),
                     );
                   },
                 );
               },
             ),
           ),
-          
           // Loading indicator
-          Consumer<ChatService>(
-            builder: (context, chatService, _) {
-              if (chatService.isLoading && chatService.messages.isNotEmpty) {
+          BlocBuilder<ChatCubit, ChatState>(
+            builder: (context, state) {
+              if ((state.status == ChatStatus.loading ||
+                      state.status == ChatStatus.sending) &&
+                  state.messages.isNotEmpty) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.paddingS,
+                  ),
                   child: const Center(
                     child: SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
@@ -114,19 +127,17 @@ class _ChatScreenState extends State<ChatScreen> {
               }
               return const SizedBox.shrink();
             },
-          ),
-          
-          // Input box
+          ), // Input box
           Padding(
             padding: const EdgeInsets.all(AppSizes.paddingM),
             child: ChatInputBox(
               onSendText: (text) {
-                final chatService = Provider.of<ChatService>(context, listen: false);
-                chatService.sendTextMessage(text);
+                context.read<ChatCubit>().sendTextMessage(text);
               },
               onSendImage: (imageBytes, fileName) {
-                final chatService = Provider.of<ChatService>(context, listen: false);
-                chatService.sendImageMessage(imageBytes, fileName);
+                // Convert List<int> to Uint8List before passing to Cubit
+                final Uint8List uint8list = Uint8List.fromList(imageBytes);
+                context.read<ChatCubit>().sendImageMessage(uint8list);
               },
             ),
           ),
@@ -150,17 +161,17 @@ class _ChatScreenState extends State<ChatScreen> {
             const SizedBox(height: AppSizes.marginM),
             Text(
               'Tanya saya tentang masakan Indonesia!', // Changed to Indonesian
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
               'Saya dapat membantu dengan teknik memasak, pengganti bahan, atau panduan resep langkah demi langkah.', // Changed to Indonesian
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginL),
@@ -168,9 +179,13 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Updated with Indonesian cuisine suggestions
-                _buildSuggestionChip('Bagaimana cara membuat rendang yang empuk?'),
+                _buildSuggestionChip(
+                  'Bagaimana cara membuat rendang yang empuk?',
+                ),
                 _buildSuggestionChip('Apa bahan pengganti santan?'),
-                _buildSuggestionChip('Bagaimana cara membuat sambal yang enak?'),
+                _buildSuggestionChip(
+                  'Bagaimana cara membuat sambal yang enak?',
+                ),
               ],
             ),
           ],
@@ -184,8 +199,7 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.only(bottom: AppSizes.paddingS),
       child: InkWell(
         onTap: () {
-          final chatService = Provider.of<ChatService>(context, listen: false);
-          chatService.sendTextMessage(suggestion);
+          context.read<ChatCubit>().sendTextMessage(suggestion);
         },
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         child: Container(
@@ -254,27 +268,27 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _confirmClearChat() async {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Chat'), // Changed to Indonesian
-        content: const Text('Apakah Anda yakin ingin menghapus riwayat chat? Tindakan ini tidak dapat dibatalkan.'), // Changed to Indonesian
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'), // Changed to Indonesian
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hapus Chat'), // Changed to Indonesian
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus riwayat chat? Tindakan ini tidak dapat dibatalkan.',
+            ), // Changed to Indonesian
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'), // Changed to Indonesian
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.read<ChatCubit>().clearChatHistory();
+                },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('Hapus'), // Changed to Indonesian
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              final chatService = Provider.of<ChatService>(context, listen: false);
-              chatService.clearChatHistory();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
-            child: const Text('Hapus'), // Changed to Indonesian
-          ),
-        ],
-      ),
     );
   }
 }

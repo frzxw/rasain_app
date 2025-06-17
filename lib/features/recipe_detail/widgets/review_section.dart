@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/widgets/auth_dialog.dart';
 import '../../../models/recipe.dart';
 import '../../../services/recipe_service.dart';
+import '../../../cubits/auth/auth_cubit.dart';
+import '../../../cubits/auth/auth_state.dart';
 
 class ReviewSection extends StatefulWidget {
   final Recipe recipe;
@@ -33,25 +37,29 @@ class _ReviewSectionState extends State<ReviewSection> {
     _loadReviews();
   }
 
-  void _loadReviews() async {
+  Future<void> _loadReviews() async {
     setState(() {
       _isLoadingReviews = true;
     });
 
     try {
       final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);
-      setState(() {
-        _reviews = reviews;
-        _isLoadingReviews = false;
-      });
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _isLoadingReviews = false;
+        });
+      }
       debugPrint(
         '✅ Loaded ${reviews.length} reviews for recipe ${widget.recipe.id}',
       );
     } catch (e) {
       debugPrint('❌ Error loading reviews: $e');
-      setState(() {
-        _isLoadingReviews = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
     }
   }
 
@@ -63,22 +71,31 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Rating Summary
-        _buildRatingSummary(context),
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, authState) {
+        final isAuthenticated = authState.status == AuthStatus.authenticated;
 
-        const SizedBox(height: AppSizes.marginL),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Rating Summary
+            _buildRatingSummary(context),
 
-        // Add Review Section
-        if (!_hasRated) _buildAddReviewSection(context),
+            const SizedBox(height: AppSizes.marginL),
 
-        const SizedBox(height: AppSizes.marginL),
+            // Add Review Section
+            if (isAuthenticated && !_hasRated)
+              _buildAddReviewSection(context)
+            else if (!isAuthenticated)
+              _buildLoginPromptSection(context),
 
-        // Review List with real or sample review data
-        _buildReviewsList(context),
-      ],
+            const SizedBox(height: AppSizes.marginL),
+
+            // Review List with real or sample review data
+            _buildReviewsList(context),
+          ],
+        );
+      },
     );
   }
 
@@ -334,6 +351,59 @@ class _ReviewSectionState extends State<ReviewSection> {
     );
   }
 
+  Widget _buildLoginPromptSection(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.account_circle_outlined,
+            size: 48,
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          Text(
+            'Masuk untuk Memberikan Ulasan',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Text(
+            'Bagikan pengalaman Anda dengan resep ini dan bantu pengguna lain.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          ElevatedButton(
+            onPressed: () {
+              // Show login dialog instead of navigating to profile
+              AuthDialog.showLoginDialog(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingL,
+                vertical: AppSizes.paddingM,
+              ),
+            ),
+            child: const Text('Masuk'),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _getRatingDescription(double rating) {
     if (rating == 5) return 'Sangat Bagus!';
     if (rating == 4) return 'Bagus';
@@ -352,7 +422,11 @@ class _ReviewSectionState extends State<ReviewSection> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: AppSizes.marginM),
-          const Center(child: CircularProgressIndicator()),
+          const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
         ],
       );
     }
@@ -363,7 +437,22 @@ class _ReviewSectionState extends State<ReviewSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ulasan Terbaru', style: Theme.of(context).textTheme.titleMedium),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Ulasan Terbaru',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (reviews.isNotEmpty)
+              Text(
+                '${reviews.length} ulasan',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+          ],
+        ),
         const SizedBox(height: AppSizes.marginM),
 
         reviews.isNotEmpty
@@ -391,7 +480,7 @@ class _ReviewSectionState extends State<ReviewSection> {
                       ),
                     ),
                   )
-                else if (_showAllReviews)
+                else if (_showAllReviews && reviews.length > 2)
                   Padding(
                     padding: const EdgeInsets.only(top: AppSizes.paddingS),
                     child: Center(
@@ -414,8 +503,9 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   Widget _buildReviewItem(Map<String, dynamic> review) {
     final rating = review['rating']?.toDouble() ?? 0.0;
-    final reviewText = review['review_text'] ?? 'Tidak ada komentar';
-    final createdAt = review['created_at'] ?? '';
+    final reviewText =
+        review['comment'] ?? review['review_text'] ?? 'Tidak ada komentar';
+    final createdAt = review['date'] ?? review['created_at'] ?? '';
     final userId = review['user_id'] ?? '';
 
     // Format date
@@ -430,13 +520,16 @@ class _ReviewSectionState extends State<ReviewSection> {
           formattedDate = '${difference.inDays} hari yang lalu';
         } else if (difference.inHours > 0) {
           formattedDate = '${difference.inHours} jam yang lalu';
-        } else {
+        } else if (difference.inMinutes > 0) {
           formattedDate = '${difference.inMinutes} menit yang lalu';
+        } else {
+          formattedDate = 'Baru saja';
         }
       } catch (e) {
         formattedDate = createdAt;
       }
     }
+
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       decoration: BoxDecoration(
@@ -493,10 +586,11 @@ class _ReviewSectionState extends State<ReviewSection> {
             ],
           ),
 
-          const SizedBox(height: AppSizes.marginM),
-
-          // Review Comment
-          Text(reviewText, style: Theme.of(context).textTheme.bodyMedium),
+          if (reviewText.isNotEmpty && reviewText != 'Tidak ada komentar') ...[
+            const SizedBox(height: AppSizes.marginM),
+            // Review Comment
+            Text(reviewText, style: Theme.of(context).textTheme.bodyMedium),
+          ],
         ],
       ),
     );
@@ -538,6 +632,18 @@ class _ReviewSectionState extends State<ReviewSection> {
   }
 
   void _submitReview() async {
+    // Check if user is authenticated first
+    final authState = context.read<AuthCubit>().state;
+    if (authState.status != AuthStatus.authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda harus masuk untuk memberikan ulasan'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     if (_reviewController.text.trim().isEmpty && _userRating <= 0) {
       // Show error for empty submission
       ScaffoldMessenger.of(context).showSnackBar(
@@ -549,19 +655,33 @@ class _ReviewSectionState extends State<ReviewSection> {
       return;
     }
 
+    if (_userRating <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mohon berikan rating untuk resep ini'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     try {
       // Submit review to Supabase
-      await _recipeService.submitRecipeReview(
+      final success = await _recipeService.submitRecipeReview(
         widget.recipe.id,
         _userRating,
         _reviewController.text.trim(),
       );
 
+      if (!success) {
+        throw Exception('Gagal mengirim ulasan');
+      }
+
       // Call the callback to rate the recipe (for updating local state)
       widget.onRateRecipe(_userRating, _reviewController.text.trim());
 
       // Reload reviews to show the new one
-      _loadReviews();
+      await _loadReviews();
 
       // Reset form and update state
       setState(() {
@@ -571,20 +691,24 @@ class _ReviewSectionState extends State<ReviewSection> {
       });
 
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Terima kasih atas ulasan Anda!'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Terima kasih atas ulasan Anda!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
     } catch (e) {
       // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengirim ulasan: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim ulasan: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 }

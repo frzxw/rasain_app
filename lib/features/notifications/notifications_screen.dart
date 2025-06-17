@@ -1,11 +1,11 @@
-// filepath: c:\Users\hp\Projects\rasain_app\lib\features\notifications\notifications_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
-import '../../services/notification_service.dart';
+import '../../cubits/notification/notification_cubit.dart';
+import '../../cubits/notification/notification_state.dart';
 import '../../models/notification.dart';
 import '../../routes.dart';
 
@@ -18,17 +18,18 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _filterUnreadOnly = false;
-
   @override
   void initState() {
     super.initState();
-    // Initialize notifications data
+    // Initialize notifications data using NotificationCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notificationService = Provider.of<NotificationService>(context, listen: false);
-      if (notificationService.hasNewNotifications) {
-        // Auto mark as read when opening the screen
-        notificationService.markAllAsRead();
-      }
+      final cubit = context.read<NotificationCubit>();
+      cubit.initialize().then((_) {
+        if (cubit.state.hasNewNotifications) {
+          // Auto mark as read when opening the screen
+          cubit.markAllAsRead();
+        }
+      });
     });
   }
 
@@ -43,7 +44,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           IconButton(
             icon: Icon(
               _filterUnreadOnly ? Icons.filter_alt : Icons.filter_alt_outlined,
-              color: _filterUnreadOnly ? AppColors.primary : AppColors.textSecondary,
+              color:
+                  _filterUnreadOnly
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
             ),
             onPressed: () {
               setState(() {
@@ -52,7 +56,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
             tooltip: 'Filter notifikasi yang belum dibaca',
           ),
-          
+
           // Delete All Menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -60,33 +64,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               if (value == 'clear_all') {
                 _confirmClearAll(context);
               } else if (value == 'mark_all_read') {
-                Provider.of<NotificationService>(context, listen: false).markAllAsRead();
+                context.read<NotificationCubit>().markAllAsRead();
               }
             },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'mark_all_read',
-                child: ListTile(
-                  leading: Icon(Icons.check_circle_outline),
-                  title: Text('Tandai semua dibaca'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'clear_all',
-                child: ListTile(
-                  leading: Icon(Icons.delete_outline),
-                  title: Text('Hapus semua'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
+            itemBuilder:
+                (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'mark_all_read',
+                    child: ListTile(
+                      leading: Icon(Icons.check_circle_outline),
+                      title: Text('Tandai semua dibaca'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'clear_all',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline),
+                      title: Text('Hapus semua'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
-      body: Consumer<NotificationService>(
-        builder: (context, notificationService, _) {
-          if (notificationService.isLoading) {
+      body: BlocBuilder<NotificationCubit, NotificationState>(
+        builder: (context, state) {
+          if (state.status == NotificationStatus.loading) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -94,30 +99,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             );
           }
 
-          final notifications = _filterUnreadOnly
-              ? notificationService.notifications.where((n) => !n.isRead).toList()
-              : notificationService.notifications;
+          final notifications =
+              _filterUnreadOnly
+                  ? state.notifications.where((n) => !n.isRead).toList()
+                  : state.notifications;
 
           if (notifications.isEmpty) {
             return _buildEmptyState(context);
           }
-
           return RefreshIndicator(
             onRefresh: () async {
-              await notificationService.initialize();
+              await context.read<NotificationCubit>().initialize();
             },
             color: AppColors.primary,
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSizes.paddingM),
               itemCount: notifications.length,
-              separatorBuilder: (context, index) => const SizedBox(height: AppSizes.marginS),
+              separatorBuilder:
+                  (context, index) => const SizedBox(height: AppSizes.marginS),
               itemBuilder: (context, index) {
                 final notification = notifications[index];
-                return _buildNotificationItem(
-                  context, 
-                  notification,
-                  notificationService,
-                );
+                return _buildNotificationItem(context, notification);
               },
             ),
           );
@@ -129,8 +131,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildNotificationItem(
     BuildContext context,
     AppNotification notification,
-    NotificationService notificationService,
   ) {
+    final notificationCubit = context.read<NotificationCubit>();
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
@@ -148,7 +150,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
       ),
       onDismissed: (_) {
-        notificationService.deleteNotification(notification.id);
+        notificationCubit.deleteNotification(notification.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Notifikasi dihapus'),
@@ -157,7 +159,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: () {
                 // This would need to restore the deleted notification
                 // For demo purposes, we'll just refresh the screen
-                notificationService.initialize();
+                notificationCubit.initialize();
               },
             ),
           ),
@@ -167,7 +169,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           side: BorderSide(
-            color: notification.isRead ? AppColors.border : AppColors.primary.withOpacity(0.5),
+            color:
+                notification.isRead
+                    ? AppColors.border
+                    : AppColors.primary.withOpacity(0.5),
             width: notification.isRead ? 1 : 2,
           ),
         ),
@@ -194,9 +199,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     size: AppSizes.iconM,
                   ),
                 ),
-                
+
                 const SizedBox(width: AppSizes.marginM),
-                
+
                 // Notification Content
                 Expanded(
                   child: Column(
@@ -210,91 +215,104 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             child: Text(
                               notification.title,
                               style: TextStyle(
-                                fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                                fontWeight:
+                                    notification.isRead
+                                        ? FontWeight.normal
+                                        : FontWeight.bold,
                                 fontSize: 16,
                               ),
                             ),
                           ),
                           Text(
-                            timeago.format(notification.timestamp, locale: 'id'),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
+                            timeago.format(
+                              notification.timestamp,
+                              locale: 'id',
                             ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: AppSizes.marginXS),
-                      
+
                       // Message
                       Text(
                         notification.message,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      
+
                       // Image if available
                       if (notification.imageUrl != null)
                         Padding(
                           padding: const EdgeInsets.only(top: AppSizes.marginM),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusS,
+                            ),
                             child: Image.network(
                               notification.imageUrl!,
                               height: 120,
                               width: double.infinity,
                               fit: BoxFit.cover,
-                              errorBuilder: (ctx, error, _) => Container(
-                                height: 80,
-                                width: double.infinity,
-                                color: AppColors.surface,
-                                child: const Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
+                              errorBuilder:
+                                  (ctx, error, _) => Container(
+                                    height: 80,
+                                    width: double.infinity,
+                                    color: AppColors.surface,
+                                    child: const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
                             ),
                           ),
                         ),
-                      
+
                       const SizedBox(height: AppSizes.marginM),
-                      
+
                       // Action Buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           // View Button
                           OutlinedButton(
-                            onPressed: () => _handleNotificationTap(notification),
+                            onPressed:
+                                () => _handleNotificationTap(notification),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSizes.paddingM,
                                 vertical: AppSizes.paddingXS,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusL,
+                                ),
                               ),
                               side: BorderSide(
-                                color: notification.isRead 
-                                    ? AppColors.border
-                                    : notification.typeColor,
+                                color:
+                                    notification.isRead
+                                        ? AppColors.border
+                                        : notification.typeColor,
                               ),
                             ),
                             child: Text(
                               _getActionButtonText(notification.type),
                               style: TextStyle(
-                                color: notification.isRead 
-                                    ? AppColors.textPrimary
-                                    : notification.typeColor,
+                                color:
+                                    notification.isRead
+                                        ? AppColors.textPrimary
+                                        : notification.typeColor,
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: AppSizes.marginS),
-                          
+
                           // Mark as Read/Unread toggle
                           IconButton(
                             icon: Icon(
-                              notification.isRead 
+                              notification.isRead
                                   ? Icons.visibility_off_outlined
                                   : Icons.check_circle_outline,
                               size: AppSizes.iconS,
@@ -306,17 +324,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 // For demo purposes, we'll just show a message
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Fitur tandai belum dibaca akan segera hadir'),
+                                    content: Text(
+                                      'Fitur tandai belum dibaca akan segera hadir',
+                                    ),
                                     duration: Duration(seconds: 1),
                                   ),
                                 );
                               } else {
-                                notificationService.markAsRead(notification.id);
+                                notificationCubit.markAsRead(notification.id);
                               }
                             },
-                            tooltip: notification.isRead 
-                                ? 'Tandai belum dibaca'
-                                : 'Tandai sudah dibaca',
+                            tooltip:
+                                notification.isRead
+                                    ? 'Tandai belum dibaca'
+                                    : 'Tandai sudah dibaca',
                           ),
                         ],
                       ),
@@ -352,9 +373,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   void _handleNotificationTap(AppNotification notification) {
     // Mark notification as read
-    Provider.of<NotificationService>(context, listen: false)
-        .markAsRead(notification.id);
-    
+    context.read<NotificationCubit>().markAsRead(notification.id);
+
     // Navigate based on notification type
     switch (notification.type) {
       case NotificationType.recipeRecommendation:
@@ -367,13 +387,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         }
         break;
-      
+
       case NotificationType.expirationWarning:
       case NotificationType.lowStock:
         // Navigate to pantry view
         Navigator.pushNamed(context, AppRoutes.pantry);
         break;
-        
+
       case NotificationType.review:
         // Navigate to recipe reviews
         if (notification.relatedItemId != null) {
@@ -384,7 +404,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         }
         break;
-        
+
       case NotificationType.achievement:
       case NotificationType.system:
         // Just mark as read, no specific action
@@ -395,26 +415,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _confirmClearAll(BuildContext context) async {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Semua Notifikasi'),
-        content: const Text('Anda yakin ingin menghapus semua notifikasi? Tindakan ini tidak dapat dibatalkan.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Provider.of<NotificationService>(context, listen: false).clearAll();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hapus Semua Notifikasi'),
+            content: const Text(
+              'Anda yakin ingin menghapus semua notifikasi? Tindakan ini tidak dapat dibatalkan.',
             ),
-            child: const Text('Hapus Semua'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.read<NotificationCubit>().clearAll();
+                },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('Hapus Semua'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -432,7 +453,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             const SizedBox(height: AppSizes.marginM),
             Text(
-              _filterUnreadOnly 
+              _filterUnreadOnly
                   ? 'Tidak ada notifikasi yang belum dibaca'
                   : 'Tidak ada notifikasi',
               style: Theme.of(context).textTheme.headlineSmall,
@@ -443,9 +464,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               _filterUnreadOnly
                   ? 'Semua notifikasi telah ditandai sebagai dibaca'
                   : 'Anda akan menerima notifikasi tentang bahan yang hampir kadaluarsa, stok yang menipis, atau rekomendasi resep',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSizes.marginL),
