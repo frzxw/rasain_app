@@ -278,28 +278,23 @@ class DataService {
   /// Get ingredients by category with caching
   Future<List<String>> getIngredientsByCategory(String category) async {
     List<String>? cachedList;
-    String tableName;
+    final lowerCaseCategory = category.toLowerCase();
 
-    switch (category.toLowerCase()) {
+    switch (lowerCaseCategory) {
       case 'vegetables':
         cachedList = _cachedVegetables;
-        tableName = 'ingredient_categories';
         break;
       case 'fruits':
         cachedList = _cachedFruits;
-        tableName = 'ingredient_categories';
         break;
       case 'meat':
         cachedList = _cachedMeats;
-        tableName = 'ingredient_categories';
         break;
       case 'dairy':
         cachedList = _cachedDairy;
-        tableName = 'ingredient_categories';
         break;
       case 'spices':
         cachedList = _cachedSpices;
-        tableName = 'ingredient_categories';
         break;
       default:
         return [];
@@ -311,16 +306,16 @@ class DataService {
 
     try {
       final response = await _supabaseService.client
-          .from(tableName)
+          .from('ingredient_categories')
           .select('name')
-          .eq('category', category.toLowerCase())
+          .eq('category', lowerCaseCategory)
           .order('name');
 
       final result =
           response.map<String>((item) => item['name'] as String).toList();
 
       // Cache the result
-      switch (category.toLowerCase()) {
+      switch (lowerCaseCategory) {
         case 'vegetables':
           _cachedVegetables = result;
           break;

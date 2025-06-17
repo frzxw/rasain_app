@@ -110,18 +110,19 @@ CREATE INDEX idx_user_profiles_name ON user_profiles(name);
 -- ========================================
 CREATE TABLE recipes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) UNIQUE,
-    image_url TEXT,
-    rating DECIMAL(3,2) DEFAULT 0.00,
-    review_count INTEGER DEFAULT 0,
-    estimated_cost VARCHAR(100),
-    cook_time VARCHAR(100),
-    servings INTEGER,
-    tingkat_kesulitan difficulty_level DEFAULT 'mudah',
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
     description TEXT,
-    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    image_url TEXT,
+    video_url TEXT,
+    rating NUMERIC(2, 1) DEFAULT 0.0,
+    cook_time INTEGER, -- in minutes
+    servings INTEGER,
+    tingkat_kesulitan difficulty_level,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_published BOOLEAN DEFAULT TRUE,
+    created_by UUID REFERENCES auth.users(id),
+    categories TEXT[], -- Added categories column
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -150,6 +151,73 @@ CREATE INDEX idx_recipes_cook_time ON recipes(cook_time);
 CREATE INDEX idx_recipes_servings ON recipes(servings);
 CREATE INDEX idx_recipes_difficulty ON recipes(tingkat_kesulitan);
 CREATE INDEX idx_recipes_created_by ON recipes(created_by);
+CREATE INDEX idx_recipes_categories ON recipes USING GIN(categories); -- Index for categories
+
+-- ========================================
+-- Kitchen Tools Table
+-- ========================================
+CREATE TABLE kitchen_tools (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE kitchen_tools ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for kitchen_tools (public read)
+CREATE POLICY "Anyone can view kitchen tools" ON kitchen_tools
+    FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can manage kitchen tools" ON kitchen_tools
+    FOR ALL USING (auth.role() = 'authenticated');
+
+-- Indexes for kitchen_tools
+CREATE INDEX idx_kitchen_tools_name ON kitchen_tools(name);
+
+-- ========================================
+-- Common Ingredients Table
+-- ========================================
+CREATE TABLE common_ingredients (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE common_ingredients ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for common_ingredients (public read)
+CREATE POLICY "Anyone can view common ingredients" ON common_ingredients
+    FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can manage common ingredients" ON common_ingredients
+    FOR ALL USING (auth.role() = 'authenticated');
+
+-- Indexes for common_ingredients
+CREATE INDEX idx_common_ingredients_name ON common_ingredients(name);
+
+-- ========================================
+-- Ingredient Categories Table
+-- ========================================
+CREATE TABLE ingredient_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE ingredient_categories ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for ingredient_categories (public read)
+CREATE POLICY "Anyone can view ingredient categories" ON ingredient_categories
+    FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can manage ingredient categories" ON ingredient_categories
+    FOR ALL USING (auth.role() = 'authenticated');
+
+-- Indexes for ingredient_categories
+CREATE INDEX idx_ingredient_categories_category ON ingredient_categories(category);
+CREATE INDEX idx_ingredient_categories_name ON ingredient_categories(name);
+
 
 -- ========================================
 -- Recipe Categories Table
@@ -237,339 +305,6 @@ CREATE POLICY "Anyone can view recipe instructions" ON recipe_instructions
 
 CREATE POLICY "Authenticated users can manage recipe instructions" ON recipe_instructions
     FOR ALL USING (auth.role() = 'authenticated');
-
--- Indexes for recipe_instructions
-CREATE INDEX idx_recipe_instructions_recipe_steps ON recipe_instructions(recipe_id, step_number);
-
--- ========================================
--- Tools (Cooking Tools/Equipment) Table
--- ========================================
-CREATE TABLE tools (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
-    image_url TEXT,
-    category VARCHAR(100), -- e.g., 'peralatan_masak', 'peralatan_potong', 'peralatan_bakar'
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for tools (public read, authenticated create/update)
-DROP POLICY IF EXISTS "Anyone can view tools" ON tools;
-DROP POLICY IF EXISTS "Authenticated users can create tools" ON tools;
-DROP POLICY IF EXISTS "Authenticated users can update tools" ON tools;
-
-CREATE POLICY "Anyone can view tools" ON tools
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can create tools" ON tools
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Authenticated users can update tools" ON tools
-    FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Indexes for tools
-CREATE INDEX idx_tools_name ON tools(name);
-CREATE INDEX idx_tools_category ON tools(category);
-
--- ========================================
--- Recipe Tools (Many-to-Many relationship)
--- ========================================
-CREATE TABLE recipe_tools (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-    tool_id UUID NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
-    is_required BOOLEAN DEFAULT TRUE, -- Whether this tool is required or optional
-    notes TEXT, -- Additional notes about how the tool is used
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_recipe_tool UNIQUE (recipe_id, tool_id)
-);
-
--- Enable RLS
-ALTER TABLE recipe_tools ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for recipe_tools
-DROP POLICY IF EXISTS "Anyone can view recipe tools" ON recipe_tools;
-DROP POLICY IF EXISTS "Authenticated users can manage recipe tools" ON recipe_tools;
-
-CREATE POLICY "Anyone can view recipe tools" ON recipe_tools
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can manage recipe tools" ON recipe_tools
-    FOR ALL USING (auth.role() = 'authenticated');
-
--- Indexes for recipe_tools
-CREATE INDEX idx_recipe_tools_recipe_id ON recipe_tools(recipe_id);
-CREATE INDEX idx_recipe_tools_tool_id ON recipe_tools(tool_id);
-CREATE INDEX idx_recipe_tools_required ON recipe_tools(is_required);
-
--- ========================================
--- Pantry Items Table
--- ========================================
-CREATE TABLE pantry_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    image_url TEXT,
-    quantity VARCHAR(100),
-    expiration_date DATE,
-    price VARCHAR(100),
-    unit VARCHAR(50),
-    category VARCHAR(100),
-    storage_location VARCHAR(255),
-    total_quantity INTEGER,
-    low_stock_alert BOOLEAN DEFAULT FALSE,
-    expiration_alert BOOLEAN DEFAULT FALSE,
-    purchase_date DATE,
-    last_used_date DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE pantry_items ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for pantry_items
-CREATE POLICY "Users can view own pantry items" ON pantry_items
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage own pantry items" ON pantry_items
-    FOR ALL USING (auth.uid() = user_id);
-
--- Indexes for pantry_items
-CREATE INDEX idx_pantry_items_user_id ON pantry_items(user_id);
-CREATE INDEX idx_pantry_items_name ON pantry_items(name);
-CREATE INDEX idx_pantry_items_category ON pantry_items(category);
-CREATE INDEX idx_pantry_items_expiration ON pantry_items(expiration_date);
-CREATE INDEX idx_pantry_items_storage_location ON pantry_items(storage_location);
-
--- ========================================
--- Community Posts Table
--- ========================================
-CREATE TABLE community_posts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    user_name VARCHAR(255) NOT NULL,
-    user_image_url TEXT,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    content TEXT,
-    image_url TEXT,
-    category VARCHAR(100),
-    like_count INTEGER DEFAULT 0,
-    comment_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE community_posts ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for community_posts
-CREATE POLICY "Anyone can view community posts" ON community_posts
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can create posts" ON community_posts
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
-
-CREATE POLICY "Users can update own posts" ON community_posts
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own posts" ON community_posts
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Indexes for community_posts
-CREATE INDEX idx_community_posts_user_id ON community_posts(user_id);
-CREATE INDEX idx_community_posts_timestamp ON community_posts(timestamp);
-CREATE INDEX idx_community_posts_category ON community_posts(category);
-CREATE INDEX idx_community_posts_like_count ON community_posts(like_count);
-
--- ========================================
--- Community Post Tagged Ingredients Table
--- ========================================
-CREATE TABLE post_tagged_ingredients (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
-    ingredient_name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE post_tagged_ingredients ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for post_tagged_ingredients
-CREATE POLICY "Anyone can view post tagged ingredients" ON post_tagged_ingredients
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can manage post tagged ingredients" ON post_tagged_ingredients
-    FOR ALL USING (auth.role() = 'authenticated');
-
--- Indexes for post_tagged_ingredients
-CREATE INDEX idx_post_tagged_ingredients_post_id ON post_tagged_ingredients(post_id);
-CREATE INDEX idx_post_tagged_ingredients_name ON post_tagged_ingredients(ingredient_name);
-
--- ========================================
--- Community Post Likes Table
--- ========================================
-CREATE TABLE post_likes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_user_post_like UNIQUE (user_id, post_id)
-);
-
--- Enable RLS
-ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for post_likes
-CREATE POLICY "Anyone can view post likes" ON post_likes
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can manage own likes" ON post_likes
-    FOR ALL USING (auth.uid() = user_id);
-
--- Indexes for post_likes
-CREATE INDEX idx_post_likes_post_id ON post_likes(post_id);
-CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
-
--- ========================================
--- Chat Messages Table
--- ========================================
-CREATE TABLE chat_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    message_type message_type NOT NULL DEFAULT 'text',
-    sender message_sender NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    image_url TEXT,
-    is_rated_positive BOOLEAN,
-    is_rated_negative BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for chat_messages
-CREATE POLICY "Users can view own chat messages" ON chat_messages
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create own chat messages" ON chat_messages
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own chat messages" ON chat_messages
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Indexes for chat_messages
-CREATE INDEX idx_chat_messages_user_id ON chat_messages(user_id);
-CREATE INDEX idx_chat_messages_timestamp ON chat_messages(timestamp);
-CREATE INDEX idx_chat_messages_sender ON chat_messages(sender);
-CREATE INDEX idx_chat_messages_type ON chat_messages(message_type);
-
--- ========================================
--- Notifications Table
--- ========================================
-CREATE TABLE notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    notification_type notification_type NOT NULL,
-    image_url TEXT,
-    action_url TEXT,
-    related_item_id UUID,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for notifications
-CREATE POLICY "Users can view own notifications" ON notifications
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "System can create notifications" ON notifications
-    FOR INSERT WITH CHECK (true);
-
-CREATE POLICY "Users can update own notifications" ON notifications
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Indexes for notifications
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_timestamp ON notifications(timestamp);
-CREATE INDEX idx_notifications_type ON notifications(notification_type);
-CREATE INDEX idx_notifications_is_read ON notifications(is_read);
-CREATE INDEX idx_notifications_related_item ON notifications(related_item_id);
-
--- ========================================
--- User Saved Recipes Table (Many-to-Many relationship)
--- ========================================
-CREATE TABLE user_saved_recipes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-    saved_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_user_recipe_save UNIQUE (user_id, recipe_id)
-);
-
--- Enable RLS
-ALTER TABLE user_saved_recipes ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for user_saved_recipes
-CREATE POLICY "Users can view own saved recipes" ON user_saved_recipes
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can manage own saved recipes" ON user_saved_recipes
-    FOR ALL USING (auth.uid() = user_id);
-
--- Indexes for user_saved_recipes
-CREATE INDEX idx_user_saved_recipes_user_id ON user_saved_recipes(user_id);
-CREATE INDEX idx_user_saved_recipes_recipe_id ON user_saved_recipes(recipe_id);
-
--- ========================================
--- Recipe Reviews Table
--- ========================================
-CREATE TABLE recipe_reviews (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    rating DECIMAL(2,1) NOT NULL CHECK (rating >= 0.0 AND rating <= 5.0),
-    review_text TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    CONSTRAINT unique_user_recipe_review UNIQUE (user_id, recipe_id)
-);
-
--- Enable RLS
-ALTER TABLE recipe_reviews ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for recipe_reviews
-CREATE POLICY "Anyone can view recipe reviews" ON recipe_reviews
-    FOR SELECT USING (true);
-
-CREATE POLICY "Authenticated users can create reviews" ON recipe_reviews
-    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
-
-CREATE POLICY "Users can update own reviews" ON recipe_reviews
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own reviews" ON recipe_reviews
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Indexes for recipe_reviews
-CREATE INDEX idx_recipe_reviews_recipe_id ON recipe_reviews(recipe_id);
-CREATE INDEX idx_recipe_reviews_user_id ON recipe_reviews(user_id);
-CREATE INDEX idx_recipe_reviews_rating ON recipe_reviews(rating);
 
 -- ========================================
 -- Functions for Updating Timestamps

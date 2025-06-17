@@ -112,6 +112,18 @@ class RecipeCubit extends Cubit<RecipeState> {
     }
   }
 
+  Future<void> searchRecipesByImage(List<int> imageBytes, String imageName) async {
+    emit(state.copyWith(status: RecipeStatus.loading));
+    try {
+      final searchResults = await _recipeService.searchRecipesByImage(imageBytes, imageName);
+      emit(state.copyWith(recipes: searchResults, status: RecipeStatus.loaded));
+    } catch (e) {
+      emit(
+        state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
+      );
+    }
+  }
+
   Recipe? getRecipeById(String id) {
     try {
       return state.recipes.firstWhere((recipe) => recipe.id == id);

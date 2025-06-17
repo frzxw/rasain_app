@@ -6,28 +6,28 @@ import '../models/user_profile.dart';
 
 class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = SupabaseConfig.client;
-  
+
   UserProfile? _currentUser;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _error;
-  
+
   AuthService() {
     // Listen to auth state changes
     _supabase.auth.onAuthStateChange.listen((event) {
       _handleAuthStateChange(event);
     });
-    
+
     // Check current session on initialization
     _checkCurrentSession();
   }
-  
+
   // Getters
   UserProfile? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get error => _error;
-  
+
   // Handle auth state changes
   void _handleAuthStateChange(AuthState event) {
     if (event.event == AuthChangeEvent.signedIn) {
@@ -38,7 +38,7 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
   // Check current session
   Future<void> _checkCurrentSession() async {
     final session = _supabase.auth.currentSession;
@@ -46,18 +46,19 @@ class AuthService extends ChangeNotifier {
       await _loadUserProfile(session!.user.id);
     }
   }
-  
+
   // Load user profile from database
   Future<void> _loadUserProfile(String? userId) async {
     if (userId == null) return;
-    
+
     try {
-      final response = await _supabase
-          .from('user_profiles')
-          .select()
-          .eq('id', userId)
-          .single();
-      
+      final response =
+          await _supabase
+              .from('user_profiles')
+              .select()
+              .eq('id', userId)
+              .single();
+
       _currentUser = UserProfile.fromJson(response);
       _isAuthenticated = true;
       notifyListeners();
@@ -70,13 +71,14 @@ class AuthService extends ChangeNotifier {
       }
     }
   }
-  
+
   // Create user profile in database
   Future<void> _createUserProfile(User user) async {
     try {
       final profileData = {
         'id': user.id,
-        'name': user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
+        'name':
+            user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
         'email': user.email,
         'image_url': user.userMetadata?['avatar_url'],
         'saved_recipes_count': 0,
@@ -85,9 +87,9 @@ class AuthService extends ChangeNotifier {
         'language': 'id',
         'is_dark_mode_enabled': false,
       };
-      
+
       await _supabase.from('user_profiles').insert(profileData);
-      
+
       // Load the newly created profile
       await _loadUserProfile(user.id);
     } catch (e) {
@@ -95,290 +97,166 @@ class AuthService extends ChangeNotifier {
       _setError('Failed to create user profile: $e');
     }
   }
-    // Check if user is authenticated
+
+  // Sign up with email and password
+  Future<void> signUpWithEmail(String email, String password) async {
+    _setLoading(true);
+    try {
+      final AuthResponse res = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+      if (res.user != null) {
+        await _createUserProfile(res.user!);
+      } else {
+        _setError('Sign up failed: No user returned.');
+      }
+    } on AuthException catch (e) {
+      _setError(e.message);
+      rethrow;
+    } catch (e) {
+      _setError('An unexpected error occurred during sign up.');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Sign in with email and password
+  Future<void> signInWithEmail(String email, String password) async {
+    _setLoading(true);
+    try {
+      final AuthResponse res = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      if (res.user == null) {
+        _setError('Sign in failed: No user returned.');
+      }
+      // The onAuthStateChange listener will handle loading the profile
+    } on AuthException catch (e) {
+      _setError(e.message);
+      rethrow;
+    } catch (e) {
+      _setError('An unexpected error occurred during sign in.');
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Sign out
+  Future<void> signOut() async {
+    _setLoading(true);
+    try {
+      await _supabase.auth.signOut();
+    } on AuthException catch (e) {
+      _setError(e.message);
+    } catch (e) {
+      _setError('An unexpected error occurred during sign out.');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Check if user is authenticated
   Future<bool> checkAuth() async {
     _setLoading(true);
-    _clearError();
-
-    try {
-      final session = _supabase.auth.currentSession;
-      
-      if (session?.user != null) {
-        await _loadUserProfile(session!.user.id);
-        return _isAuthenticated;
-      } else {
-        _isAuthenticated = false;
-        _currentUser = null;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _isAuthenticated = false;
-      _currentUser = null;
-      _setError('Authentication check failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
-    }
+    await _checkCurrentSession();
+    _setLoading(false);
+    return _isAuthenticated;
   }
-    // Login with email and password
+
+  // Login (alias signInWithEmail)
   Future<bool> login(String email, String password) async {
-    _setLoading(true);
-    _clearError();
-
     try {
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (response.user != null) {
-        await _loadUserProfile(response.user!.id);
-        return true;
-      } else {
-        _setError('Login failed: Invalid credentials');
-        return false;
-      }
-    } on AuthException catch (e) {
-      _setError('Login failed: ${e.message}');
+      await signInWithEmail(email, password);
+      return isAuthenticated;
+    } catch (_) {
       return false;
-    } catch (e) {
-      _setError('Login failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
     }
   }
-    // Register new account
+
+  // Register (alias signUpWithEmail)
   Future<bool> register(String name, String email, String password) async {
-    _setLoading(true);
-    _clearError();
-
     try {
-      final response = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-        data: {'name': name},
-      );
-      
-      if (response.user != null) {
-        // Create user profile
-        await _createUserProfile(response.user!);
-        return true;
-      } else {
-        _setError('Registration failed');
-        return false;
+      await signUpWithEmail(email, password);
+      // Optionally update name after registration
+      if (currentUser != null && name.isNotEmpty) {
+        await updateProfile(currentUser!.copyWith(name: name));
       }
-    } on AuthException catch (e) {
-      _setError('Registration failed: ${e.message}');
+      return isAuthenticated;
+    } catch (_) {
       return false;
-    } catch (e) {
-      _setError('Registration failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
     }
   }
-    // Logout
+
+  // Logout (alias signOut)
   Future<void> logout() async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      await _supabase.auth.signOut();
-      
-      _currentUser = null;
-      _isAuthenticated = false;
-      notifyListeners();
-    } catch (e) {
-      _setError('Logout failed: $e');
-    } finally {
-      _setLoading(false);
-    }
+    await signOut();
   }
-    // Update user profile
+
+  // Update profile
   Future<bool> updateProfile(UserProfile updatedProfile) async {
-    _setLoading(true);
-    _clearError();
-
     try {
-      final updateData = updatedProfile.toJson();
-      updateData.remove('id'); // Don't update the ID
-      
       await _supabase
           .from('user_profiles')
-          .update(updateData)
+          .update(updatedProfile.toJson())
           .eq('id', updatedProfile.id);
-      
-      _currentUser = updatedProfile;
-      notifyListeners();
+      await _loadUserProfile(updatedProfile.id);
       return true;
     } catch (e) {
-      _setError('Profile update failed: $e');
+      _setError('Failed to update profile: $e');
       return false;
-    } finally {
-      _setLoading(false);
     }
   }
-    // Update user settings
-  Future<bool> updateSettings({
-    bool? notificationsEnabled,
-    String? language,
-    bool? darkModeEnabled,
-  }) async {
-    if (_currentUser == null) return false;
 
-    _setLoading(true);
-    _clearError();
-
-    try {
-      final updatedSettings = {
-        'is_notifications_enabled':
-            notificationsEnabled ?? _currentUser!.isNotificationsEnabled,
-        'language': language ?? _currentUser!.language,
-        // We'll still store the preference in the database but won't use it in the app
-        'is_dark_mode_enabled': false,
-      };
-      
-      await _supabase
-          .from('user_profiles')
-          .update(updatedSettings)
-          .eq('id', _currentUser!.id);
-      
-      // Update local user object
-      _currentUser = _currentUser!.copyWith(
-        isNotificationsEnabled: notificationsEnabled,
-        language: language,
-      );
-      
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _setError('Settings update failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-    // Change password
-  Future<bool> changePassword(String currentPassword, String newPassword) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      await _supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
-      
-      return true;
-    } on AuthException catch (e) {
-      _setError('Password change failed: ${e.message}');
-      return false;
-    } catch (e) {
-      _setError('Password change failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-    // Delete account
-  Future<bool> deleteAccount(String password) async {
-    _setLoading(true);
-    _clearError();
-
-    try {
-      // First delete the user profile
-      if (_currentUser?.id != null) {
-        await _supabase
-            .from('user_profiles')
-            .delete()
-            .eq('id', _currentUser!.id);
-      }
-      
-      // Note: Supabase doesn't provide a direct way to delete a user account from client
-      // This would typically require server-side implementation or admin API
-      // For now, we'll just sign out the user and clear local data
-      await _supabase.auth.signOut();
-      
-      _currentUser = null;
-      _isAuthenticated = false;
-      notifyListeners();
-      
-      // In a real implementation, you'd call a server endpoint to delete the user
-      // from auth.users table using admin privileges
-      return true;
-    } catch (e) {
-      _setError('Account deletion failed: $e');
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-    // Request password reset
+  // Reset password
   Future<bool> resetPassword(String email) async {
-    _setLoading(true);
-    _clearError();
-    
     try {
       await _supabase.auth.resetPasswordForEmail(email);
       return true;
-    } on AuthException catch (e) {
-      _setError('Password reset failed: ${e.message}');
-      return false;
     } catch (e) {
-      _setError('Password reset failed: $e');
+      _setError('Failed to reset password: $e');
       return false;
-    } finally {
-      _setLoading(false);
     }
   }
-  
-  // Resend email verification
-  Future<bool> resendEmailVerification() async {
-    if (_supabase.auth.currentUser?.email == null) return false;
-    
-    _setLoading(true);
-    _clearError();
-    
+
+  // Change password
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
     try {
-      await _supabase.auth.resend(
-        type: OtpType.signup,
-        email: _supabase.auth.currentUser!.email!,
-      );
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+      await _supabase.auth.updateUser(UserAttributes(password: newPassword));
       return true;
-    } on AuthException catch (e) {
-      _setError('Email verification resend failed: ${e.message}');
-      return false;
     } catch (e) {
-      _setError('Email verification resend failed: $e');
+      _setError('Failed to change password: $e');
       return false;
-    } finally {
-      _setLoading(false);
     }
   }
-  
-  // Check if user email is verified
-  bool get isEmailVerified {
-    return _supabase.auth.currentUser?.emailConfirmedAt != null;
-  }
-  
-  // Get current session
-  Session? get currentSession => _supabase.auth.currentSession;
 
-  // Helpers
-  void _setLoading(bool loading) {
-    _isLoading = loading;
+  // Delete account
+  Future<bool> deleteAccount(String password) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+      // Optionally, re-authenticate user here
+      await _supabase.from('user_profiles').delete().eq('id', user.id);
+      await _supabase.auth.signOut();
+      return true;
+    } catch (e) {
+      _setError('Failed to delete account: $e');
+      return false;
+    }
+  }
+
+  void _setError(String? error) {
+    _error = error;
     notifyListeners();
   }
 
-  void _setError(String errorMessage) {
-    debugPrint(errorMessage);
-    _error = errorMessage;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _error = null;
+  void _setLoading(bool isLoading) {
+    _isLoading = isLoading;
     notifyListeners();
   }
 }
