@@ -13,25 +13,14 @@ class ServicesInitializer {
   /// Create and initialize all service providers for the app
   static List<SingleChildWidget> getProviders() {
     return [
+      ChangeNotifierProvider(create: (_) => ThemeService(), lazy: false),
+      ChangeNotifierProvider(create: (_) => AuthService(), lazy: false),
+      ChangeNotifierProvider(create: (_) => RecipeService()),
+      ChangeNotifierProvider(create: (_) => PantryService()),
+      ChangeNotifierProvider(create: (_) => ChatService()),
       ChangeNotifierProvider(
-        create: (_) => ThemeService(),
-        lazy: false,
-      ),
-      ChangeNotifierProvider(
-        create: (_) => AuthService(),
-        lazy: false,
-      ),
-      ChangeNotifierProvider(
-        create: (_) => RecipeService(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => PantryService(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => ChatService(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => NotificationService(), // Added notification service provider
+        create:
+            (_) => NotificationService(), // Added notification service provider
       ),
     ];
   }
@@ -42,9 +31,10 @@ class ServicesInitializer {
     final authService = Provider.of<AuthService>(context, listen: false);
     await authService.checkAuth();
 
-    // Initialize recipe service
-    final recipeService = Provider.of<RecipeService>(context, listen: false);
-    await recipeService.initialize();
+    // The RecipeService now initializes its data in the constructor.
+    // No need to call an initialize method here.
+    // final recipeService = Provider.of<RecipeService>(context, listen: false);
+    // await recipeService.initialize();
 
     // Initialize pantry service
     final pantryService = Provider.of<PantryService>(context, listen: false);
@@ -53,9 +43,12 @@ class ServicesInitializer {
     // Initialize chat service
     final chatService = Provider.of<ChatService>(context, listen: false);
     await chatService.initialize();
-    
+
     // Initialize notification service
-    final notificationService = Provider.of<NotificationService>(context, listen: false);
+    final notificationService = Provider.of<NotificationService>(
+      context,
+      listen: false,
+    );
     await notificationService.initialize();
 
     debugPrint('All services initialized with Indonesian mock data');

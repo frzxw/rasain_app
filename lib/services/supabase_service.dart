@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
@@ -10,54 +9,27 @@ class SupabaseService {
   SupabaseService._() {
     _client = Supabase.instance.client;
   }
+
   // Singleton instance getter
   static SupabaseService get instance {
     _instance ??= SupabaseService._();
     return _instance!;
   }
 
-  // Initialization method to be called from main.dart
-  static Future<void> initialize() async {
-    try {
-      final supabaseUrl = dotenv.env['SUPABASE_URL'];
-      final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  // Get the Supabase client
+  SupabaseClient get client => _client;
 
-      if (supabaseUrl == null || supabaseAnonKey == null) {
-        throw Exception(
-          'Supabase credentials not found in environment variables',
-        );
-      }
-
-      // Log credentials for debugging (remove in production)
-      if (kDebugMode) {
-        debugPrint('Initializing Supabase with:');
-        debugPrint('URL: $supabaseUrl');
-        debugPrint('ANON_KEY: ${supabaseAnonKey.substring(0, 10)}...');
-      }
-
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-      debugPrint('✅ Supabase initialized successfully');
-    } catch (e) {
-      debugPrint('❌ Error initializing Supabase: $e');
-
-      // For development, we'll just log the error but continue
-      // In production, we might want to handle this differently
-      if (kDebugMode) {
-        debugPrint('Application will continue with limited functionality');
-      } else {
-        rethrow;
-      }
-    }
-  }
-
-  // Getter for the Supabase client
-  SupabaseClient get client => _client; // Generic CRUD operations
+  // Generic CRUD operations
   Future<List<Map<String, dynamic>>> fetchAll(String table) async {
     try {
+      debugPrint('🔍 Fetching all data from $table...');
       final response = await _client
           .from(table)
           .select()
           .order('created_at', ascending: false);
+      debugPrint(
+        '✅ Successfully fetched ${response.length} records from $table',
+      );
       return response;
     } catch (e) {
       debugPrint('❌ Error fetching data from $table: $e');

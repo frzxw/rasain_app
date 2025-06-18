@@ -503,8 +503,7 @@ class _ReviewSectionState extends State<ReviewSection> {
 
   Widget _buildReviewItem(Map<String, dynamic> review) {
     final rating = review['rating']?.toDouble() ?? 0.0;
-    final reviewText =
-        review['comment'] ?? review['review_text'] ?? 'Tidak ada komentar';
+    final reviewText = review['comment'] ?? 'Tidak ada komentar';
     final createdAt = review['date'] ?? review['created_at'] ?? '';
     final userId = review['user_id'] ?? '';
 

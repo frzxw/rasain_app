@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Recipe {
   final String id;
   final String name;
@@ -9,7 +11,8 @@ class Recipe {
   final String? cookTime;
   final int? servings;
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -30,31 +33,68 @@ class Recipe {
     this.categories,
     this.isSaved = false,
   });
-
   factory Recipe.fromJson(Map<String, dynamic> json) {
+    debugPrint('Recipe fromJson: ${json['id']}');
+    debugPrint('Recipe instructions raw data: ${json['instructions']}');
+
+    // Handle instructions data with care to avoid errors
+    List<Map<String, dynamic>>? instructions;
+    if (json['instructions'] != null) {
+      try {
+        if (json['instructions'] is List<String>) {
+          instructions =
+              (json['instructions'] as List)
+                  .map<Map<String, dynamic>>(
+                    (step) => {'text': step.toString(), 'videoUrl': null},
+                  )
+                  .toList();
+        } else if (json['instructions'] is List) {
+          instructions =
+              (json['instructions'] as List)
+                  .map<Map<String, dynamic>>(
+                    (item) =>
+                        item is Map<String, dynamic>
+                            ? item
+                            : {'text': item.toString(), 'videoUrl': null},
+                  )
+                  .toList();
+        }
+      } catch (e) {
+        debugPrint('Error processing instructions: $e');
+        instructions = null;
+      }
+    }
+
+    debugPrint('Recipe instructions processed: $instructions');
+
     return Recipe(
-      id: json['id'],
-      name: json['name'],
-      slug: json['slug'] ?? json['name'].toString().toLowerCase().replaceAll(' ', '-'),
+      id: json['id'].toString(), // Convert to string since DB might return int8
+      name:
+          json['title'] ??
+          json['name'], // Try 'title' first, then fallback to 'name'
+      slug:
+          json['slug'] ??
+          (json['title'] ?? json['name'])?.toString().toLowerCase().replaceAll(
+            ' ',
+            '-',
+          ) ??
+          '',
       imageUrl: json['image_url'],
-      rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['review_count'] ?? 0,
       estimatedCost: json['estimated_cost'],
       cookTime: json['cook_time'],
       servings: json['servings'],
-      ingredients: json['ingredients'] != null ? 
-        List<Map<String, dynamic>>.from(json['ingredients']) : null,
-      instructions: json['instructions'] != null ?
-        (json['instructions'] is List<String> ?
-          // Convert string instructions to map format with only 'text' field
-          List<Map<String, dynamic>>.from(
-            (json['instructions'] as List).map((step) => {'text': step, 'videoUrl': null})
-          )
-          : List<Map<String, dynamic>>.from(json['instructions'])
-        ) : null,
+      ingredients:
+          json['ingredients'] != null
+              ? List<Map<String, dynamic>>.from(json['ingredients'])
+              : null,
+      instructions: instructions,
       description: json['description'],
-      categories: json['categories'] != null ?
-        List<String>.from(json['categories']) : null,
+      categories:
+          json['categories'] != null
+              ? List<String>.from(json['categories'])
+              : null,
       isSaved: json['is_saved'] ?? false,
     );
   }

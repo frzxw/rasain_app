@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:rasain_app/services/auth_service.dart';
 import 'package:rasain_app/features/auth/register_screen.dart';
 import 'package:rasain_app/features/home/home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final void Function()? onLoginSuccess;
+  const LoginScreen({super.key, this.onLoginSuccess});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -27,14 +29,47 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           listen: false,
         ).signInWithEmail(_email, _password);
+        if (widget.onLoginSuccess != null) {
+          widget.onLoginSuccess!();
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to log in: $e')));
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  void _loginWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final supabase = Supabase.instance.client;
+      await supabase.auth.signInWithOAuth(OAuthProvider.google);
+      if (widget.onLoginSuccess != null) {
+        widget.onLoginSuccess!();
+      } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to log in: ${e.toString()}')),
-        );
-      } finally {
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to login with Google: $e')),
+      );
+    } finally {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -74,6 +109,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _login,
                     child: const Text('Login'),
                   ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: _isLoading ? null : _loginWithGoogle,
+                icon: Image.asset(
+                  'assets/images/google_logo.png',
+                  height: 24,
+                  width: 24,
+                ),
+                label: const Text('Login with Google'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 48),
+                  side: const BorderSide(color: Colors.grey),
+                ),
+              ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).push(

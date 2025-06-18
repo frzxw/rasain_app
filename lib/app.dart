@@ -4,6 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/theme.dart';
 import 'routes.dart';
 import 'services/services_initializer.dart';
+import 'models/pantry_item.dart';
+import 'services/pantry_service.dart';
+import 'features/home/home_screen.dart';
+import 'services/auth_service.dart';
 
 // Import cubits
 import 'cubits/auth/auth_cubit.dart';
@@ -53,5 +57,40 @@ class RasainApp extends StatelessWidget {
 
     // Initialize community cubit
     await context.read<CommunityCubit>().initialize();
+  }
+}
+
+class MyApp extends StatelessWidget {
+  // Fungsi untuk tes simpan pantry item
+  Future<void> testTambahPantryItem() async {
+    final pantryService = PantryService();
+    await pantryService.initialize();
+    final item = PantryItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: 'Tomat',
+      quantity: '3',
+      unit: 'pcs',
+      category: 'Vegetables',
+      storageLocation: 'Pantry',
+      expirationDate: DateTime.now().add(const Duration(days: 7)),
+    );
+    await pantryService.addPantryItem(item);
+    debugPrint('Item berhasil disimpan ke pantry!');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Jalankan tes simpan pantry item sekali saat aplikasi start
+    testTambahPantryItem();
+
+    return MaterialApp(
+      title: 'Rasain',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.light(),
+      home: BlocProvider(
+        create: (context) => AuthCubit(AuthService()),
+        child: const HomeScreen(),
+      ),
+    );
   }
 }

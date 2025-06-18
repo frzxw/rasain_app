@@ -275,6 +275,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       });
                     },
                   ),
+                // Debug info as a separate widget to avoid hot reload issues
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(top: 8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.amber),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Debug Info:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Instructions status: ${recipe.instructions == null ? "NULL" : "Available: ${recipe.instructions!.length} items"}',
+                      ),
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: AppSizes.marginL),
 

@@ -6,7 +6,10 @@ import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/auth/auth_state.dart';
 
 class AuthDialog {
-  static void showLoginDialog(BuildContext context) {
+  static void showLoginDialog(
+    BuildContext context, {
+    VoidCallback? onLoginSuccess,
+  }) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -166,6 +169,9 @@ class AuthDialog {
                                               backgroundColor: Colors.green,
                                             ),
                                           );
+                                          if (onLoginSuccess != null) {
+                                            onLoginSuccess();
+                                          }
                                         }
                                       }
                                     },

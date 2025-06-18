@@ -8,6 +8,7 @@ import 'services/recipe_service.dart';
 import 'services/pantry_service.dart';
 import 'services/chat_service.dart';
 import 'services/notification_service.dart';
+import 'services/database_test.dart';
 import 'core/theme/theme_service.dart';
 import 'core/config/supabase_config.dart';
 import 'services/data_service.dart';
@@ -24,8 +25,31 @@ import 'cubits/theme/theme_cubit.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase
-  await SupabaseConfig.initialize();
+  try {
+    print('🚀 Starting Rasain App...');
+
+    // Initialize Supabase
+    print('🔧 Initializing Supabase...');
+    await SupabaseConfig.initialize();
+
+    // Test database connection
+    print('🧪 Testing database connection...');
+    final connectionTest = await DatabaseTest.testConnection();
+    if (connectionTest) {
+      print('✅ Database connection successful');
+
+      // Run comprehensive test
+      final dataFlowTest = await DatabaseTest.testDataFlow();
+      print('📊 Data flow test results: $dataFlowTest');
+    } else {
+      print(
+        '⚠️ Database connection failed, app will continue with limited functionality',
+      );
+    }
+  } catch (e) {
+    print('❌ Error during initialization: $e');
+    print('⚠️ App will continue with limited functionality');
+  }
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

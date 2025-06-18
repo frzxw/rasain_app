@@ -210,21 +210,22 @@ class RecipeService extends ChangeNotifier {
       debugPrint('✅ Fetched ${recipes.length} popular recipes');
 
       // Extract categories from recipes to build user preferences
-      Set<String> preferredCategories =
-          {}; // Get unique categories from popular recipes to determine user preferences
+      Set<String> preferredCategories = {};
+
+      // Get unique categories from popular recipes to determine user preferences
       for (final recipe in _popularRecipes) {
         if (recipe.categories != null) {
-          preferredCategories.addAll(recipe.categories!);
+          preferredCategories.addAll(List<String>.from(recipe['categories']));
         }
       }
 
       return recipes;
     } catch (e) {
       debugPrint('❌ Error fetching popular recipes: $e');
-      _setError(
-        'Failed to load popular recipes: $e',
-      ); // Use fallback data in case of error
-      _popularRecipes = FallbackDataService.getMockRecipes();
+      _setError('Failed to load popular recipes: $e');
+
+      // Use fallback data in case of error
+      _popularRecipes = FallbackDataService.getPopularRecipes();
       notifyListeners();
 
       return _popularRecipes;
@@ -255,10 +256,10 @@ class RecipeService extends ChangeNotifier {
       return recipes;
     } catch (e) {
       debugPrint('❌ Error fetching new recipes: $e');
-      _setError(
-        'Failed to load new recipes: $e',
-      ); // Use fallback data in case of error
-      _whatsNewRecipes = FallbackDataService.getMockRecipes();
+      _setError('Failed to load new recipes: $e');
+
+      // Use fallback data in case of error
+      _whatsNewRecipes = FallbackDataService.getWhatsNewRecipes();
       notifyListeners();
       return _whatsNewRecipes;
     } finally {

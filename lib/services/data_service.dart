@@ -27,10 +27,22 @@ class DataService {
   /// Get all recipes from Supabase
   Future<List<Recipe>> getRecipes() async {
     try {
-      final data = await _supabaseService.fetchAll('recipes');
-      return data.map((json) => Recipe.fromJson(json)).toList();
+      debugPrint('🔍 DataService: Fetching all recipes...');
+
+      // MODIFIED: Fetch from the new view instead of the table
+      final data = await _supabaseService.fetchAll('recipes_with_categories');
+      debugPrint('✅ DataService: Fetched ${data.length} recipes from database');
+
+      final recipes = data.map((json) => Recipe.fromJson(json)).toList();
+      debugPrint(
+        '🔄 DataService: Converted to ${recipes.length} Recipe objects',
+      );
+
+      return recipes;
     } catch (e) {
-      debugPrint('Error fetching recipes: $e');
+      debugPrint('❌ DataService: Error fetching recipes: $e');
+
+      // Return empty list instead of crashing the app
       return [];
     }
   }
@@ -39,7 +51,8 @@ class DataService {
   Future<List<Recipe>> getPopularRecipes() async {
     try {
       final response = await _supabaseService.client
-          .from('recipes')
+          // MODIFIED: Fetch from the new view
+          .from('recipes_with_categories')
           .select()
           .gte('rating', 4.7)
           .order('rating', ascending: false);
@@ -54,7 +67,8 @@ class DataService {
   Future<List<Recipe>> getSavedRecipes() async {
     try {
       final response = await _supabaseService.client
-          .from('recipes')
+          // MODIFIED: Fetch from the new view
+          .from('recipes_with_categories')
           .select()
           .eq('is_saved', true)
           .order('created_at', ascending: false);
@@ -69,9 +83,12 @@ class DataService {
   Future<List<Recipe>> getRecommendedRecipes() async {
     try {
       final response = await _supabaseService.client
-          .from('recipes')
+          // MODIFIED: Fetch from the new view
+          .from('recipes_with_categories')
           .select()
-          .or('rating.gte.4.5,categories.cs.["Tradisional"]')
+          .or(
+            'rating.gte.4.5,categories.cs.{\"Tradisional\"}',
+          ) // Corrected filter syntax
           .limit(5)
           .order('rating', ascending: false);
       return response.map<Recipe>((json) => Recipe.fromJson(json)).toList();
@@ -126,7 +143,7 @@ class DataService {
 
       // Get current user ID
       final userId = _supabaseService.client.auth.currentUser?.id;
-      debugPrint('� DataService: Current user ID: $userId');
+      debugPrint('DataService: Current user ID: $userId');
 
       if (userId == null) {
         debugPrint(

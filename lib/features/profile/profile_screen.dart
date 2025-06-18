@@ -277,8 +277,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Show login dialog
-                  AuthDialog.showLoginDialog(context);
+                  // Show login dialog dengan callback refresh profile
+                  AuthDialog.showLoginDialog(
+                    context,
+                    onLoginSuccess: () {
+                      setState(() {}); // Refresh profile setelah login
+                    },
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(

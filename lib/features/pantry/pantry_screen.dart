@@ -12,6 +12,9 @@ import '../../services/data_service.dart';
 import '../../models/pantry_item.dart';
 import '../../cubits/pantry/pantry_cubit.dart';
 import '../../cubits/pantry/pantry_state.dart';
+import '../../cubits/auth/auth_cubit.dart';
+import '../../cubits/auth/auth_state.dart';
+import '../auth/login_screen.dart';
 import 'widgets/pantry_input_form.dart';
 import 'widgets/pantry_suggestions.dart';
 
@@ -53,43 +56,57 @@ class _PantryScreenState extends State<PantryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const CustomAppBar(title: 'My Pantry'),
-      body: BlocBuilder<PantryCubit, PantryState>(
-        builder: (context, state) {
-          // Keep reference to the pantry service for some operations
-          final pantryService = Provider.of<PantryService>(
-            context,
-            listen: false,
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        if (state.status != AuthStatus.authenticated) {
+          // Jika belum login, tampilkan halaman login dengan callback kembali ke pantry
+          return LoginScreen(
+            onLoginSuccess: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const PantryScreen()),
+              );
+            },
           );
-
-          if (state.status == PantryStatus.loading && state.items.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
-            );
-          }
-
-          return _showInputForm
-              ? _buildInputForm()
-              : _buildPantryContent(state, pantryService);
-        },
-      ),
-      floatingActionButton:
-          !_showInputForm
-              ? FloatingActionButton(
-                onPressed: () {
-                  setState(() {
-                    _showInputForm = true;
-                    _editingItem = null;
-                  });
-                },
-                backgroundColor: AppColors.primary,
-                child: const Icon(Icons.add),
-              )
-              : null,
+        }
+        // Jika sudah login, tampilkan pantry
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const CustomAppBar(title: 'My Pantry'),
+          body: BlocBuilder<PantryCubit, PantryState>(
+            builder: (context, state) {
+              final pantryService = Provider.of<PantryService>(
+                context,
+                listen: false,
+              );
+              if (state.status == PantryStatus.loading && state.items.isEmpty) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                  ),
+                );
+              }
+              return _showInputForm
+                  ? _buildInputForm()
+                  : _buildPantryContent(state, pantryService);
+            },
+          ),
+          floatingActionButton:
+              !_showInputForm
+                  ? FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        _showInputForm = true;
+                        _editingItem = null;
+                      });
+                    },
+                    backgroundColor: AppColors.primary,
+                    child: const Icon(Icons.add),
+                  )
+                  : null,
+        );
+      },
     );
   }
 

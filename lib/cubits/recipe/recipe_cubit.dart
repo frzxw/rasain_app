@@ -1,39 +1,64 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
+import '../../services/home_data_service.dart';
 import 'recipe_state.dart';
 
 class RecipeCubit extends Cubit<RecipeState> {
   final RecipeService _recipeService;
 
   RecipeCubit(this._recipeService) : super(const RecipeState());
-
   Future<void> initialize() async {
+    debugPrint('🚀 RecipeCubit: Starting initialization...');
     emit(state.copyWith(status: RecipeStatus.loading));
-    try {
-      // Initialize the recipe service
-      await _recipeService.initialize();
 
+    try {
+      // Initialization is now handled in the RecipeService constructor,
+      // so we can directly access the data.
+      // await _recipeService.initialize(); // This is no longer needed.
+
+      // Add a small delay to ensure data is processed
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      debugPrint('📊 RecipeCubit: Getting recipe data...');
       // Get popular/featured recipes
       final popularRecipes = _recipeService.popularRecipes;
-
-      // Get recommended recipes
-      final recommendedRecipes = _recipeService.recommendedRecipes;
+      debugPrint('✅ Popular recipes: ${popularRecipes.length}');
 
       // Get saved recipes
-      final savedRecipes =
-          _recipeService
-              .savedRecipes; // Get all recipes: combine popular, new, and recommended
-      final allRecipes =
-          [
-            ..._recipeService.popularRecipes,
-            ..._recipeService.whatsNewRecipes,
-            ..._recipeService.recommendedRecipes,
-          ].toSet().toList(); // Remove duplicates
+      final savedRecipes = _recipeService.savedRecipes;
+      debugPrint('✅ Saved recipes: ${savedRecipes.length}');
 
-      // Process categories
+      // Get whats new recipes
+      final whatsNewRecipes = _recipeService.whatsNewRecipes;
+      debugPrint('✅ What\'s new recipes: ${whatsNewRecipes.length}');
+
+      // Get all recipes: combine popular and new
+      final allRecipes =
+          <Recipe>{
+            ...popularRecipes,
+            ...whatsNewRecipes,
+          }.toList(); // Use a Set to remove duplicates automatically
+      debugPrint('✅ Total unique recipes: ${allRecipes.length}');
+
+      // FALLBACK: If no recipes loaded from any source, use HomeDataService
+      List<Recipe> finalRecipes = allRecipes;
+      List<Recipe> finalFeatured = popularRecipes;
+      // Recommended recipes are no longer a separate category in the new service
+      List<Recipe> finalRecommended = [];
+
+      if (allRecipes.isEmpty) {
+        debugPrint(
+          '⚠️ No recipes from database, using HomeDataService fallback',
+        );
+        finalRecipes = HomeDataService.getHomeRecipes();
+        finalFeatured = HomeDataService.getFeaturedRecipes();
+        finalRecommended = HomeDataService.getRecommendedRecipes();
+        debugPrint('🔄 Fallback loaded: ${finalRecipes.length} recipes');
+      } // Process categories
       final Map<String, List<Recipe>> categoryRecipes = {};
-      for (var recipe in allRecipes) {
+      for (var recipe in finalRecipes) {
         if (recipe.categories != null) {
           for (var category in recipe.categories!) {
             if (!categoryRecipes.containsKey(category)) {
@@ -46,9 +71,9 @@ class RecipeCubit extends Cubit<RecipeState> {
 
       emit(
         state.copyWith(
-          recipes: allRecipes,
-          featuredRecipes: _recipeService.popularRecipes,
-          recommendedRecipes: recommendedRecipes,
+          recipes: finalRecipes,
+          featuredRecipes: finalFeatured,
+          recommendedRecipes: finalRecommended, // Pass the empty list
           savedRecipes: savedRecipes,
           categoryRecipes: categoryRecipes,
           status: RecipeStatus.loaded,
@@ -112,10 +137,19 @@ class RecipeCubit extends Cubit<RecipeState> {
     }
   }
 
-  Future<void> searchRecipesByImage(List<int> imageBytes, String imageName) async {
+  /*
+  // This feature is not implemented in the new RecipeService.
+  // Commenting it out to avoid compilation errors.
+  Future<void> searchRecipesByImage(
+    List<int> imageBytes,
+    String imageName,
+  ) async {
     emit(state.copyWith(status: RecipeStatus.loading));
     try {
-      final searchResults = await _recipeService.searchRecipesByImage(imageBytes, imageName);
+      final searchResults = await _recipeService.searchRecipesByImage(
+        imageBytes,
+        imageName,
+      );
       emit(state.copyWith(recipes: searchResults, status: RecipeStatus.loaded));
     } catch (e) {
       emit(
@@ -123,6 +157,7 @@ class RecipeCubit extends Cubit<RecipeState> {
       );
     }
   }
+  */
 
   Recipe? getRecipeById(String id) {
     try {
