@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../core/theme/theme_service.dart';
 import '../models/user_profile.dart';
 import 'mock_api_service.dart';
 

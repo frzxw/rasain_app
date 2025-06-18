@@ -11,7 +11,6 @@ class AppTheme {
       secondary: AppColors.highlight,
       surface: AppColors.surface,
       error: AppColors.error,
-      background: AppColors.background,
     );
     
     return _buildModernLightTheme(colorScheme);
@@ -33,7 +32,7 @@ class AppTheme {
       
       // Colors
       primaryColor: colorScheme.primary,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       
       // Typography
       textTheme: AppTypography.getTextTheme(isDark: false),
@@ -240,19 +239,19 @@ class AppTheme {
 
       // Switch with modern styling
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return colorScheme.primary;
           }
           return Colors.white;
         }),
-        trackColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return colorScheme.primary.withOpacity(0.5);
           }
           return AppColors.disabledColor;
         }),
-        trackOutlineColor: MaterialStateProperty.resolveWith((states) {
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
           return Colors.transparent;
         }),
       ),
@@ -278,8 +277,8 @@ class AppTheme {
       // Modern scroll physics
       scrollbarTheme: ScrollbarThemeData(
         radius: const Radius.circular(8),
-        thickness: MaterialStateProperty.all(4), // Thinner scrollbar
-        thumbColor: MaterialStateProperty.all(colorScheme.primary.withOpacity(0.3)),
+        thickness: WidgetStateProperty.all(4), // Thinner scrollbar
+        thumbColor: WidgetStateProperty.all(colorScheme.primary.withOpacity(0.3)),
       ),
       
       // Sheet themes with modern styling

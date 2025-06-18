@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
-import '../../../core/widgets/custom_button.dart';
 
 class Review {
   final String id;

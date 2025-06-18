@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/recipe.dart';
 import 'supabase_service.dart';
-import 'dart:typed_data';
 
 // This class has been fully migrated to use Supabase
 

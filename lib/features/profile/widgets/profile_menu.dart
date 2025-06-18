@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/user_profile.dart';
-import '../../../core/widgets/custom_button.dart';
 
 class ProfileMenu extends StatefulWidget {
   final UserProfile user;
