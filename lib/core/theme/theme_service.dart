@@ -8,7 +8,7 @@ class ThemeService extends ChangeNotifier {
   static const String _themePreferenceKey = 'app_theme_mode';
 
   // Always use light theme
-  ThemeMode _themeMode = ThemeMode.light;
+  final ThemeMode _themeMode = ThemeMode.light;
 
   ThemeService() {
     _updateSystemUIOverlay();
