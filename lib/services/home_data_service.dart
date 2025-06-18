@@ -34,8 +34,45 @@ class HomeDataService {
   }
 
   static List<Recipe> getRecommendedRecipes() {
+    debugPrint('🎯 HomeDataService: Getting recommended recipes...');
+
     final allRecipes = getHomeRecipes();
-    // Return resep yang tidak termasuk featured
-    return allRecipes.skip(1).toList();
+    debugPrint('🎯 HomeDataService: Got ${allRecipes.length} total recipes');
+
+    if (allRecipes.isEmpty) {
+      debugPrint('❌ HomeDataService: No recipes available for recommendations');
+      return [];
+    }
+
+    // Return resep dengan rating di atas 4.0 dan shuffle untuk variasi
+    final recommendedList =
+        allRecipes.where((recipe) => recipe.rating >= 4.0).toList();
+
+    debugPrint(
+      '🎯 HomeDataService: Found ${recommendedList.length} recipes with rating >= 4.0',
+    );
+
+    if (recommendedList.isEmpty) {
+      debugPrint(
+        '⚠️ HomeDataService: No recipes meet rating criteria, returning all recipes',
+      );
+      return allRecipes.take(5).toList();
+    }
+
+    // Shuffle untuk variasi setiap kali dipanggil
+    recommendedList.shuffle();
+
+    final finalList = recommendedList.take(5).toList();
+    debugPrint(
+      '🎯 HomeDataService: Returning ${finalList.length} recommended recipes:',
+    );
+
+    for (int i = 0; i < finalList.length; i++) {
+      debugPrint(
+        '   ${i + 1}. ${finalList[i].name} (Rating: ${finalList[i].rating})',
+      );
+    }
+
+    return finalList;
   }
 }

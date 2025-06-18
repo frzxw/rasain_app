@@ -500,18 +500,27 @@ class _ReviewSectionState extends State<ReviewSection> {
       ],
     );
   }
-
   Widget _buildReviewItem(Map<String, dynamic> review) {
     final rating = review['rating']?.toDouble() ?? 0.0;
     final reviewText = review['comment'] ?? 'Tidak ada komentar';
-    final createdAt = review['date'] ?? review['created_at'] ?? '';
+    final createdAt = review['date'] ?? review['created_at'];
     final userId = review['user_id'] ?? '';
 
-    // Format date
+    // Format date - handle both DateTime objects and string dates
     String formattedDate = 'Tidak diketahui';
-    if (createdAt.isNotEmpty) {
+    if (createdAt != null) {
       try {
-        final dateTime = DateTime.parse(createdAt);
+        DateTime dateTime;
+        
+        // Check if createdAt is already a DateTime object or a string
+        if (createdAt is DateTime) {
+          dateTime = createdAt;
+        } else if (createdAt is String && createdAt.isNotEmpty) {
+          dateTime = DateTime.parse(createdAt);
+        } else {
+          dateTime = DateTime.now();
+        }
+
         final now = DateTime.now();
         final difference = now.difference(dateTime);
 
@@ -525,7 +534,8 @@ class _ReviewSectionState extends State<ReviewSection> {
           formattedDate = 'Baru saja';
         }
       } catch (e) {
-        formattedDate = createdAt;
+        debugPrint('❌ Error formatting date: $e');
+        formattedDate = 'Tidak diketahui';
       }
     }
 

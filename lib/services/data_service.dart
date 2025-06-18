@@ -27,11 +27,13 @@ class DataService {
   /// Get all recipes from Supabase
   Future<List<Recipe>> getRecipes() async {
     try {
-      debugPrint('🔍 DataService: Fetching all recipes...');
-
-      // MODIFIED: Fetch from the new view instead of the table
-      final data = await _supabaseService.fetchAll('recipes_with_categories');
-      debugPrint('✅ DataService: Fetched ${data.length} recipes from database');
+      debugPrint(
+        '🔍 DataService: Fetching all recipes...',
+      ); // Fetch from the main recipes table
+      final data = await _supabaseService.fetchAll('recipes');
+      debugPrint(
+        '✅ DataService: Fetched [32m${data.length}[0m recipes from database',
+      );
 
       final recipes = data.map((json) => Recipe.fromJson(json)).toList();
       debugPrint(
@@ -51,8 +53,8 @@ class DataService {
   Future<List<Recipe>> getPopularRecipes() async {
     try {
       final response = await _supabaseService.client
-          // MODIFIED: Fetch from the new view
-          .from('recipes_with_categories')
+          // Fetch from the main recipes table
+          .from('recipes')
           .select()
           .gte('rating', 4.7)
           .order('rating', ascending: false);
@@ -67,8 +69,8 @@ class DataService {
   Future<List<Recipe>> getSavedRecipes() async {
     try {
       final response = await _supabaseService.client
-          // MODIFIED: Fetch from the new view
-          .from('recipes_with_categories')
+          // Fetch from the main recipes table
+          .from('recipes')
           .select()
           .eq('is_saved', true)
           .order('created_at', ascending: false);
@@ -82,18 +84,91 @@ class DataService {
   /// Get recipe recommendations
   Future<List<Recipe>> getRecommendedRecipes() async {
     try {
-      final response = await _supabaseService.client
-          // MODIFIED: Fetch from the new view
-          .from('recipes_with_categories')
+      debugPrint(
+        '🔍 DataService: Fetching recommended recipes from database...',
+      );
+
+      // Try multiple strategies for recommendations
+      List<Recipe> recommendations = [];
+
+      // Strategy 1: Get highly rated recipes from main recipes table
+      final highRatedResponse = await _supabaseService.client
+          .from('recipes')
           .select()
-          .or(
-            'rating.gte.4.5,categories.cs.{\"Tradisional\"}',
-          ) // Corrected filter syntax
-          .limit(5)
+          .gte('rating', 4.0)
+          .limit(10)
           .order('rating', ascending: false);
-      return response.map<Recipe>((json) => Recipe.fromJson(json)).toList();
+
+      final highRatedRecipes =
+          highRatedResponse
+              .map<Recipe>((json) => Recipe.fromJson(json))
+              .toList();
+      debugPrint('✅ Found ${highRatedRecipes.length} high-rated recipes');      // Strategy 2: Get recipes by category (skip if categories column has issues)
+      List<Map<String, dynamic>> traditionalResponse = [];
+      try {
+        traditionalResponse = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .limit(5)
+            .order('rating', ascending: false);
+      } catch (e) {
+        debugPrint('⚠️ Category search failed, using fallback: $e');
+        traditionalResponse = [];
+      }
+
+      final traditionalRecipes =
+          traditionalResponse
+              .map<Recipe>((json) => Recipe.fromJson(json))
+              .toList();
+      debugPrint('✅ Found ${traditionalRecipes.length} traditional recipes');
+
+      // Strategy 3: Get recently added recipes
+      final recentResponse = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .limit(10)
+          .order('created_at', ascending: false);
+
+      final recentRecipes =
+          recentResponse.map<Recipe>((json) => Recipe.fromJson(json)).toList();
+      debugPrint('✅ Found ${recentRecipes.length} recent recipes');
+
+      // Combine all strategies and pick diverse recommendations
+      Set<String> addedIds = {};
+
+      // Add high-rated recipes first
+      for (var recipe in highRatedRecipes) {
+        if (recommendations.length >= 5) break;
+        if (!addedIds.contains(recipe.id)) {
+          recommendations.add(recipe);
+          addedIds.add(recipe.id);
+        }
+      }
+
+      // Add traditional recipes
+      for (var recipe in traditionalRecipes) {
+        if (recommendations.length >= 5) break;
+        if (!addedIds.contains(recipe.id)) {
+          recommendations.add(recipe);
+          addedIds.add(recipe.id);
+        }
+      }
+
+      // Fill remaining slots with recent recipes
+      for (var recipe in recentRecipes) {
+        if (recommendations.length >= 5) break;
+        if (!addedIds.contains(recipe.id)) {
+          recommendations.add(recipe);
+          addedIds.add(recipe.id);
+        }
+      }
+
+      debugPrint(
+        '🎯 DataService: Returning ${recommendations.length} recommended recipes',
+      );
+      return recommendations;
     } catch (e) {
-      debugPrint('Error fetching recommended recipes: $e');
+      debugPrint('❌ DataService: Error fetching recommended recipes: $e');
       return [];
     }
   }
@@ -489,10 +564,24 @@ class DataService {
   /// Get community posts
   Future<List<CommunityPost>> getCommunityPosts() async {
     try {
-      final data = await _supabaseService.fetchAll('community_posts');
-      return data.map((json) => CommunityPost.fromJson(json)).toList();
+      debugPrint('🔍 Fetching community posts...');
+
+      final response = await _supabaseService.client
+          .from('community_posts')
+          .select()
+          .order('created_at', ascending: false);
+
+      debugPrint('✅ Fetched ${response.length} community posts');
+      debugPrint(
+        '🔍 First post data: ${response.isNotEmpty ? response.first : 'No posts'}',
+      );
+
+      return response.map<CommunityPost>((json) {
+        debugPrint('📊 Processing post JSON: $json');
+        return CommunityPost.fromJson(json);
+      }).toList();
     } catch (e) {
-      debugPrint('Error fetching community posts: $e');
+      debugPrint('❌ Error fetching community posts: $e');
       return [];
     }
   }

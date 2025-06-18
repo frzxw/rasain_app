@@ -26,20 +26,28 @@ class CommunityPost {
     this.commentCount = 0,
     this.isLiked = false,
   });
-
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
+    // Handle timestamp field - could be 'timestamp', 'created_at', or fallback
+    final timestampStr =
+        json['timestamp'] ??
+        json['created_at'] ??
+        DateTime.now().toIso8601String();
+
     return CommunityPost(
-      id: json['id'],
-      userId: json['user_id'],
-      userName: json['user_name'],
-      userImageUrl: json['user_image_url'],
-      timestamp: DateTime.parse(json['timestamp']),
-      content: json['content'],
-      imageUrl: json['image_url'],
-      taggedIngredients: json['tagged_ingredients'] != null
-          ? List<String>.from(json['tagged_ingredients'])
-          : null,
-      category: json['category'],
+      id: json['id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? '',
+      userName: json['user_name']?.toString() ?? 'Unknown User',
+      userImageUrl: json['user_image_url']?.toString(),
+      timestamp: DateTime.parse(timestampStr),
+      content: json['content']?.toString(),
+      imageUrl: json['image_url']?.toString(),
+      taggedIngredients:
+          json['tagged_ingredients'] != null
+              ? (json['tagged_ingredients'] is List
+                  ? List<String>.from(json['tagged_ingredients'])
+                  : [])
+              : null,
+      category: json['category']?.toString(),
       likeCount: json['like_count'] ?? 0,
       commentCount: json['comment_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,

@@ -2,11 +2,12 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
-import '../../services/home_data_service.dart';
+import '../../services/data_service.dart';
 import 'recipe_state.dart';
 
 class RecipeCubit extends Cubit<RecipeState> {
   final RecipeService _recipeService;
+  final DataService _dataService = DataService();
 
   RecipeCubit(this._recipeService) : super(const RecipeState());
   Future<void> initialize() async {
@@ -40,22 +41,64 @@ class RecipeCubit extends Cubit<RecipeState> {
             ...popularRecipes,
             ...whatsNewRecipes,
           }.toList(); // Use a Set to remove duplicates automatically
-      debugPrint('✅ Total unique recipes: ${allRecipes.length}');
-
-      // FALLBACK: If no recipes loaded from any source, use HomeDataService
+      debugPrint(
+        '✅ Total unique recipes: ${allRecipes.length}',
+      ); // FALLBACK: If no recipes loaded from any source, use HomeDataService
       List<Recipe> finalRecipes = allRecipes;
-      List<Recipe> finalFeatured = popularRecipes;
-      // Recommended recipes are no longer a separate category in the new service
+      List<Recipe> finalFeatured =
+          popularRecipes; // Get recommended recipes - ONLY from database
       List<Recipe> finalRecommended = [];
+      try {
+        debugPrint('🔍 Getting recommended recipes from database...');
+        finalRecommended = await _dataService.getRecommendedRecipes();
+        debugPrint(
+          '✅ Recommended recipes from database: ${finalRecommended.length}',
+        );
 
+        // If database returns empty, use high-rated recipes from database only
+        if (finalRecommended.isEmpty && allRecipes.isNotEmpty) {
+          debugPrint(
+            '⚠️ No specific recommendations, using high-rated recipes from database',
+          );
+          finalRecommended =
+              allRecipes
+                  .where((recipe) => recipe.rating >= 4.0)
+                  .take(5)
+                  .toList();
+          debugPrint(
+            '✅ Using high-rated database recipes as recommendations: ${finalRecommended.length}',
+          );
+
+          // If still no high-rated recipes, just take any recipes from database
+          if (finalRecommended.isEmpty) {
+            finalRecommended = allRecipes.take(5).toList();
+            debugPrint(
+              '✅ Using first available database recipes: ${finalRecommended.length}',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('❌ Error getting recommendations from database: $e');
+        // Use any available database recipes as fallback - NO MOCK DATA
+        if (allRecipes.isNotEmpty) {
+          finalRecommended = allRecipes.take(5).toList();
+          debugPrint(
+            '🔄 Using available database recipes as fallback: ${finalRecommended.length}',
+          );
+        }
+      } // ONLY use database data - NO MOCK DATA FALLBACK
       if (allRecipes.isEmpty) {
         debugPrint(
-          '⚠️ No recipes from database, using HomeDataService fallback',
+          '❌ No recipes found in database! Please check database connection and data.',
         );
-        finalRecipes = HomeDataService.getHomeRecipes();
-        finalFeatured = HomeDataService.getFeaturedRecipes();
-        finalRecommended = HomeDataService.getRecommendedRecipes();
-        debugPrint('🔄 Fallback loaded: ${finalRecipes.length} recipes');
+        emit(
+          state.copyWith(
+            status: RecipeStatus.error,
+            errorMessage:
+                'No recipes found in database. Please check your connection.',
+          ),
+        );
+        return;
       } // Process categories
       final Map<String, List<Recipe>> categoryRecipes = {};
       for (var recipe in finalRecipes) {
@@ -68,17 +111,24 @@ class RecipeCubit extends Cubit<RecipeState> {
           }
         }
       }
-
       emit(
         state.copyWith(
           recipes: finalRecipes,
           featuredRecipes: finalFeatured,
-          recommendedRecipes: finalRecommended, // Pass the empty list
+          recommendedRecipes: finalRecommended, // Now properly filled
           savedRecipes: savedRecipes,
           categoryRecipes: categoryRecipes,
           status: RecipeStatus.loaded,
         ),
       );
+
+      // Final debugging log
+      debugPrint('🎉 RecipeCubit: Initialization complete!');
+      debugPrint('   📊 Total recipes: ${finalRecipes.length}');
+      debugPrint('   ⭐ Featured recipes: ${finalFeatured.length}');
+      debugPrint('   🎯 Recommended recipes: ${finalRecommended.length}');
+      debugPrint('   💾 Saved recipes: ${savedRecipes.length}');
+      debugPrint('   📁 Categories: ${categoryRecipes.keys.length}');
     } catch (e) {
       emit(
         state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
@@ -169,5 +219,17 @@ class RecipeCubit extends Cubit<RecipeState> {
 
   List<Recipe> getRecipesByCategory(String category) {
     return state.categoryRecipes[category] ?? [];
+  }
+
+  Future<void> filterByCategory(String category) async {
+    emit(state.copyWith(status: RecipeStatus.loading));
+    try {
+      final filteredResults = await _recipeService.filterRecipesByCategory(category);
+      emit(state.copyWith(recipes: filteredResults, status: RecipeStatus.loaded));
+    } catch (e) {
+      emit(
+        state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
+      );
+    }
   }
 }

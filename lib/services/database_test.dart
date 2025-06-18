@@ -33,12 +33,10 @@ class DatabaseTest {
       // Get total count
       final countResponse = await _supabaseService.client
           .from('recipes')
-          .select('id');
-
-      // Get sample recipes
+          .select('id');      // Get sample recipes
       final sampleResponse = await _supabaseService.client
           .from('recipes')
-          .select('id, title, rating, image_url')
+          .select('id, name, rating, image_url')
           .limit(5);
 
       final result = {

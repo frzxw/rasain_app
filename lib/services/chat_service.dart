@@ -39,7 +39,7 @@ class ChatService extends ChangeNotifier {
           .from('chat_messages')
           .select()
           .eq('user_id', userId)
-          .order('timestamp', ascending: true);
+          .order('created_at', ascending: true);
 
       final messages =
           response.map((message) => ChatMessage.fromJson(message)).toList();
@@ -85,7 +85,7 @@ class ChatService extends ChangeNotifier {
           'content': content,
           'type': 'text',
           'sender': 'user',
-          'timestamp': userMessage.timestamp.toIso8601String(),
+          'created_at': userMessage.timestamp.toIso8601String(),
         });
       }
       // Generate AI response (simple mock response for now)
@@ -112,7 +112,7 @@ class ChatService extends ChangeNotifier {
           'content': aiResponse,
           'type': 'text',
           'sender': 'assistant',
-          'timestamp': aiMessage.timestamp.toIso8601String(),
+          'created_at': aiMessage.timestamp.toIso8601String(),
         });
       }
     } catch (e) {
@@ -175,7 +175,7 @@ class ChatService extends ChangeNotifier {
           'type': 'image',
           'sender': 'user',
           'image_url': imageUrl,
-          'timestamp': userMessage.timestamp.toIso8601String(),
+          'created_at': userMessage.timestamp.toIso8601String(),
         });
       }
       // Generate AI response for image
@@ -203,7 +203,7 @@ class ChatService extends ChangeNotifier {
           'content': aiResponse,
           'type': 'text',
           'sender': 'assistant',
-          'timestamp': aiMessage.timestamp.toIso8601String(),
+          'created_at': aiMessage.timestamp.toIso8601String(),
         });
       }
     } catch (e) {

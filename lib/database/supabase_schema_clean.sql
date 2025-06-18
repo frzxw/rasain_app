@@ -56,8 +56,16 @@
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Custom Types (Enums)
 -- ========================================
+-- Drop existing types if they exist
+DROP TYPE IF EXISTS message_type CASCADE;
+DROP TYPE IF EXISTS message_sender CASCADE;
+DROP TYPE IF EXISTS difficulty_level CASCADE;
+DROP TYPE IF EXISTS notification_type CASCADE;
+
+-- Create types
 CREATE TYPE message_type AS ENUM ('text', 'image');
 CREATE TYPE message_sender AS ENUM ('user', 'ai');
 CREATE TYPE difficulty_level AS ENUM ('mudah', 'sedang', 'sulit');
@@ -74,7 +82,7 @@ CREATE TYPE notification_type AS ENUM (
 -- ========================================
 -- User Profiles Table (extends auth.users)
 -- ========================================
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255),
@@ -92,6 +100,11 @@ CREATE TABLE user_profiles (
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for user_profiles
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
+
 CREATE POLICY "Users can view own profile" ON user_profiles
     FOR SELECT USING (auth.uid() = id);
 
@@ -102,23 +115,22 @@ CREATE POLICY "Users can insert own profile" ON user_profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Indexes for user_profiles
-CREATE INDEX idx_user_profiles_email ON user_profiles(email);
-CREATE INDEX idx_user_profiles_name ON user_profiles(name);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_name ON user_profiles(name);
 
 -- ========================================
 -- Recipes Table
 -- ========================================
-CREATE TABLE recipes (
+CREATE TABLE IF NOT EXISTS recipes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
     description TEXT,
     image_url TEXT,
     video_url TEXT,
-    rating NUMERIC(2, 1) DEFAULT 0.0,
-    cook_time INTEGER, -- in minutes
+    rating NUMERIC(2, 1) DEFAULT 0.0,    cook_time INTEGER, -- in minutes
     servings INTEGER,
-    tingkat_kesulitan difficulty_level,
+    difficulty_level difficulty_level,
     is_featured BOOLEAN DEFAULT FALSE,
     is_published BOOLEAN DEFAULT TRUE,
     created_by UUID REFERENCES auth.users(id),
@@ -143,20 +155,20 @@ CREATE POLICY "Authenticated users can create recipes" ON recipes
 CREATE POLICY "Users can update own recipes" ON recipes
     FOR UPDATE USING (auth.uid() = created_by);
 
--- Indexes for recipes
-CREATE INDEX idx_recipes_name ON recipes(name);
-CREATE INDEX idx_recipes_slug ON recipes(slug);
-CREATE INDEX idx_recipes_rating ON recipes(rating);
-CREATE INDEX idx_recipes_cook_time ON recipes(cook_time);
-CREATE INDEX idx_recipes_servings ON recipes(servings);
-CREATE INDEX idx_recipes_difficulty ON recipes(tingkat_kesulitan);
-CREATE INDEX idx_recipes_created_by ON recipes(created_by);
-CREATE INDEX idx_recipes_categories ON recipes USING GIN(categories); -- Index for categories
+-- Indexes for recipes table
+CREATE INDEX IF NOT EXISTS idx_recipes_name ON recipes(name);
+CREATE INDEX IF NOT EXISTS idx_recipes_slug ON recipes(slug);
+CREATE INDEX IF NOT EXISTS idx_recipes_rating ON recipes(rating);
+CREATE INDEX IF NOT EXISTS idx_recipes_cook_time ON recipes(cook_time);
+CREATE INDEX IF NOT EXISTS idx_recipes_servings ON recipes(servings);
+CREATE INDEX IF NOT EXISTS idx_recipes_difficulty ON recipes(difficulty_level);
+CREATE INDEX IF NOT EXISTS idx_recipes_created_by ON recipes(created_by);
+CREATE INDEX IF NOT EXISTS idx_recipes_categories ON recipes USING GIN(categories);
 
 -- ========================================
 -- Kitchen Tools Table
 -- ========================================
-CREATE TABLE kitchen_tools (
+CREATE TABLE IF NOT EXISTS kitchen_tools (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -172,12 +184,12 @@ CREATE POLICY "Authenticated users can manage kitchen tools" ON kitchen_tools
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- Indexes for kitchen_tools
-CREATE INDEX idx_kitchen_tools_name ON kitchen_tools(name);
+CREATE INDEX IF NOT EXISTS idx_kitchen_tools_name ON kitchen_tools(name);
 
 -- ========================================
 -- Common Ingredients Table
 -- ========================================
-CREATE TABLE common_ingredients (
+CREATE TABLE IF NOT EXISTS common_ingredients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -193,7 +205,7 @@ CREATE POLICY "Authenticated users can manage common ingredients" ON common_ingr
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- Indexes for common_ingredients
-CREATE INDEX idx_common_ingredients_name ON common_ingredients(name);
+CREATE INDEX IF NOT EXISTS idx_common_ingredients_name ON common_ingredients(name);
 
 -- ========================================
 -- Ingredient Categories Table
@@ -215,14 +227,14 @@ CREATE POLICY "Authenticated users can manage ingredient categories" ON ingredie
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- Indexes for ingredient_categories
-CREATE INDEX idx_ingredient_categories_category ON ingredient_categories(category);
-CREATE INDEX idx_ingredient_categories_name ON ingredient_categories(name);
+CREATE INDEX IF NOT EXISTS idx_ingredient_categories_category ON ingredient_categories(category);
+CREATE INDEX IF NOT EXISTS idx_ingredient_categories_name ON ingredient_categories(name);
 
 
 -- ========================================
 -- Recipe Categories Table
 -- ========================================
-CREATE TABLE recipe_categories (
+CREATE TABLE IF NOT EXISTS recipe_categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     category VARCHAR(100) NOT NULL,
@@ -243,13 +255,13 @@ CREATE POLICY "Authenticated users can manage recipe categories" ON recipe_categ
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- Indexes for recipe_categories
-CREATE INDEX idx_recipe_categories_recipe_category ON recipe_categories(recipe_id, category);
-CREATE INDEX idx_recipe_categories_category ON recipe_categories(category);
+CREATE INDEX IF NOT EXISTS idx_recipe_categories_recipe_category ON recipe_categories(recipe_id, category);
+CREATE INDEX IF NOT EXISTS idx_recipe_categories_category ON recipe_categories(category);
 
 -- ========================================
 -- Recipe Ingredients Table
 -- ========================================
-CREATE TABLE recipe_ingredients (
+CREATE TABLE IF NOT EXISTS recipe_ingredients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     ingredient_name VARCHAR(255) NOT NULL,
@@ -274,14 +286,14 @@ CREATE POLICY "Authenticated users can manage recipe ingredients" ON recipe_ingr
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- Indexes for recipe_ingredients
-CREATE INDEX idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
-CREATE INDEX idx_recipe_ingredients_name ON recipe_ingredients(ingredient_name);
-CREATE INDEX idx_recipe_ingredients_order ON recipe_ingredients(recipe_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_name ON recipe_ingredients(ingredient_name);
+CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_order ON recipe_ingredients(recipe_id, order_index);
 
 -- ========================================
 -- Recipe Instructions Table
 -- ========================================
-CREATE TABLE recipe_instructions (
+CREATE TABLE IF NOT EXISTS recipe_instructions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
     step_number INTEGER NOT NULL,
@@ -307,6 +319,177 @@ CREATE POLICY "Authenticated users can manage recipe instructions" ON recipe_ins
     FOR ALL USING (auth.role() = 'authenticated');
 
 -- ========================================
+-- Community Posts Table
+-- ========================================
+CREATE TABLE IF NOT EXISTS community_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL,
+    user_image_url TEXT,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    content TEXT,
+    image_url TEXT,
+    tagged_ingredients TEXT[],
+    category TEXT,
+    like_count INTEGER DEFAULT 0,
+    comment_count INTEGER DEFAULT 0,
+    is_liked BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE community_posts ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for community_posts
+CREATE POLICY "Anyone can view community posts" ON community_posts
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can create posts" ON community_posts
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
+
+CREATE POLICY "Users can update own posts" ON community_posts
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own posts" ON community_posts
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Indexes for community_posts
+CREATE INDEX IF NOT EXISTS idx_community_posts_user_id ON community_posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_posts_timestamp ON community_posts(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_community_posts_category ON community_posts(category);
+
+-- ========================================
+-- Post Likes Table
+-- ========================================
+CREATE TABLE IF NOT EXISTS post_likes (
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    post_id UUID REFERENCES community_posts(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (user_id, post_id)
+);
+
+-- Enable RLS
+ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for post_likes
+CREATE POLICY "Anyone can view post likes" ON post_likes
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can manage likes" ON post_likes
+    FOR ALL USING (auth.role() = 'authenticated' AND auth.uid() = user_id);
+
+-- ========================================
+-- Recipe Reviews Table
+-- ========================================
+CREATE TABLE IF NOT EXISTS recipe_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    rating NUMERIC(2,1) NOT NULL CHECK (rating >= 1.0 AND rating <= 5.0),
+    comment TEXT, -- Ganti dari review_text ke comment
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT unique_user_recipe_review UNIQUE (recipe_id, user_id)
+);
+
+-- Enable RLS
+ALTER TABLE recipe_reviews ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for recipe_reviews
+CREATE POLICY "Anyone can view recipe reviews" ON recipe_reviews
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can create reviews" ON recipe_reviews
+    FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = user_id);
+
+CREATE POLICY "Users can update own reviews" ON recipe_reviews
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own reviews" ON recipe_reviews
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Indexes for recipe_reviews
+CREATE INDEX idx_recipe_reviews_recipe_id ON recipe_reviews(recipe_id);
+CREATE INDEX idx_recipe_reviews_user_id ON recipe_reviews(user_id);
+CREATE INDEX idx_recipe_reviews_rating ON recipe_reviews(rating DESC);
+
+-- ========================================
+-- Tools Table
+-- ========================================
+DROP TABLE IF EXISTS tools CASCADE;
+CREATE TABLE tools (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    category TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for tools
+CREATE POLICY "Anyone can view tools" ON tools
+    FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can manage tools" ON tools
+    FOR ALL USING (auth.role() = 'authenticated');
+
+-- Indexes for tools
+CREATE INDEX idx_tools_name ON tools(name);
+CREATE INDEX idx_tools_category ON tools(category);
+
+-- ========================================
+-- Pantry Items Table
+-- ========================================
+CREATE TABLE IF NOT EXISTS pantry_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    quantity TEXT,
+    unit TEXT,
+    category TEXT,
+    expiration_date DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE pantry_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for pantry_items
+CREATE POLICY "Users can view own pantry" ON pantry_items
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own pantry" ON pantry_items
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Indexes for pantry_items
+CREATE INDEX idx_pantry_items_user_id ON pantry_items(user_id);
+CREATE INDEX idx_pantry_items_expiration ON pantry_items(expiration_date);
+
+-- ========================================
+-- User Saved Recipes Table
+-- ========================================
+CREATE TABLE IF NOT EXISTS user_saved_recipes (
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (user_id, recipe_id)
+);
+
+-- Enable RLS
+ALTER TABLE user_saved_recipes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for user_saved_recipes
+CREATE POLICY "Users can view own saved recipes" ON user_saved_recipes
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own saved recipes" ON user_saved_recipes
+    FOR ALL USING (auth.uid() = user_id);
+
+-- ========================================
 -- Functions for Updating Timestamps
 -- ========================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -318,21 +501,27 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at columns
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_recipes_updated_at ON recipes;
 CREATE TRIGGER update_recipes_updated_at BEFORE UPDATE ON recipes 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tools_updated_at ON tools;
 CREATE TRIGGER update_tools_updated_at BEFORE UPDATE ON tools 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_pantry_items_updated_at ON pantry_items;
 CREATE TRIGGER update_pantry_items_updated_at BEFORE UPDATE ON pantry_items 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_community_posts_updated_at ON community_posts;
 CREATE TRIGGER update_community_posts_updated_at BEFORE UPDATE ON community_posts 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_recipe_reviews_updated_at ON recipe_reviews;
 CREATE TRIGGER update_recipe_reviews_updated_at BEFORE UPDATE ON recipe_reviews 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -355,14 +544,17 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for recipe stats
+DROP TRIGGER IF EXISTS update_recipe_stats_after_review_insert ON recipe_reviews;
 CREATE TRIGGER update_recipe_stats_after_review_insert
     AFTER INSERT ON recipe_reviews
     FOR EACH ROW EXECUTE FUNCTION update_recipe_stats();
 
+DROP TRIGGER IF EXISTS update_recipe_stats_after_review_update ON recipe_reviews;
 CREATE TRIGGER update_recipe_stats_after_review_update
     AFTER UPDATE ON recipe_reviews
     FOR EACH ROW EXECUTE FUNCTION update_recipe_stats();
 
+DROP TRIGGER IF EXISTS update_recipe_stats_after_review_delete ON recipe_reviews;
 CREATE TRIGGER update_recipe_stats_after_review_delete
     AFTER DELETE ON recipe_reviews
     FOR EACH ROW EXECUTE FUNCTION update_recipe_stats();
@@ -380,10 +572,12 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for user saved count
+DROP TRIGGER IF EXISTS update_user_saved_count_after_save_insert ON user_saved_recipes;
 CREATE TRIGGER update_user_saved_count_after_save_insert
     AFTER INSERT ON user_saved_recipes
     FOR EACH ROW EXECUTE FUNCTION update_user_saved_count();
 
+DROP TRIGGER IF EXISTS update_user_saved_count_after_save_delete ON user_saved_recipes;
 CREATE TRIGGER update_user_saved_count_after_save_delete
     AFTER DELETE ON user_saved_recipes
     FOR EACH ROW EXECUTE FUNCTION update_user_saved_count();
@@ -401,10 +595,12 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for user posts count
+DROP TRIGGER IF EXISTS update_user_posts_count_after_post_insert ON community_posts;
 CREATE TRIGGER update_user_posts_count_after_post_insert
     AFTER INSERT ON community_posts
     FOR EACH ROW EXECUTE FUNCTION update_user_posts_count();
 
+DROP TRIGGER IF EXISTS update_user_posts_count_after_post_delete ON community_posts;
 CREATE TRIGGER update_user_posts_count_after_post_delete
     AFTER DELETE ON community_posts
     FOR EACH ROW EXECUTE FUNCTION update_user_posts_count();
@@ -422,10 +618,12 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for post like count
+DROP TRIGGER IF EXISTS update_post_like_count_after_like_insert ON post_likes;
 CREATE TRIGGER update_post_like_count_after_like_insert
     AFTER INSERT ON post_likes
     FOR EACH ROW EXECUTE FUNCTION update_post_like_count();
 
+DROP TRIGGER IF EXISTS update_post_like_count_after_like_delete ON post_likes;
 CREATE TRIGGER update_post_like_count_after_like_delete
     AFTER DELETE ON post_likes
     FOR EACH ROW EXECUTE FUNCTION update_post_like_count();
@@ -443,6 +641,7 @@ END;
 $$ language 'plpgsql' SECURITY DEFINER;
 
 -- Trigger to automatically create profile when user signs up
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -491,7 +690,7 @@ LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id
 LEFT JOIN recipe_tools rt ON r.id = rt.recipe_id
 LEFT JOIN tools t ON rt.tool_id = t.id
 GROUP BY r.id, r.name, r.slug, r.image_url, r.rating, r.review_count, 
-         r.estimated_cost, r.cook_time, r.servings, r.tingkat_kesulitan, r.description, 
+         r.estimated_cost, r.cook_time, r.servings, r.difficulty_level, r.description, 
          r.created_by, r.created_at, r.updated_at;
 
 -- View for popular recipes
@@ -521,7 +720,7 @@ LEFT JOIN recipe_tools rt ON r.id = rt.recipe_id
 LEFT JOIN tools t ON rt.tool_id = t.id
 WHERE r.rating >= 4.0 AND r.review_count >= 5
 GROUP BY r.id, r.name, r.slug, r.image_url, r.rating, r.review_count, 
-         r.estimated_cost, r.cook_time, r.servings, r.tingkat_kesulitan, r.description, 
+         r.estimated_cost, r.cook_time, r.servings, r.difficulty_level, r.description, 
          r.created_by, r.created_at, r.updated_at
 ORDER BY r.rating DESC, r.review_count DESC;
 

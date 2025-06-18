@@ -1,6 +1,5 @@
 import '../models/recipe.dart';
 import '../models/pantry_item.dart';
-import '../models/community_post.dart';
 
 /// Service untuk menyediakan data fallback ketika database tidak tersedia
 class FallbackDataService {
@@ -96,6 +95,57 @@ class FallbackDataService {
           {'text': 'Sajikan dengan nasi putih hangat'},
         ],
         categories: ['Makanan Utama', 'Tradisional', 'Pedas'],
+      ),
+      Recipe(
+        id: 'fallback-4',
+        name: 'Soto Ayam Lamongan',
+        description: 'Soto ayam dengan kuah bening yang segar dan gurih',
+        rating: 4.6,
+        reviewCount: 32,
+        cookTime: '1 jam',
+        servings: 4,
+        imageUrl:
+            'https://via.placeholder.com/300x200/FF9800/FFFFFF?text=Soto+Ayam',
+        ingredients: [
+          {'name': 'Ayam', 'amount': '1 ekor'},
+          {'name': 'Bihun', 'amount': '200g'},
+          {'name': 'Telur rebus', 'amount': '2 butir'},
+          {'name': 'Tauge', 'amount': '100g'},
+          {'name': 'Daun bawang', 'amount': '2 batang'},
+        ],
+        instructions: [
+          {'text': 'Rebus ayam hingga empuk'},
+          {'text': 'Suwir-suwir daging ayam'},
+          {'text': 'Siapkan bihun dan tauge'},
+          {'text': 'Tata dalam mangkuk saji'},
+          {'text': 'Tuang kuah panas'},
+        ],
+        categories: ['Makanan Utama', 'Berkuah', 'Tradisional'],
+      ),
+      Recipe(
+        id: 'fallback-5',
+        name: 'Gudeg Yogyakarta',
+        description: 'Gudeg manis khas Yogya dengan nangka muda',
+        rating: 4.8,
+        reviewCount: 28,
+        cookTime: '3 jam',
+        servings: 6,
+        imageUrl:
+            'https://via.placeholder.com/300x200/8BC34A/FFFFFF?text=Gudeg',
+        ingredients: [
+          {'name': 'Nangka muda', 'amount': '1 kg'},
+          {'name': 'Santan', 'amount': '500ml'},
+          {'name': 'Gula merah', 'amount': '200g'},
+          {'name': 'Bumbu halus', 'amount': 'sesuai resep'},
+        ],
+        instructions: [
+          {'text': 'Potong nangka muda'},
+          {'text': 'Tumis bumbu halus'},
+          {'text': 'Masukkan nangka dan santan'},
+          {'text': 'Masak dengan api kecil'},
+          {'text': 'Sajikan dengan nasi'},
+        ],
+        categories: ['Makanan Utama', 'Tradisional', 'Manis'],
       ),
     ];
   }

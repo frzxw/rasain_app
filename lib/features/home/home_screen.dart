@@ -57,8 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     super.dispose();
   }
-
   void _onSearchChanged() {
+    if (!mounted) return; // Add mounted check to prevent lifecycle errors
+    
     if (_searchController.text.isNotEmpty) {
       if (!_isSearching) {
         setState(() {
@@ -78,16 +79,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _testDatabaseDirectly() async {
     try {
-      debugPrint('🧪 Testing direct database access...');
-
-      final response = await SupabaseConfig.client
+      debugPrint('🧪 Testing direct database access...');      final response = await SupabaseConfig.client
           .from('recipes')
-          .select('id, title, description')
+          .select('id, name, description')
           .limit(3);
 
       debugPrint('✅ SUCCESS! Found ${response.length} recipes from database:');
       for (var recipe in response) {
-        debugPrint('  • ${recipe['title']}: ${recipe['description']}');
+        debugPrint('  • ${recipe['name']}: ${recipe['description']}');
       }
 
       // Show success message
@@ -231,6 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: AppSizes.marginS),
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
+            debugPrint(
+              '🏠 Home - Recommended section: status=${state.status}, recommended.length=${state.recommendedRecipes.length}',
+            );
+
             if (state.status == RecipeStatus.loading) {
               return RecipeCarousel(recipes: const [], isLoading: true);
             } else if (state.status == RecipeStatus.error) {
@@ -238,10 +241,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 state.errorMessage ?? 'Error loading recipes',
               );
             }
-            return RecipeCarousel(
-              recipes: state.recommendedRecipes,
-              isLoading: false,
+
+            // TEMPORARY FIX: Use featured recipes if recommended is empty
+            final recipesToShow =
+                state.recommendedRecipes.isNotEmpty
+                    ? state.recommendedRecipes
+                    : state.featuredRecipes;
+
+            debugPrint(
+              '🏠 Home - Using ${recipesToShow.length} recipes for recommendations',
             );
+
+            return RecipeCarousel(recipes: recipesToShow, isLoading: false);
           },
         ),
         const SizedBox(height: AppSizes.marginL),
@@ -496,8 +507,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     await context.read<RecipeCubit>().initialize();
   }
-
   void _handleCategoryFilter(String category) {
+    if (!mounted) return; // Add mounted check
+    
     setState(() {
       _selectedCategory = category;
       _searchController.clear();
@@ -506,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<RecipeCubit>().initialize();
       } else {
         _isSearching = true;
-        context.read<RecipeCubit>().getRecipesByCategory(category);
+        context.read<RecipeCubit>().filterByCategory(category);
       }
     });
   }

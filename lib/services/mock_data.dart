@@ -1,7 +1,7 @@
-// import '../models/recipe.dart';
-// import '../models/pantry_item.dart';
-// import '../models/user_profile.dart';
-// import '../models/community_post.dart';
+import '../models/recipe.dart';
+import '../models/pantry_item.dart';
+import '../models/user_profile.dart';
+import '../models/community_post.dart';
 
 /// Mock data with Indonesian-themed content for the Rasain app
 class MockData {
