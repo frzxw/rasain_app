@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,10 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
     'Daging',
     'Manis',
   ];
-
   String _selectedCategory = 'All';
   bool _isSearching = false;
   bool _isImageSearching = false;
+  Timer? _searchTimer; // Add timer for debouncing
 
   @override
   void initState() {
@@ -53,33 +54,47 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchTimer?.cancel(); // Cancel timer
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
+
   void _onSearchChanged() {
     if (!mounted) return; // Add mounted check to prevent lifecycle errors
-    
-    if (_searchController.text.isNotEmpty) {
-      if (!_isSearching) {
-        setState(() {
-          _isSearching = true;
-        });
-      }
-      context.read<RecipeCubit>().searchRecipes(_searchController.text);
-    } else {
-      if (_isSearching) {
-        setState(() {
-          _isSearching = false;
-        });
+
+    // Cancel previous timer
+    _searchTimer?.cancel();
+
+    // Set timer for debouncing (500ms delay)
+    _searchTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+
+      if (_searchController.text.trim().isNotEmpty) {
+        if (!_isSearching) {
+          setState(() {
+            _isSearching = true;
+          });
+        }
+        debugPrint('🔍 Searching for: "${_searchController.text}"');
+        context.read<RecipeCubit>().searchRecipes(
+          _searchController.text.trim(),
+        );
+      } else {
+        if (_isSearching) {
+          setState(() {
+            _isSearching = false;
+          });
+        }
         context.read<RecipeCubit>().initialize();
       }
-    }
+    });
   }
 
   Future<void> _testDatabaseDirectly() async {
     try {
-      debugPrint('🧪 Testing direct database access...');      final response = await SupabaseConfig.client
+      debugPrint('🧪 Testing direct database access...');
+      final response = await SupabaseConfig.client
           .from('recipes')
           .select('id, name, description')
           .limit(3);
@@ -507,9 +522,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     await context.read<RecipeCubit>().initialize();
   }
+
   void _handleCategoryFilter(String category) {
     if (!mounted) return; // Add mounted check
-    
+
     setState(() {
       _selectedCategory = category;
       _searchController.clear();

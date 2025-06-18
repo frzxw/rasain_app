@@ -526,24 +526,62 @@ class RecipeService extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
   Future<List<Recipe>> searchRecipes(String query) async {
     _setLoading(true);
     _clearError();
 
     try {
       // Perform search through the API or database
-      final String searchTerm = query.toLowerCase();
+      final String searchTerm = query.toLowerCase().trim();
 
+      if (searchTerm.isEmpty) {
+        return [];
+      }
+
+      debugPrint('🔍 Searching for: "$searchTerm"');
+
+      // Enhanced search with multiple criteria
       final result = await _supabaseService.client
           .from('recipes')
           .select()
-          .or('name.ilike.%$searchTerm%,description.ilike.%$searchTerm%')
+          .or(
+            'name.ilike.%$searchTerm%,description.ilike.%$searchTerm%,categories.ilike.%$searchTerm%',
+          )
           .order('rating', ascending: false);
 
       final searchResults =
           result.map((data) => Recipe.fromJson(data)).toList();
 
-      debugPrint('✅ Found ${searchResults.length} matching recipes');
+      debugPrint(
+        '✅ Found ${searchResults.length} matching recipes for "$searchTerm"',
+      );
+
+      // If no exact matches, try partial word search
+      if (searchResults.isEmpty && searchTerm.length > 2) {
+        debugPrint('🔍 Trying partial search...');
+        final words = searchTerm.split(' ');
+        for (String word in words) {
+          if (word.length > 2) {
+            final partialResult = await _supabaseService.client
+                .from('recipes')
+                .select()
+                .or('name.ilike.%$word%,description.ilike.%$word%')
+                .order('rating', ascending: false)
+                .limit(10);
+
+            final partialResults =
+                partialResult.map((data) => Recipe.fromJson(data)).toList();
+            if (partialResults.isNotEmpty) {
+              debugPrint(
+                '✅ Found ${partialResults.length} partial matches for "$word"',
+              );
+              return partialResults;
+            }
+          }
+        }
+      }
+
       return searchResults;
     } catch (e) {
       debugPrint('❌ Search error: $e');
@@ -567,23 +605,52 @@ class RecipeService extends ChangeNotifier {
   // Method to fetch recipes by category
   Future<List<Recipe>> filterRecipesByCategory(String category) async {
     _setLoading(true);
-    _clearError();    try {
+    _clearError();
+
+    try {
+      debugPrint('🔍 Filtering by category: "$category"');
+
       // Filter recipes by category - use ilike instead of textSearch
       List<Map<String, dynamic>> response;
-      
-      if (category.toLowerCase() == 'all' || category.toLowerCase() == 'semua') {
+
+      if (category.toLowerCase() == 'all' ||
+          category.toLowerCase() == 'semua') {
         // Get all recipes if category is 'All'
+        debugPrint('📋 Getting all recipes...');
         response = await _supabaseService.client
             .from('recipes')
             .select()
             .order('rating', ascending: false);
       } else {
-        // Search in categories or name fields
+        // Try different search approaches for categories
+        debugPrint('🎯 Searching for category: "$category"');
+
+        // First try: exact category match
         response = await _supabaseService.client
             .from('recipes')
             .select()
-            .or('categories.ilike.%$category%,name.ilike.%$category%')
+            .ilike('categories', '%$category%')
             .order('rating', ascending: false);
+
+        // If no results, try name search as fallback
+        if (response.isEmpty) {
+          debugPrint('🔄 No category matches, trying name search...');
+          response = await _supabaseService.client
+              .from('recipes')
+              .select()
+              .ilike('name', '%$category%')
+              .order('rating', ascending: false);
+        }
+
+        // If still no results, try description search
+        if (response.isEmpty) {
+          debugPrint('🔄 No name matches, trying description search...');
+          response = await _supabaseService.client
+              .from('recipes')
+              .select()
+              .ilike('description', '%$category%')
+              .order('rating', ascending: false);
+        }
       }
 
       final filteredRecipes =
@@ -596,7 +663,21 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error filtering by category: $e');
       _setError('Failed to filter recipes by category: $e');
-      return [];
+
+      // Fallback: return all recipes if category filter fails
+      try {
+        debugPrint('🔄 Fallback: Getting all recipes...');
+        final fallbackResponse = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .order('rating', ascending: false)
+            .limit(20);
+
+        return fallbackResponse.map((data) => Recipe.fromJson(data)).toList();
+      } catch (fallbackError) {
+        debugPrint('❌ Fallback also failed: $fallbackError');
+        return [];
+      }
     } finally {
       _setLoading(false);
     }
@@ -717,7 +798,9 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');      // If no reviews found, return sample data for testing
+      debugPrint(
+        '✅ Fetched ${response.length} reviews for recipe: $recipeId',
+      ); // If no reviews found, return sample data for testing
       if (response.isEmpty) {
         debugPrint('📝 No reviews found, returning sample data');
         return [
@@ -729,7 +812,8 @@ class RecipeService extends ChangeNotifier {
             'rating': 4.5,
             'comment':
                 'Resep yang sangat enak! Mudah diikuti dan rasanya sempurna.',
-            'date': DateTime.now().subtract(Duration(days: 2)).toIso8601String(),
+            'date':
+                DateTime.now().subtract(Duration(days: 2)).toIso8601String(),
           },
           {
             'id': 'sample-2',
@@ -739,7 +823,8 @@ class RecipeService extends ChangeNotifier {
             'rating': 5.0,
             'comment':
                 'Keluarga saya sangat suka dengan resep ini. Terima kasih!',
-            'date': DateTime.now().subtract(Duration(days: 5)).toIso8601String(),
+            'date':
+                DateTime.now().subtract(Duration(days: 5)).toIso8601String(),
           },
         ];
       }
@@ -753,10 +838,13 @@ class RecipeService extends ChangeNotifier {
               'avatarUrl': null,
               'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
               'comment': review['comment'] ?? '',
-              'date': review['created_at']?.toString() ?? DateTime.now().toIso8601String(),
+              'date':
+                  review['created_at']?.toString() ??
+                  DateTime.now().toIso8601String(),
             },
           )
-          .toList();    } catch (e) {
+          .toList();
+    } catch (e) {
       debugPrint('❌ Error fetching reviews for recipe $recipeId: $e');
 
       // Return sample data on error
