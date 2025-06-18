@@ -5,6 +5,7 @@ enum CommunityStatus { initial, loading, loaded, posting, error }
 
 class CommunityState extends Equatable {
   final List<CommunityPost> posts;
+  final List<CommunityPost> allPosts; // Store all posts for filtering
   final List<String> categories;
   final String? selectedCategory;
   final CommunityStatus status;
@@ -12,6 +13,7 @@ class CommunityState extends Equatable {
 
   const CommunityState({
     this.posts = const [],
+    this.allPosts = const [],
     this.categories = const [],
     this.selectedCategory,
     this.status = CommunityStatus.initial,
@@ -20,6 +22,7 @@ class CommunityState extends Equatable {
 
   CommunityState copyWith({
     List<CommunityPost>? posts,
+    List<CommunityPost>? allPosts,
     List<String>? categories,
     String? selectedCategory,
     CommunityStatus? status,
@@ -27,6 +30,7 @@ class CommunityState extends Equatable {
   }) {
     return CommunityState(
       posts: posts ?? this.posts,
+      allPosts: allPosts ?? this.allPosts,
       categories: categories ?? this.categories,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       status: status ?? this.status,
@@ -37,6 +41,7 @@ class CommunityState extends Equatable {
   @override
   List<Object?> get props => [
     posts,
+    allPosts,
     categories,
     selectedCategory,
     status,

@@ -108,8 +108,23 @@ class RecipeService extends ChangeNotifier {
     try {
       debugPrint('🧪 Testing recipe connection...');
 
-      // Ambil recipe ID yang ada di screenshot
-      const String recipeId = 'f8ba3cfc-dea6-5fea-e89d-2bac8af9d53c';
+      // Gunakan recipe ID yang ada di screenshot dari attachment
+      const String recipeId =
+          'b4dc9eb8-9ac2-1bac-a45f-8dce47ecf62a'; // salah satu ID dari gambar
+
+      // Test ambil instructions dulu
+      debugPrint('🔍 Testing instructions for recipe: $recipeId');
+      final instructions = await getRecipeInstructions(recipeId);
+      debugPrint('📋 Instructions count: ${instructions.length}');
+
+      if (instructions.isNotEmpty) {
+        debugPrint('✅ Found instructions:');
+        for (var i = 0; i < instructions.length; i++) {
+          debugPrint('   Step ${i + 1}: ${instructions[i]['text']}');
+        }
+      } else {
+        debugPrint('❌ No instructions found for recipe');
+      }
 
       // Test ambil reviews
       final reviews = await getRecipeReviews(recipeId);
@@ -770,42 +785,55 @@ class RecipeService extends ChangeNotifier {
       debugPrint('🔧 Error details: ${e.toString()}');
       return [];
     }
-  }
+  } // Get instructions for a specific recipe from recipe_instructions table
 
-  // Get instructions for a specific recipe from recipe_instructions table
   Future<List<Map<String, dynamic>>> getRecipeInstructions(
     String recipeId,
   ) async {
     try {
+      debugPrint('🔍 Fetching instructions for recipe: $recipeId');
+
+      // Cek apakah table ada dan isinya
+      final checkTable = await _supabaseService.client
+          .from('recipe_instructions')
+          .select('*')
+          .limit(5);
+      debugPrint('🔍 Sample data from recipe_instructions table: $checkTable');
       final response = await _supabaseService.client
           .from('recipe_instructions')
           .select('''
             id,
             step_number,
             instruction_text,
-            video_url
+            image_url,
+            recipe_id,
+            timer_minutes
           ''')
           .eq('recipe_id', recipeId)
           .order('step_number', ascending: true);
 
+      debugPrint('📋 Raw instructions response: $response');
+      debugPrint('📋 Response type: ${response.runtimeType}');
       debugPrint(
         '✅ Fetched ${response.length} instructions for recipe: $recipeId',
       );
+      final instructions =
+          response
+              .map<Map<String, dynamic>>(
+                (instruction) => {
+                  'id': instruction['id']?.toString() ?? '',
+                  'text': instruction['instruction_text']?.toString() ?? '',
+                  'imageUrl': instruction['image_url']?.toString(),
+                  'step_number': instruction['step_number'] ?? 0,
+                  'estimatedTime': instruction['timer_minutes'],
+                  'temperature': null,
+                  'notes': null,
+                },
+              )
+              .toList();
 
-      return response
-          .map<Map<String, dynamic>>(
-            (instruction) => {
-              'id': instruction['id']?.toString() ?? '',
-              'text': instruction['instruction_text']?.toString() ?? '',
-              'videoUrl': instruction['video_url']?.toString(),
-              'step_number': instruction['step_number'] ?? 0,
-              'imageUrl': null, // Set null karena tidak ada di tabel
-              'estimatedTime': null,
-              'temperature': null,
-              'notes': null,
-            },
-          )
-          .toList();
+      debugPrint('📝 Processed instructions: $instructions');
+      return instructions;
     } catch (e) {
       debugPrint('❌ Error fetching instructions for recipe $recipeId: $e');
       return [];

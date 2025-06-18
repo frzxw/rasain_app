@@ -472,10 +472,48 @@ class DataService {
   /// Get community posts
   Future<List<CommunityPost>> getCommunityPosts() async {
     try {
-      final data = await _supabaseService.fetchAll('community_posts');
-      return data.map((json) => CommunityPost.fromJson(json)).toList();
+      debugPrint('🔍 Fetching community posts from database...');
+
+      // Pertama cek struktur table community_posts
+      final checkResponse = await _supabaseService.client
+          .from('community_posts')
+          .select('*')
+          .limit(3);
+      debugPrint('🔍 Sample data from community_posts: $checkResponse');
+
+      final response = await _supabaseService.client
+          .from('community_posts')
+          .select('*')
+          .order('created_at', ascending: false);
+
+      debugPrint('📋 Raw community posts response: $response');
+      debugPrint('✅ Fetched ${response.length} community posts');
+
+      final posts =
+          response.map<CommunityPost>((post) {
+            return CommunityPost(
+              id: post['id']?.toString() ?? '',
+              userId: post['user_id']?.toString() ?? '',
+              userName:
+                  'User', // Sementara pakai default, nanti join dengan user table
+              userImageUrl: null,
+              timestamp: DateTime.parse(
+                post['created_at'] ?? DateTime.now().toIso8601String(),
+              ),
+              content: post['content']?.toString(),
+              imageUrl: post['image_url']?.toString(),
+              category: post['category']?.toString(),
+              likeCount: 0, // TODO: implement likes count
+              commentCount: 0, // TODO: implement comments count
+              isLiked: false, // TODO: implement user like status
+              taggedIngredients: null, // TODO: implement if needed
+            );
+          }).toList();
+
+      debugPrint('📝 Mapped ${posts.length} community posts');
+      return posts;
     } catch (e) {
-      debugPrint('Error fetching community posts: $e');
+      debugPrint('❌ Error fetching community posts: $e');
       return [];
     }
   }

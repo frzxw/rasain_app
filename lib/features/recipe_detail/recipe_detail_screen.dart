@@ -46,6 +46,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           final recipe = recipeService.currentRecipe;
           final isLoading = recipeService.isLoading;
 
+          // Debug print untuk melihat data instruksi
+          if (recipe != null) {
+            print('🍽️ Recipe loaded: ${recipe.name}');
+            print('📋 Instructions count: ${recipe.instructions?.length ?? 0}');
+            if (recipe.instructions != null &&
+                recipe.instructions!.isNotEmpty) {
+              print('📝 First instruction: ${recipe.instructions!.first}');
+            } else {
+              print('❌ No instructions found for recipe');
+            }
+          }
+
           if (isLoading && recipe == null) {
             return const Center(
               child: CircularProgressIndicator(
@@ -75,114 +87,148 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   ) {
     return CustomScrollView(
       slivers: [
-        // App Bar with Recipe Image
+        // Enhanced App Bar with Recipe Image
         SliverAppBar(
-          expandedHeight: 250,
+          expandedHeight: 300,
           pinned: true,
           backgroundColor: AppColors.primary,
+          elevation: 0,
           leading: IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.black26,
-                borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
+                color: Colors.black38,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.arrow_back_ios,
-                size: AppSizes.iconS,
+                Icons.arrow_back_ios_new,
+                size: 18,
                 color: Colors.white,
               ),
             ),
             onPressed: () {
-              // Check if we can go back in history
               try {
                 context.pop();
               } catch (e) {
-                // If we can't pop, try to explicitly navigate to welcome screen
                 context.go('/welcome');
               }
             },
           ),
           actions: [
-            // Share Button
+            // Enhanced Share Button
             IconButton(
               icon: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
-                  Icons.share,
+                  Icons.share_outlined,
                   color: Colors.white,
-                  size: AppSizes.iconM,
+                  size: 20,
                 ),
               ),
               onPressed: () {
-                // Share functionality would be implemented here
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Membagikan resep: ${recipe.name}'),
+                    content: Row(
+                      children: [
+                        const Icon(Icons.share, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text('Membagikan: ${recipe.name}'),
+                      ],
+                    ),
                     backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
             ),
-            const SizedBox(width: 8),
 
-            // Bookmark Button
+            // Enhanced Bookmark Button with Animation
             IconButton(
               icon: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusCircular),
+                  color:
+                      recipe.isSaved
+                          ? AppColors.highlight.withOpacity(0.2)
+                          : Colors.black38,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   recipe.isSaved ? Icons.bookmark : Icons.bookmark_border,
                   color: recipe.isSaved ? AppColors.highlight : Colors.white,
-                  size: AppSizes.iconM,
+                  size: 20,
                 ),
               ),
               onPressed: () => recipeService.toggleSaveRecipe(recipe.id),
             ),
+            const SizedBox(width: 12),
           ],
           flexibleSpace: FlexibleSpaceBar(
             background: Stack(
               fit: StackFit.expand,
               children: [
-                // Recipe Image
-                recipe.imageUrl != null
-                    ? Image.network(
-                      recipe.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (_, __, ___) => Container(
-                            color: AppColors.primary,
+                // Enhanced Recipe Image with Hero Animation
+                Hero(
+                  tag: 'recipe-${recipe.id}',
+                  child:
+                      recipe.imageUrl != null
+                          ? Image.network(
+                            recipe.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        AppColors.primary,
+                                        AppColors.primary.withOpacity(0.8),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.restaurant_menu,
+                                    color: Colors.white,
+                                    size: 80,
+                                  ),
+                                ),
+                          )
+                          : Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primary.withOpacity(0.8),
+                                ],
+                              ),
+                            ),
                             child: const Icon(
-                              Icons.restaurant,
+                              Icons.restaurant_menu,
                               color: Colors.white,
-                              size: 64,
+                              size: 80,
                             ),
                           ),
-                    )
-                    : Container(
-                      color: AppColors.primary,
-                      child: const Icon(
-                        Icons.restaurant,
-                        color: Colors.white,
-                        size: 64,
-                      ),
-                    ),
+                ),
 
-                // Gradient Overlay
-                const DecoratedBox(
-                  decoration: BoxDecoration(
+                // Enhanced Gradient Overlay
+                Container(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black54],
-                      stops: [0.7, 1.0],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black26,
+                        Colors.black54,
+                      ],
+                      stops: [0.5, 0.8, 1.0],
                     ),
                   ),
                 ),
@@ -224,71 +270,223 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               children: [
                 // Recipe Summary
                 _buildRecipeSummary(context, recipe),
-
                 const SizedBox(height: AppSizes.marginL),
 
-                // Ingredients Section
-                Text(
-                  'Bahan-bahan',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppSizes.marginM),
-                if (recipe.ingredients != null)
-                  IngredientList(ingredients: recipe.ingredients!),
-
-                const SizedBox(height: AppSizes.marginL),
-
-                // Instructions Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Langkah-langkah',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    if (recipe.instructions != null &&
-                        recipe.instructions!.isNotEmpty)
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Mode Memasak'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _cookingMode = true;
-                            _currentStep = 0;
-                          });
-                        },
+                // Enhanced Ingredients Section
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                  ],
-                ),
-                const SizedBox(height: AppSizes.marginM),
-                if (recipe.instructions != null)
-                  InstructionSteps(
-                    instructions: recipe.instructions!,
-                    onStartCooking: () {
-                      setState(() {
-                        _cookingMode = true;
-                        _currentStep = 0;
-                      });
-                    },
+                    ],
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.inventory_2_outlined,
+                              color: Colors.green,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.marginM),
+                          Text(
+                            'Bahan-bahan',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (recipe.ingredients != null) ...[
+                        const SizedBox(height: AppSizes.marginM),
+                        IngredientList(ingredients: recipe.ingredients!),
+                      ],
+                    ],
+                  ),
+                ),
 
                 const SizedBox(height: AppSizes.marginL),
 
-                // Review Section
-                Text(
-                  'Ulasan & Rating',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                // Enhanced Instructions Section
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.format_list_numbered,
+                                  color: Colors.blue,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: AppSizes.marginM),
+                              Text(
+                                'Langkah-langkah',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (recipe.instructions != null &&
+                              recipe.instructions!.isNotEmpty)
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primary.withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(25),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton.icon(
+                                icon: const Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                ),
+                                label: const Text(
+                                  'Mode Memasak',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSizes.paddingL,
+                                    vertical: AppSizes.paddingM,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _cookingMode = true;
+                                    _currentStep = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (recipe.instructions != null) ...[
+                        const SizedBox(height: AppSizes.marginM),
+                        InstructionSteps(
+                          instructions: recipe.instructions!,
+                          onStartCooking: () {
+                            setState(() {
+                              _cookingMode = true;
+                              _currentStep = 0;
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSizes.marginM),
-                ReviewSection(
-                  recipe: recipe,
-                  onRateRecipe:
-                      (rating, comment) =>
-                          recipeService.rateRecipe(recipe.id, rating),
+
+                const SizedBox(height: AppSizes.marginL),
+
+                // Enhanced Review Section
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.star_outline,
+                              color: Colors.amber,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: AppSizes.marginM),
+                          Text(
+                            'Ulasan & Rating',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSizes.marginM),
+                      ReviewSection(
+                        recipe: recipe,
+                        onRateRecipe:
+                            (rating, comment) =>
+                                recipeService.rateRecipe(recipe.id, rating),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: AppSizes.marginXL),
@@ -516,93 +714,206 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget _buildRecipeSummary(BuildContext context, Recipe recipe) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Description
-        if (recipe.description != null && recipe.description!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSizes.paddingM),
-            child: Text(
-              recipe.description!,
-              style: Theme.of(context).textTheme.bodyMedium,
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, AppColors.primary.withOpacity(0.02)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Enhanced Description with Icon
+          if (recipe.description != null && recipe.description!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(AppSizes.paddingM),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.description_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSizes.marginM),
+                  Expanded(
+                    child: Text(
+                      recipe.description!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        height: 1.5,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+          const SizedBox(height: AppSizes.marginL),
+
+          // Enhanced Recipe Info Cards
+          Row(
+            children: [
+              // Cook Time Card
+              if (recipe.cookTime != null)
+                Expanded(
+                  child: _buildEnhancedInfoCard(
+                    context,
+                    icon: Icons.timer_outlined,
+                    label: 'Waktu',
+                    value: recipe.cookTime!,
+                    color: Colors.orange,
+                  ),
+                ),
+
+              if (recipe.cookTime != null && recipe.servings != null)
+                const SizedBox(width: AppSizes.marginM),
+
+              // Servings Card
+              if (recipe.servings != null)
+                Expanded(
+                  child: _buildEnhancedInfoCard(
+                    context,
+                    icon: Icons.people_outline,
+                    label: 'Porsi',
+                    value: '${recipe.servings}',
+                    color: Colors.blue,
+                  ),
+                ),
+
+              if ((recipe.cookTime != null || recipe.servings != null) &&
+                  recipe.estimatedCost != null)
+                const SizedBox(width: AppSizes.marginM),
+
+              // Estimated Cost Card
+              if (recipe.estimatedCost != null)
+                Expanded(
+                  child: _buildEnhancedInfoCard(
+                    context,
+                    icon: Icons.attach_money,
+                    label: 'Biaya',
+                    value: recipe.estimatedCost!,
+                    color: Colors.green,
+                  ),
+                ),
+            ],
           ),
 
-        // Recipe Info Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            // Cook Time
-            if (recipe.cookTime != null)
-              _buildInfoItem(
-                context,
-                icon: Icons.access_time,
-                label: 'Waktu Masak',
-                value: recipe.cookTime!,
-              ),
-
-            // Servings
-            if (recipe.servings != null)
-              _buildInfoItem(
-                context,
-                icon: Icons.people_outline,
-                label: 'Porsi',
-                value: '${recipe.servings}',
-              ),
-
-            // Estimated Cost
-            if (recipe.estimatedCost != null)
-              _buildInfoItem(
-                context,
-                icon: Icons.currency_exchange,
-                label: 'Estimasi Biaya',
-                value: recipe.estimatedCost!,
-              ),
-          ],
-        ),
-
-        // Categories
-        if (recipe.categories != null && recipe.categories!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSizes.paddingM),
-            child: Wrap(
+          // Enhanced Categories Section
+          if (recipe.categories != null && recipe.categories!.isNotEmpty) ...[
+            const SizedBox(height: AppSizes.marginL),
+            Row(
+              children: [
+                Icon(
+                  Icons.local_offer_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: AppSizes.marginS),
+                Text(
+                  'Kategori',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.marginM),
+            Wrap(
               spacing: AppSizes.marginS,
               runSpacing: AppSizes.marginS,
               children:
                   recipe.categories!.map((category) {
-                    return Chip(
-                      label: Text(category),
-                      backgroundColor: AppColors.surface,
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingM,
+                        vertical: AppSizes.paddingS,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary.withOpacity(0.1),
+                            AppColors.primary.withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Text(
+                        category,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     );
                   }).toList(),
             ),
-          ),
-      ],
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoItem(
+  Widget _buildEnhancedInfoCard(
     BuildContext context, {
     required IconData icon,
     required String label,
     required String value,
+    required Color color,
   }) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.textSecondary, size: AppSizes.iconM),
-        const SizedBox(height: AppSizes.marginS),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 2),
-        Text(value, style: Theme.of(context).textTheme.titleMedium),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+        ],
+      ),
     );
   }
 

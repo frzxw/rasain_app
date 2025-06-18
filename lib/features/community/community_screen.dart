@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
-import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
@@ -31,8 +30,24 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const CustomAppBar(title: 'Community'),
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text(
+          'Community',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       body: BlocConsumer<CommunityCubit, CommunityState>(
         listener: (context, state) {
           // Handle any errors with snackbar or dialog if needed
@@ -42,6 +57,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               SnackBar(
                 content: Text(state.errorMessage!),
                 backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             );
           }
@@ -49,11 +68,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
         builder: (context, state) {
           return Column(
             children: [
-              // Filter Tags
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.paddingM,
-                  vertical: AppSizes.paddingS,
+              // Enhanced Filter Tags with background
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: FilterTags(
                   tags: state.categories,
@@ -64,18 +89,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
               ),
 
-              // Post List
+              // Post List with enhanced spacing
               Expanded(
                 child:
                     state.status == CommunityStatus.loading &&
                             state.posts.isEmpty
-                        ? const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primary,
-                            ),
-                          ),
-                        )
+                        ? _buildLoadingState()
                         : state.status == CommunityStatus.error
                         ? _buildErrorState(state.errorMessage)
                         : state.posts.isEmpty
@@ -86,7 +105,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           },
                           color: AppColors.primary,
                           child: ListView.builder(
-                            padding: const EdgeInsets.all(AppSizes.paddingM),
+                            padding: const EdgeInsets.all(16),
                             itemCount: state.posts.length,
                             itemBuilder: (context, index) {
                               final post = state.posts[index];
@@ -107,10 +126,68 @@ class _CommunityScreenState extends State<CommunityScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreatePostDialog,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showCreatePostDialog,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  strokeWidth: 3,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Memuat postingan...',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -118,37 +195,71 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget _buildErrorState(String? errorMessage) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: AppSizes.iconXL,
-              color: AppColors.error,
-            ),
-            const SizedBox(height: AppSizes.marginM),
-            Text(
-              'Oops! Terjadi kesalahan',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.marginS),
-            Text(
-              errorMessage ?? 'Gagal memuat postingan',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.marginL),
-            CustomButton(
-              label: 'Coba Lagi',
-              icon: Icons.refresh,
-              onPressed: () => context.read<CommunityCubit>().initialize(),
-              variant: ButtonVariant.primary,
-            ),
-          ],
+        padding: const EdgeInsets.all(32),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 48,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Oops! Terjadi kesalahan',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                errorMessage ?? 'Gagal memuat postingan komunitas',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: CustomButton(
+                  label: 'Coba Lagi',
+                  icon: Icons.refresh,
+                  onPressed: () => context.read<CommunityCubit>().initialize(),
+                  variant: ButtonVariant.primary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -157,41 +268,82 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget _buildEmptyState(String selectedCategory) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.people_outline,
-              size: AppSizes.iconXL,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: AppSizes.marginM),
-            Text(
-              selectedCategory == 'Semua'
-                  ? 'Belum ada postingan'
-                  : 'Belum ada postingan di $selectedCategory',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.marginS),
-            Text(
-              selectedCategory == 'Semua'
-                  ? 'Jadilah yang pertama berbagi pengalaman memasak Anda!'
-                  : 'Coba kategori lain atau jadilah yang pertama posting di sini',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.marginL),
-            CustomButton(
-              label: 'Buat Postingan',
-              icon: Icons.add,
-              onPressed: _showCreatePostDialog,
-              variant: ButtonVariant.primary,
-            ),
-          ],
+        padding: const EdgeInsets.all(32),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.people_outline,
+                  size: 64,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                selectedCategory == 'Semua'
+                    ? 'Belum ada postingan'
+                    : 'Belum ada postingan di $selectedCategory',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                selectedCategory == 'Semua'
+                    ? 'Jadilah yang pertama berbagi pengalaman memasak Anda!'
+                    : 'Coba kategori lain atau jadilah yang pertama posting di sini',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: CustomButton(
+                  label: 'Buat Postingan',
+                  icon: Icons.add,
+                  onPressed: _showCreatePostDialog,
+                  variant: ButtonVariant.primary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

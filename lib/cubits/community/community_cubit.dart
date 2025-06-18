@@ -8,7 +8,6 @@ class CommunityCubit extends Cubit<CommunityState> {
   final DataService _dataService;
 
   CommunityCubit(this._dataService) : super(const CommunityState());
-
   // Initialize and fetch community posts
   Future<void> initialize() async {
     emit(state.copyWith(status: CommunityStatus.loading));
@@ -26,6 +25,7 @@ class CommunityCubit extends Cubit<CommunityState> {
       emit(
         state.copyWith(
           posts: posts,
+          allPosts: posts, // Store all posts for filtering
           categories: categories,
           selectedCategory: 'Semua',
           status: CommunityStatus.loaded,
@@ -53,8 +53,11 @@ class CommunityCubit extends Cubit<CommunityState> {
     try {
       final filteredPosts =
           category == 'Semua'
-              ? state.posts
-              : state.posts.where((post) => post.category == category).toList();
+              ? state
+                  .allPosts // Use allPosts instead of state.posts
+              : state.allPosts
+                  .where((post) => post.category == category)
+                  .toList();
 
       emit(
         state.copyWith(
@@ -75,11 +78,13 @@ class CommunityCubit extends Cubit<CommunityState> {
 
   // Like or unlike a post
   Future<void> toggleLikePost(String postId) async {
-    // Find the post
-    final index = state.posts.indexWhere((p) => p.id == postId);
-    if (index == -1) return;
+    // Find the post in both posts and allPosts
+    final postsIndex = state.posts.indexWhere((p) => p.id == postId);
+    final allPostsIndex = state.allPosts.indexWhere((p) => p.id == postId);
 
-    final post = state.posts[index];
+    if (postsIndex == -1 || allPostsIndex == -1) return;
+
+    final post = state.posts[postsIndex];
     final isLiked = !post.isLiked;
     final newLikeCount = isLiked ? post.likeCount + 1 : post.likeCount - 1;
 
@@ -90,9 +95,12 @@ class CommunityCubit extends Cubit<CommunityState> {
     );
 
     final updatedPosts = List<CommunityPost>.from(state.posts);
-    updatedPosts[index] = updatedPost;
+    updatedPosts[postsIndex] = updatedPost;
 
-    emit(state.copyWith(posts: updatedPosts));
+    final updatedAllPosts = List<CommunityPost>.from(state.allPosts);
+    updatedAllPosts[allPostsIndex] = updatedPost;
+
+    emit(state.copyWith(posts: updatedPosts, allPosts: updatedAllPosts));
 
     // Update in database (would be implemented in a real app)
     try {
@@ -100,11 +108,15 @@ class CommunityCubit extends Cubit<CommunityState> {
     } catch (e) {
       // If there was an error, revert the change
       final revertedPosts = List<CommunityPost>.from(state.posts);
-      revertedPosts[index] = post;
+      revertedPosts[postsIndex] = post;
+
+      final revertedAllPosts = List<CommunityPost>.from(state.allPosts);
+      revertedAllPosts[allPostsIndex] = post;
 
       emit(
         state.copyWith(
           posts: revertedPosts,
+          allPosts: revertedAllPosts,
           status: CommunityStatus.error,
           errorMessage: 'Failed to update like status: ${e.toString()}',
         ),
