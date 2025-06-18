@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rasain_app/core/widgets/shimmer_widget.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../cubits/recipe/recipe_cubit.dart';
@@ -23,15 +22,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _categories = [
-    'All',
-    'Makanan Utama',
-    'Pedas',
-    'Tradisional',
-    'Sup',
-    'Daging',
-    'Manis',
-  ];
+  List<String> _categories = []; // Start empty, load from database
 
   String _selectedCategory = 'All';
   bool _isSearching = false;
@@ -46,7 +37,29 @@ class _HomeScreenState extends State<HomeScreen> {
       if (recipeCubit.state.status == RecipeStatus.initial) {
         recipeCubit.initialize();
       }
+      _loadCategories();
     });
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      debugPrint('🔍 Loading categories from database...');
+      final categories = await context.read<RecipeCubit>().getCategories();
+
+      // Remove duplicates if any
+      final uniqueCategories = categories.toSet().toList();
+
+      setState(() {
+        _categories = uniqueCategories;
+      });
+      debugPrint('✅ Categories loaded: ${uniqueCategories.join(', ')}');
+    } catch (e) {
+      debugPrint('❌ Failed to load categories: $e');
+      // Set default if failed to load from database
+      setState(() {
+        _categories = ['All'];
+      });
+    }
   }
 
   @override
@@ -87,6 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildSliverAppBar(),
               if (_isSearching)
                 _buildSearchResults()
+              else if (_selectedCategory != 'All')
+                _buildCategoryResults()
               else
                 _buildHomeContent(),
             ],
@@ -104,9 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
       snap: false,
       elevation: 0,
       expandedHeight: 120,
-      flexibleSpace: FlexibleSpaceBar(
-        background: _buildAppBarContent(),
-      ),
+      flexibleSpace: FlexibleSpaceBar(background: _buildAppBarContent()),
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(50.0),
         child: CategorySlider(
@@ -134,9 +147,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Cari resep...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.textSecondary,
+                  ),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.camera_alt_outlined, color: AppColors.textSecondary),
+                    icon: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: AppColors.textSecondary,
+                    ),
                     onPressed: _handleImageSearch,
                   ),
                   border: InputBorder.none,
@@ -146,7 +165,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 textInputAction: TextInputAction.search,
-                onSubmitted: (query) => context.read<RecipeCubit>().searchRecipes(query),
+                onSubmitted:
+                    (query) => context.read<RecipeCubit>().searchRecipes(query),
               ),
             ),
           ),
@@ -159,7 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
             child: IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+              icon: const Icon(
+                Icons.notifications_outlined,
+                color: AppColors.textPrimary,
+              ),
               onPressed: () => GoRouter.of(context).push('/notifications'),
             ),
           ),
@@ -170,69 +193,85 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomeContent() {
     return SliverList(
-      delegate: SliverChildListDelegate(
-        [
-          const SizedBox(height: AppSizes.marginL),
-          _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
-          const SizedBox(height: AppSizes.marginS),
-          BlocBuilder<RecipeCubit, RecipeState>(
-            builder: (context, state) {
-              if (state.status == RecipeStatus.loading) {
-                return RecipeCarousel(recipes: const [], isLoading: true);
-              } else if (state.status == RecipeStatus.error) {
-                return _buildErrorWidget(state.errorMessage ?? 'Error loading recipes');
-              }
-              return RecipeCarousel(recipes: state.recommendedRecipes, isLoading: false);
-            },
-          ),
-          const SizedBox(height: AppSizes.marginL),
-          _buildSectionTitle('Hidangan Populer'),
-          const SizedBox(height: AppSizes.marginS),
-          BlocBuilder<RecipeCubit, RecipeState>(
-            builder: (context, state) {
-              if (state.status == RecipeStatus.loading) {
-                return RecipeCarousel(recipes: const [], isLoading: true);
-              } else if (state.status == RecipeStatus.error) {
-                return _buildErrorWidget(state.errorMessage ?? 'Error loading recipes');
-              }
-              return RecipeCarousel(recipes: state.featuredRecipes, isLoading: false);
-            },
-          ),
-          const SizedBox(height: AppSizes.marginL),
-          _buildSectionTitle('Dari Dapur Anda'),
-          const SizedBox(height: AppSizes.marginS),
-          BlocBuilder<RecipeCubit, RecipeState>(
-            builder: (context, state) {
-              if (state.status == RecipeStatus.loading) {
-                return RecipeCarousel(recipes: const [], isLoading: true);
-              } else if (state.status == RecipeStatus.error) {
-                return _buildErrorWidget(state.errorMessage ?? 'Error loading recipes');
-              }
-              final pantryRecipes = state.recipes
-                  .where((recipe) => recipe.categories?.contains('Dari Dapur') == true)
-                  .toList();
-              return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
-            },
-          ),
-          const SizedBox(height: AppSizes.marginL),
-          _buildSectionTitle('Masak Apa Hari Ini?'),
-          const SizedBox(height: AppSizes.marginS),
-          BlocBuilder<RecipeCubit, RecipeState>(
-            builder: (context, state) {
-              if (state.status == RecipeStatus.loading) {
-                return WhatsCookingStream(recipes: const [], isLoading: true);
-              } else if (state.status == RecipeStatus.error) {
-                return _buildErrorWidget(state.errorMessage ?? 'Error loading recipes');
-              }
-              return WhatsCookingStream(
-                recipes: state.recipes.take(5).toList(),
-                isLoading: false,
+      delegate: SliverChildListDelegate([
+        const SizedBox(height: AppSizes.marginL),
+        _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
+        const SizedBox(height: AppSizes.marginS),
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loading) {
+              return RecipeCarousel(recipes: const [], isLoading: true);
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading recipes',
               );
-            },
-          ),
-          const SizedBox(height: AppSizes.marginL),
-        ],
-      ),
+            }
+            return RecipeCarousel(
+              recipes: state.recommendedRecipes,
+              isLoading: false,
+            );
+          },
+        ),
+        const SizedBox(height: AppSizes.marginL),
+        _buildSectionTitle('Hidangan Populer'),
+        const SizedBox(height: AppSizes.marginS),
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loading) {
+              return RecipeCarousel(recipes: const [], isLoading: true);
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading recipes',
+              );
+            }
+            return RecipeCarousel(
+              recipes: state.featuredRecipes,
+              isLoading: false,
+            );
+          },
+        ),
+        const SizedBox(height: AppSizes.marginL),
+        _buildSectionTitle('Dari Dapur Anda'),
+        const SizedBox(height: AppSizes.marginS),
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loading) {
+              return RecipeCarousel(recipes: const [], isLoading: true);
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading recipes',
+              );
+            }
+            final pantryRecipes =
+                state.recipes
+                    .where(
+                      (recipe) =>
+                          recipe.categories?.contains('Dari Dapur') == true,
+                    )
+                    .toList();
+            return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
+          },
+        ),
+        const SizedBox(height: AppSizes.marginL),
+        _buildSectionTitle('Masak Apa Hari Ini?'),
+        const SizedBox(height: AppSizes.marginS),
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loading) {
+              return WhatsCookingStream(recipes: const [], isLoading: true);
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading recipes',
+              );
+            }
+            return WhatsCookingStream(
+              recipes: state.recipes.take(5).toList(),
+              isLoading: false,
+            );
+          },
+        ),
+        const SizedBox(height: AppSizes.marginL),
+      ]),
     );
   }
 
@@ -255,22 +294,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocBuilder<RecipeCubit, RecipeState>(
       builder: (context, state) {
         if (state.status == RecipeStatus.loading && state.recipes.isEmpty) {
-          return SliverToBoxAdapter(
-            child: ShimmerWidget(
-              child: MasonryGridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                itemCount: 6,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return Container(
+          return SliverPadding(
+            padding: const EdgeInsets.all(AppSizes.paddingM),
+            sliver: SliverMasonryGrid.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childCount: 6,
+              itemBuilder: (context, index) {
+                return ShimmerWidget(
+                  child: Container(
                     height: (index % 2 + 1) * 100.0,
-                    color: Colors.white,
-                  );
-                },
-              ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                    ),
+                  ),
+                );
+              },
             ),
           );
         }
@@ -281,30 +322,37 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.search_off, size: 64, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: AppSizes.marginM),
                   Text(
                     'Tidak ada resep ditemukan',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.marginS),
                   Text(
                     'Coba kata kunci lain atau kategori berbeda.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
             ),
           );
         }
-
         return SliverPadding(
           padding: const EdgeInsets.all(AppSizes.paddingM),
-          sliver: MasonryGridView.count(
+          sliver: SliverMasonryGrid.count(
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            itemCount: state.recipes.length,
+            childCount: state.recipes.length,
             itemBuilder: (context, index) {
               final recipe = state.recipes[index];
               return _buildSearchResultItem(recipe);
@@ -312,6 +360,95 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCategoryResults() {
+    return SliverList(
+      delegate: SliverChildListDelegate([
+        const SizedBox(height: AppSizes.marginL),
+        _buildSectionTitle('$_selectedCategory'),
+        const SizedBox(height: AppSizes.marginS),
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loading) {
+              return _buildShimmerGrid();
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading recipes',
+              );
+            } else if (state.recipes.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingL),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.restaurant_menu,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: AppSizes.marginM),
+                      Text(
+                        'Tidak ada resep untuk kategori $_selectedCategory',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return _buildRecipeGrid(state.recipes);
+          },
+        ),
+        const SizedBox(height: AppSizes.marginL),
+      ]),
+    );
+  }
+
+  Widget _buildShimmerGrid() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      child: MasonryGridView.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        itemCount: 6,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          return ShimmerWidget(
+            child: Container(
+              height: (index % 2 + 1) * 100.0,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecipeGrid(List<Recipe> recipes) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.paddingM),
+      child: MasonryGridView.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        itemCount: recipes.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          final recipe = recipes[index];
+          return _buildSearchResultItem(recipe);
+        },
+      ),
     );
   }
 
@@ -327,7 +464,9 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => GoRouter.of(context).push('/recipe/${recipe.id}'),
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusM)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,26 +474,30 @@ class _HomeScreenState extends State<HomeScreen> {
             Hero(
               tag: 'recipe_image_${recipe.id}',
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusM)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppSizes.radiusM),
+                ),
                 child: Container(
                   height: 120,
                   width: double.infinity,
                   color: AppColors.surface,
-                  child: recipe.imageUrl != null
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+                  child:
+                      recipe.imageUrl != null
+                          ? Image.network(
+                            recipe.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => const Icon(
+                                  Icons.restaurant_menu,
+                                  color: AppColors.textSecondary,
+                                  size: AppSizes.iconL,
+                                ),
+                          )
+                          : const Icon(
                             Icons.restaurant_menu,
                             color: AppColors.textSecondary,
                             size: AppSizes.iconL,
                           ),
-                        )
-                      : const Icon(
-                          Icons.restaurant_menu,
-                          color: AppColors.textSecondary,
-                          size: AppSizes.iconL,
-                        ),
                 ),
               ),
             ),
@@ -372,7 +515,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: AppSizes.marginS),
                   Row(
                     children: [
-                      const Icon(Icons.star, color: AppColors.highlight, size: AppSizes.iconS),
+                      const Icon(
+                        Icons.star,
+                        color: AppColors.highlight,
+                        size: AppSizes.iconS,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${recipe.rating} (${recipe.reviewCount})',
@@ -385,7 +532,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(top: AppSizes.paddingS),
                       child: Text(
                         'Est. Rp ${recipe.estimatedCost}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                 ],
@@ -407,17 +556,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _handleCategoryFilter(String category) {
+    debugPrint('🏷️ Category selected: $category');
     setState(() {
       _selectedCategory = category;
       _searchController.clear();
-      if (category == 'All') {
-        _isSearching = false;
-        context.read<RecipeCubit>().initialize();
-      } else {
-        _isSearching = true;
-        context.read<RecipeCubit>().getRecipesByCategory(category);
-      }
+      _isSearching = false; // Reset search state
     });
+
+    if (category == 'All') {
+      debugPrint('📋 Loading all recipes');
+      context.read<RecipeCubit>().initialize();
+    } else {
+      debugPrint('🔍 Filtering by category: $category');
+      context.read<RecipeCubit>().filterByCategory(category);
+    }
   }
 
   Future<void> _handleImageSearch() async {

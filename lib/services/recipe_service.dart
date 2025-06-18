@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import '../models/recipe.dart';
 import 'supabase_service.dart';
@@ -137,14 +138,13 @@ class RecipeService extends ChangeNotifier {
 
     try {
       final response = await _supabaseService.client
-          .from('recipes')
+          .from('popular_recipes')
           .select()
           .gte('rating', 4.0)
-          .order('rating', ascending: false)
           .limit(10);
 
-      // Use optimized function untuk fetch dengan details
-      _popularRecipes = await fetchRecipesWithDetails(response);
+      _popularRecipes =
+          response.map((recipe) => Recipe.fromJson(recipe)).toList();
 
       debugPrint(
         '✅ Fetched ${_popularRecipes.length} popular recipes with complete details',
@@ -616,22 +616,31 @@ class RecipeService extends ChangeNotifier {
     }
   }
 
-  // Search recipes by name using Supabase's full-text search
+  // Search recipes by name using improved search algorithm
   Future<List<Recipe>> searchRecipes(String query) async {
     _setLoading(true);
     _clearError();
 
     try {
+      if (query.trim().isEmpty) {
+        return [];
+      }
+
+      final searchTerm = query.trim().toLowerCase();
+
+      // Search hanya berdasarkan nama resep saja
       final response = await _supabaseService.client
           .from('recipes')
           .select()
-          .textSearch('name', query, config: 'english')
-          .order('rating', ascending: false);
+          .ilike('name', '%$searchTerm%')
+          .order('rating', ascending: false)
+          .limit(20);
 
+      // Convert to Recipe objects
       final recipes =
           response.map<Recipe>((recipe) => Recipe.fromJson(recipe)).toList();
 
-      debugPrint('✅ Found ${recipes.length} recipes matching "$query"');
+      debugPrint('✅ Found ${recipes.length} recipes matching "$query" by name');
       return recipes;
     } catch (e) {
       _setError('Failed to search recipes: $e');
@@ -640,7 +649,9 @@ class RecipeService extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-  } // Search recipes by image (Store in Supabase Storage and return similar recipes)
+  }
+
+  // Search recipes by image (Store in Supabase Storage and return similar recipes)
 
   Future<List<Recipe>> searchRecipesByImage(
     List<int> imageBytes,
@@ -691,26 +702,73 @@ class RecipeService extends ChangeNotifier {
   }
 
   // Filter recipes by category
-  Future<List<Recipe>> filterRecipesByCategory(String category) async {
-    _setLoading(true);
-    _clearError();
-
+  Future<List<Recipe>> getRecipesByCategory(String category) async {
     try {
-      final response = await _supabaseService.client
-          .from('recipes')
-          .select()
-          .contains('categories', [category])
-          .order('rating', ascending: false);
+      debugPrint('🔍 Fetching recipes for category: $category');
 
-      final recipes =
-          response.map((recipe) => Recipe.fromJson(recipe)).toList();
+      if (category == 'All') {
+        // Return all recipes sorted by rating
+        final response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .order('rating', ascending: false)
+            .limit(50);
 
-      return recipes;
+        debugPrint('✅ Found ${response.length} recipes for "All" category');
+        return response.map((recipe) => Recipe.fromJson(recipe)).toList();
+      } else {
+        // Filter by specific category using junction table with explicit join
+        debugPrint('🔗 Using explicit join query for category: $category');
+
+        // First, get the category ID
+        final categoryResponse =
+            await _supabaseService.client
+                .from('recipe_categories')
+                .select('id')
+                .eq('name', category)
+                .single();
+
+        final categoryId = categoryResponse['id'];
+        debugPrint('📋 Category ID for "$category": $categoryId');
+        // Then get recipe IDs that belong to this category
+        final mappingResponse = await _supabaseService.client
+            .from('recipe_categories_recipes')
+            .select('recipe_id')
+            .eq('category_id', categoryId);
+
+        final recipeIds =
+            mappingResponse
+                .map((mapping) => mapping['recipe_id'] as String)
+                .toList();
+
+        debugPrint(
+          '📋 Found ${recipeIds.length} recipe IDs for category: $category',
+        );
+
+        if (recipeIds.isEmpty) {
+          debugPrint('⚠️ No recipes found for category: $category');
+          return [];
+        } // Finally, get the actual recipes
+        final response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .filter('id', 'in', '(${recipeIds.join(',')})')
+            .order('rating', ascending: false)
+            .limit(50);
+
+        debugPrint(
+          '✅ Found ${response.length} recipes for category: $category',
+        );
+        if (response.isNotEmpty) {
+          debugPrint('📋 Sample recipe: ${response.first['name']}');
+        }
+        return response.map((recipe) => Recipe.fromJson(recipe)).toList();
+      }
     } catch (e) {
-      _setError('Failed to filter recipes: $e');
+      debugPrint('❌ Error fetching recipes by category: $e');
+      debugPrint('🔧 Error type: ${e.runtimeType}');
+      debugPrint('🔧 Error details: ${e.toString()}');
       return [];
-    } finally {
-      _setLoading(false);
     }
   }
 
@@ -1035,6 +1093,32 @@ class RecipeService extends ChangeNotifier {
     } else {
       // If we're unsaving, remove from saved list
       _savedRecipes.removeWhere((r) => r.id == recipeId);
+    }
+  } // Get recipe categories from database
+
+  Future<List<String>> getRecipeCategories() async {
+    try {
+      debugPrint('🔍 Fetching categories from recipe_categories table...');
+      final response = await _supabaseService.client
+          .from('recipe_categories')
+          .select('name')
+          .order('name');
+
+      final categories =
+          response
+              .map<String>((category) => category['name'] as String)
+              .toList();
+
+      debugPrint('✅ Found ${categories.length} categories from database');
+      debugPrint('📋 Categories: ${categories.join(', ')}');
+
+      // Add "All" at the beginning only if not already present
+      final result = ['All', ...categories];
+      return result;
+    } catch (e) {
+      debugPrint('❌ Error fetching categories: $e');
+      // Return just 'All' if database fails - don't hardcode categories
+      return ['All'];
     }
   }
 
