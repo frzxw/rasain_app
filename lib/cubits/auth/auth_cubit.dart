@@ -7,7 +7,6 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
 
   AuthCubit(this._authService) : super(const AuthState());
-
   // Initialize and check current authentication status
   Future<void> initialize() async {
     emit(state.copyWith(status: AuthStatus.loading));
@@ -15,7 +14,7 @@ class AuthCubit extends Cubit<AuthState> {
       // Check if user is already logged in
       final isLoggedIn = await _authService.checkAuth();
 
-      if (isLoggedIn) {
+      if (isLoggedIn && _authService.currentUser != null) {
         emit(
           state.copyWith(
             user: _authService.currentUser,
@@ -27,37 +26,59 @@ class AuthCubit extends Cubit<AuthState> {
       }
     } catch (e) {
       emit(
-        state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "Authentication check failed: ${e.toString()}",
+        ),
       );
     }
   }
 
   // Sign in with email and password
   Future<bool> signIn(String email, String password) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
     try {
       final success = await _authService.login(email, password);
 
-      if (success) {
+      if (success && _authService.currentUser != null) {
         emit(
           state.copyWith(
             user: _authService.currentUser,
             status: AuthStatus.authenticated,
+            errorMessage: null,
           ),
         );
         return true;
       } else {
+        // Give one more chance - sometimes there's a slight delay
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (_authService.isAuthenticated && _authService.currentUser != null) {
+          emit(
+            state.copyWith(
+              user: _authService.currentUser,
+              status: AuthStatus.authenticated,
+              errorMessage: null,
+            ),
+          );
+          return true;
+        }
+
         emit(
           state.copyWith(
             status: AuthStatus.error,
-            errorMessage: _authService.error ?? "Login failed",
+            errorMessage:
+                _authService.error ?? "Login failed - please try again",
           ),
         );
         return false;
       }
     } catch (e) {
       emit(
-        state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "Login error: ${e.toString()}",
+        ),
       );
       return false;
     }
@@ -65,30 +86,49 @@ class AuthCubit extends Cubit<AuthState> {
 
   // Sign up with email and password
   Future<bool> signUp(String name, String email, String password) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(state.copyWith(status: AuthStatus.loading, errorMessage: null));
     try {
       final success = await _authService.register(name, email, password);
 
-      if (success) {
+      if (success && _authService.currentUser != null) {
         emit(
           state.copyWith(
             user: _authService.currentUser,
             status: AuthStatus.authenticated,
+            errorMessage: null,
           ),
         );
         return true;
       } else {
+        // Give one more chance for registration
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (_authService.isAuthenticated && _authService.currentUser != null) {
+          emit(
+            state.copyWith(
+              user: _authService.currentUser,
+              status: AuthStatus.authenticated,
+              errorMessage: null,
+            ),
+          );
+          return true;
+        }
+
         emit(
           state.copyWith(
             status: AuthStatus.error,
-            errorMessage: _authService.error ?? "Registration failed",
+            errorMessage:
+                _authService.error ?? "Registration failed - please try again",
           ),
         );
         return false;
       }
     } catch (e) {
       emit(
-        state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "Registration error: ${e.toString()}",
+        ),
       );
       return false;
     }

@@ -778,25 +778,70 @@ class RecipeService extends ChangeNotifier {
     }
 
     return recipesWithDetails;
-  }
+  } // Get reviews for a specific recipe from recipe_reviews table
 
-  // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
     try {
       debugPrint('🔍 Fetching reviews for recipe: $recipeId');
 
-      // Simplified query without join first to test
-      final response = await _supabaseService.client
-          .from('recipe_reviews')
-          .select('''
-            id,
-            user_id,
-            rating,
-            comment,
-            created_at
-          ''')
-          .eq('recipe_id', recipeId)
-          .order('created_at', ascending: false);
+      List<Map<String, dynamic>> response;
+
+      try {
+        // Try query with direct user columns (after migration)
+        response = await _supabaseService.client
+            .from('recipe_reviews')
+            .select('''
+              id,
+              user_id,
+              rating,
+              comment,
+              created_at,
+              user_name,
+              user_image_url
+            ''')
+            .eq('recipe_id', recipeId)
+            .order('created_at', ascending: false);
+
+        debugPrint('✅ Direct column query successful for reviews');
+      } catch (directError) {
+        debugPrint('⚠️ Direct columns failed, trying JOIN: $directError');
+
+        try {
+          // Fallback to JOIN query
+          response = await _supabaseService.client
+              .from('recipe_reviews')
+              .select('''
+                id,
+                user_id,
+                rating,
+                comment,
+                created_at,
+                user_profiles (
+                  name,
+                  image_url
+                )
+              ''')
+              .eq('recipe_id', recipeId)
+              .order('created_at', ascending: false);
+
+          debugPrint('✅ JOIN query successful for reviews');
+        } catch (joinError) {
+          debugPrint('⚠️ JOIN failed, using basic query: $joinError');
+
+          // Final fallback to basic query
+          response = await _supabaseService.client
+              .from('recipe_reviews')
+              .select('''
+                id,
+                user_id,
+                rating,
+                comment,
+                created_at
+              ''')
+              .eq('recipe_id', recipeId)
+              .order('created_at', ascending: false);
+        }
+      }
 
       debugPrint(
         '✅ Fetched ${response.length} reviews for recipe: $recipeId',
@@ -828,22 +873,34 @@ class RecipeService extends ChangeNotifier {
           },
         ];
       }
+      return response.map<Map<String, dynamic>>((review) {
+        // Try to get user data from direct columns first (after migration)
+        String userName = review['user_name'] ?? '';
+        String? userImageUrl = review['user_image_url'];
 
-      return response
-          .map<Map<String, dynamic>>(
-            (review) => {
-              'id': review['id']?.toString() ?? '',
-              'userId': review['user_id']?.toString() ?? '',
-              'username': 'Pengguna Anonymous', // Simplified for now
-              'avatarUrl': null,
-              'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-              'comment': review['comment'] ?? '',
-              'date':
-                  review['created_at']?.toString() ??
-                  DateTime.now().toIso8601String(),
-            },
-          )
-          .toList();
+        // If direct columns are empty, try to get from JOIN
+        if (userName.isEmpty) {
+          final userProfile = review['user_profiles'] as Map<String, dynamic>?;
+          userName = userProfile?['name'] ?? 'Pengguna Anonymous';
+          userImageUrl = userProfile?['image_url'];
+        }
+
+        debugPrint(
+          '👤 Review user: $userName (from ${review['user_name'] != null ? 'direct column' : 'JOIN/fallback'})',
+        );
+
+        return {
+          'id': review['id']?.toString() ?? '',
+          'userId': review['user_id']?.toString() ?? '',
+          'username': userName,
+          'avatarUrl': userImageUrl,
+          'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
+          'comment': review['comment'] ?? '',
+          'date':
+              review['created_at']?.toString() ??
+              DateTime.now().toIso8601String(),
+        };
+      }).toList();
     } catch (e) {
       debugPrint('❌ Error fetching reviews for recipe $recipeId: $e');
 

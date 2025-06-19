@@ -99,7 +99,9 @@ void main() async {
         BlocProvider(
           create: (context) => NotificationCubit(notificationService),
         ),
-        BlocProvider(create: (context) => CommunityCubit(dataService)),
+        BlocProvider(
+          create: (context) => CommunityCubit(dataService, authService),
+        ),
       ],
       child: const RasainApp(),
     ),

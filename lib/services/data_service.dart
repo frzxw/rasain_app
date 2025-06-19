@@ -103,7 +103,9 @@ class DataService {
           highRatedResponse
               .map<Recipe>((json) => Recipe.fromJson(json))
               .toList();
-      debugPrint('✅ Found ${highRatedRecipes.length} high-rated recipes');      // Strategy 2: Get recipes by category (skip if categories column has issues)
+      debugPrint(
+        '✅ Found ${highRatedRecipes.length} high-rated recipes',
+      ); // Strategy 2: Get recipes by category (skip if categories column has issues)
       List<Map<String, dynamic>> traditionalResponse = [];
       try {
         traditionalResponse = await _supabaseService.client
@@ -566,10 +568,25 @@ class DataService {
     try {
       debugPrint('🔍 Fetching community posts...');
 
-      final response = await _supabaseService.client
-          .from('community_posts')
-          .select()
-          .order('created_at', ascending: false);
+      // Try JOIN first, fall back to basic query if relationship doesn't exist
+      List<Map<String, dynamic>> response;
+      try {
+        response = await _supabaseService.client
+            .from('community_posts')
+            .select('''
+              *,
+              user_profiles(name, image_url)
+            ''')
+            .order('created_at', ascending: false);
+      } catch (joinError) {
+        debugPrint('⚠️ JOIN failed, using basic query: $joinError');
+
+        // Fallback to basic query without JOIN
+        response = await _supabaseService.client
+            .from('community_posts')
+            .select('*')
+            .order('created_at', ascending: false);
+      }
 
       debugPrint('✅ Fetched ${response.length} community posts');
       debugPrint(
@@ -578,11 +595,73 @@ class DataService {
 
       return response.map<CommunityPost>((json) {
         debugPrint('📊 Processing post JSON: $json');
-        return CommunityPost.fromJson(json);
+
+        // Extract user profile data if available from JOIN
+        String userName = 'Unknown User';
+        String? userImageUrl;
+
+        if (json.containsKey('user_profiles') &&
+            json['user_profiles'] != null) {
+          final userProfile = json['user_profiles'];
+          userName = userProfile['name'] ?? 'Unknown User';
+          userImageUrl = userProfile['image_url'];
+        } else if (json.containsKey('user_name') && json['user_name'] != null) {
+          // Use direct columns if available
+          userName = json['user_name'];
+          userImageUrl = json['user_image_url'];
+        }
+
+        // Create a modified JSON with user name and image
+        final modifiedJson = Map<String, dynamic>.from(json);
+        modifiedJson['user_name'] = userName;
+        modifiedJson['user_image_url'] = userImageUrl;
+
+        return CommunityPost.fromJson(modifiedJson);
       }).toList();
     } catch (e) {
       debugPrint('❌ Error fetching community posts: $e');
       return [];
+    }
+  }
+
+  /// Create a new community post
+  Future<CommunityPost?> createCommunityPost({
+    required String userId,
+    required String userName,
+    String? userImageUrl,
+    required String content,
+    String? imageUrl,
+    String? category,
+    List<String>? taggedIngredients,
+  }) async {
+    try {
+      debugPrint('🔍 Creating community post for user: $userName');
+
+      final postData = {
+        'user_id': userId,
+        'user_name': userName,
+        'user_image_url': userImageUrl,
+        'content': content,
+        'image_url': imageUrl,
+        'category': category,
+        'tagged_ingredients': taggedIngredients,
+        'like_count': 0,
+        'comment_count': 0,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      final response =
+          await _supabaseService.client
+              .from('community_posts')
+              .insert(postData)
+              .select()
+              .single();
+
+      debugPrint('✅ Created community post: ${response['id']}');
+      return CommunityPost.fromJson(response);
+    } catch (e) {
+      debugPrint('❌ Error creating community post: $e');
+      return null;
     }
   }
 }

@@ -149,17 +149,15 @@ class AuthDialog {
                                     ? null
                                     : () async {
                                       if (formKey.currentState!.validate()) {
-                                        await context.read<AuthCubit>().signIn(
-                                          emailController.text.trim(),
-                                          passwordController.text,
-                                        );
+                                        final success = await context
+                                            .read<AuthCubit>()
+                                            .signIn(
+                                              emailController.text.trim(),
+                                              passwordController.text,
+                                            );
 
-                                        // Check if login was successful by examining the new state
-                                        final newState =
-                                            context.read<AuthCubit>().state;
-                                        if (newState.status ==
-                                                AuthStatus.authenticated &&
-                                            context.mounted) {
+                                        // Check if login was successful
+                                        if (success && context.mounted) {
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(
                                             context,
@@ -173,6 +171,7 @@ class AuthDialog {
                                             onLoginSuccess();
                                           }
                                         }
+                                        // Error handling is done by BlocBuilder showing error message
                                       }
                                     },
                             child: const Text('Masuk'),
@@ -354,18 +353,16 @@ class AuthDialog {
                                     ? null
                                     : () async {
                                       if (formKey.currentState!.validate()) {
-                                        await context.read<AuthCubit>().signUp(
-                                          nameController.text,
-                                          emailController.text.trim(),
-                                          passwordController.text,
-                                        );
+                                        final success = await context
+                                            .read<AuthCubit>()
+                                            .signUp(
+                                              nameController.text,
+                                              emailController.text.trim(),
+                                              passwordController.text,
+                                            );
 
-                                        // Check if registration was successful by examining the new state
-                                        final newState =
-                                            context.read<AuthCubit>().state;
-                                        if (newState.status ==
-                                                AuthStatus.authenticated &&
-                                            context.mounted) {
+                                        // Check if registration was successful
+                                        if (success && context.mounted) {
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(
                                             context,
@@ -378,6 +375,7 @@ class AuthDialog {
                                             ),
                                           );
                                         }
+                                        // Error handling is done by BlocBuilder showing error message
                                       }
                                     },
                             child: const Text('Daftar'),

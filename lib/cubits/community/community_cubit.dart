@@ -1,13 +1,16 @@
 import 'package:bloc/bloc.dart';
 import '../../models/community_post.dart';
 import '../../services/data_service.dart';
+import '../../services/auth_service.dart';
 import 'dart:typed_data';
 import 'community_state.dart';
 
 class CommunityCubit extends Cubit<CommunityState> {
   final DataService _dataService;
+  final AuthService _authService;
 
-  CommunityCubit(this._dataService) : super(const CommunityState());
+  CommunityCubit(this._dataService, this._authService)
+    : super(const CommunityState());
 
   // Initialize and fetch community posts
   Future<void> initialize() async {
@@ -121,29 +124,49 @@ class CommunityCubit extends Cubit<CommunityState> {
     List<String>? taggedIngredients,
   }) async {
     emit(state.copyWith(status: CommunityStatus.posting));
-
     try {
-      // In a real app, this would upload the image to storage
-      // and create the post in the database
+      // Get current user data from AuthService
+      final currentUserAuth = _authService.supabaseUser;
+      final userProfile = _authService.currentUser;
 
-      // Mock post creation with local data only
-      final newPost = CommunityPost(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id', // This would come from AuthService
-        userName: 'Current User', // This would come from AuthService
-        timestamp: DateTime.now(),
+      if (currentUserAuth == null || userProfile == null) {
+        emit(
+          state.copyWith(
+            status: CommunityStatus.error,
+            errorMessage: 'User must be logged in to create posts',
+          ),
+        );
+        return;
+      }
+
+      // Create post in database using DataService
+      final newPost = await _dataService.createCommunityPost(
+        userId: currentUserAuth.id,
+        userName: userProfile.name,
+        userImageUrl: userProfile.imageUrl,
         content: content,
-        imageUrl: imageBytes != null ? 'mock_image_url' : null,
+        imageUrl:
+            imageBytes != null
+                ? 'mock_image_url'
+                : null, // TODO: implement image upload
         category: category,
         taggedIngredients: taggedIngredients,
-        likeCount: 0,
-        commentCount: 0,
       );
 
-      // Add the new post to the list
-      final updatedPosts = [newPost, ...state.posts];
-
-      emit(state.copyWith(posts: updatedPosts, status: CommunityStatus.loaded));
+      if (newPost != null) {
+        // Add the new post to the list
+        final updatedPosts = [newPost, ...state.posts];
+        emit(
+          state.copyWith(posts: updatedPosts, status: CommunityStatus.loaded),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: CommunityStatus.error,
+            errorMessage: 'Failed to create post',
+          ),
+        );
+      }
     } catch (e) {
       emit(
         state.copyWith(
