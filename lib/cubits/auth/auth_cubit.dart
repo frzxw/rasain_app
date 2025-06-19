@@ -7,7 +7,6 @@ class AuthCubit extends Cubit<AuthState> {
   final AuthService _authService;
 
   AuthCubit(this._authService) : super(const AuthState());
-
   // Initialize and check current authentication status
   Future<void> initialize() async {
     emit(state.copyWith(status: AuthStatus.loading));
@@ -15,7 +14,7 @@ class AuthCubit extends Cubit<AuthState> {
       // Check if user is already logged in
       final isLoggedIn = await _authService.checkAuth();
 
-      if (isLoggedIn) {
+      if (isLoggedIn && _authService.currentUser != null) {
         emit(
           state.copyWith(
             user: _authService.currentUser,
@@ -31,14 +30,13 @@ class AuthCubit extends Cubit<AuthState> {
       );
     }
   }
-
   // Sign in with email and password
   Future<bool> signIn(String email, String password) async {
     emit(state.copyWith(status: AuthStatus.loading));
     try {
       final success = await _authService.login(email, password);
 
-      if (success) {
+      if (success && _authService.isAuthenticated) {
         emit(
           state.copyWith(
             user: _authService.currentUser,
@@ -47,13 +45,26 @@ class AuthCubit extends Cubit<AuthState> {
         );
         return true;
       } else {
-        emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: _authService.error ?? "Login failed",
-          ),
-        );
-        return false;
+        // Wait a bit more for the auth state to propagate
+        await Future.delayed(const Duration(milliseconds: 200));
+        
+        if (_authService.isAuthenticated) {
+          emit(
+            state.copyWith(
+              user: _authService.currentUser,
+              status: AuthStatus.authenticated,
+            ),
+          );
+          return true;
+        } else {
+          emit(
+            state.copyWith(
+              status: AuthStatus.error,
+              errorMessage: _authService.error ?? "Login failed",
+            ),
+          );
+          return false;
+        }
       }
     } catch (e) {
       emit(

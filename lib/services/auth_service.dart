@@ -11,7 +11,6 @@ class AuthService extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _error;
-
   AuthService() {
     // Listen to auth state changes
     _supabase.auth.onAuthStateChange.listen((event) {
@@ -19,7 +18,13 @@ class AuthService extends ChangeNotifier {
     });
 
     // Check current session on initialization
-    _checkCurrentSession();
+    _initializeAuth();
+  }
+
+  // Initialize authentication state
+  Future<void> _initializeAuth() async {
+    debugPrint('🚀 Initializing AuthService...');
+    await _checkCurrentSession();
   }
 
   // Getters
@@ -27,31 +32,39 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
   // Handle auth state changes
   void _handleAuthStateChange(AuthState event) {
+    debugPrint('🔄 Auth state changed: ${event.event}');
     if (event.event == AuthChangeEvent.signedIn) {
+      debugPrint('✅ User signed in, loading profile for: ${event.session?.user.id}');
       _loadUserProfile(event.session?.user.id);
     } else if (event.event == AuthChangeEvent.signedOut) {
+      debugPrint('❌ User signed out');
       _currentUser = null;
       _isAuthenticated = false;
       notifyListeners();
     }
   }
-
   // Check current session
   Future<void> _checkCurrentSession() async {
+    debugPrint('🔍 Checking current session...');
     final session = _supabase.auth.currentSession;
     if (session?.user != null) {
-      await _loadUserProfile(session!.user.id);
+      debugPrint('📋 Found existing session for user: ${session!.user.id}');
+      await _loadUserProfile(session.user.id);
+    } else {
+      debugPrint('❌ No existing session found');
+      _isAuthenticated = false;
+      _currentUser = null;
+      notifyListeners();
     }
   }
-
   // Load user profile from database
   Future<void> _loadUserProfile(String? userId) async {
     if (userId == null) return;
 
     try {
+      debugPrint('📥 Loading user profile for: $userId');
       final response =
           await _supabase
               .from('user_profiles')
@@ -61,12 +74,14 @@ class AuthService extends ChangeNotifier {
 
       _currentUser = UserProfile.fromJson(response);
       _isAuthenticated = true;
+      debugPrint('✅ User profile loaded successfully: ${_currentUser?.name}');
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading user profile: $e');
+      debugPrint('❌ Error loading user profile: $e');
       // If profile doesn't exist, user might be newly registered
       // but profile creation failed, try to create it
       if (_supabase.auth.currentUser != null) {
+        debugPrint('🔧 Attempting to create user profile...');
         await _createUserProfile(_supabase.auth.currentUser!);
       }
     }
@@ -121,23 +136,31 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
   // Sign in with email and password
   Future<void> signInWithEmail(String email, String password) async {
     _setLoading(true);
+    _setError(null); // Clear previous errors
     try {
+      debugPrint('🔑 Attempting to sign in with email: $email');
       final AuthResponse res = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
       if (res.user == null) {
         _setError('Sign in failed: No user returned.');
+        debugPrint('❌ Sign in failed: No user returned');
+      } else {
+        debugPrint('🎉 Sign in successful, user ID: ${res.user!.id}');
+        // Wait a bit for the auth state change to be processed
+        await Future.delayed(const Duration(milliseconds: 100));
       }
       // The onAuthStateChange listener will handle loading the profile
     } on AuthException catch (e) {
+      debugPrint('❌ Auth exception during sign in: ${e.message}');
       _setError(e.message);
       rethrow;
     } catch (e) {
+      debugPrint('❌ Unexpected error during sign in: $e');
       _setError('An unexpected error occurred during sign in.');
       rethrow;
     } finally {
@@ -158,21 +181,29 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
   // Check if user is authenticated
   Future<bool> checkAuth() async {
+    debugPrint('🔐 Checking authentication status...');
     _setLoading(true);
     await _checkCurrentSession();
     _setLoading(false);
+    debugPrint('🎯 Authentication check result: $_isAuthenticated');
     return _isAuthenticated;
   }
-
   // Login (alias signInWithEmail)
   Future<bool> login(String email, String password) async {
     try {
       await signInWithEmail(email, password);
+      // Wait for authentication state to update
+      int attempts = 0;
+      while (!isAuthenticated && attempts < 50) { // Max 5 seconds wait
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+      debugPrint('🔍 Login result after wait: isAuthenticated=$isAuthenticated, attempts=$attempts');
       return isAuthenticated;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('❌ Login method caught error: $e');
       return false;
     }
   }
