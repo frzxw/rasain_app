@@ -145,21 +145,38 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error testing recipe connection: $e');
     }
-  } // Fetch popular recipes
-
+  }  // Fetch popular recipes
   Future<void> fetchPopularRecipes() async {
     _setLoading(true);
     _clearError();
 
     try {
+      debugPrint('🔍 Fetching popular recipes from main recipes table...');
+      
+      // Use main recipes table instead of popular_recipes view
+      // Sort by rating and review_count to get popular recipes
       final response = await _supabaseService.client
-          .from('popular_recipes')
+          .from('recipes')
           .select()
-          .gte('rating', 4.0)
+          .gte('rating', 4.0) // Minimum rating of 4.0
+          .order('rating', ascending: false)
+          .order('review_count', ascending: false)
           .limit(10);
 
-      _popularRecipes =
-          response.map((recipe) => Recipe.fromJson(recipe)).toList();
+      debugPrint('📋 Raw popular recipes response: $response');
+
+      // Get recipes with ingredients from recipe_ingredients table
+      List<Recipe> popularRecipesWithIngredients = [];
+      for (final recipeData in response) {
+        final ingredients = await getRecipeIngredients(recipeData['id']);
+        final recipeWithIngredients = Recipe.fromJson({
+          ...recipeData,
+          'ingredients': ingredients,
+        });
+        popularRecipesWithIngredients.add(recipeWithIngredients);
+      }
+
+      _popularRecipes = popularRecipesWithIngredients;
 
       debugPrint(
         '✅ Fetched ${_popularRecipes.length} popular recipes with complete details',
@@ -168,6 +185,35 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       _setError('Failed to load popular recipes: $e');
       debugPrint('❌ Error fetching popular recipes: $e');
+      
+      // Fallback: Get any recipes if no highly rated ones exist
+      try {
+        debugPrint('🔄 Trying fallback: fetching any available recipes...');
+        final fallbackResponse = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .order('review_count', ascending: false)
+            .order('created_at', ascending: false)
+            .limit(10);
+
+        List<Recipe> fallbackRecipesWithIngredients = [];
+        for (final recipeData in fallbackResponse) {
+          final ingredients = await getRecipeIngredients(recipeData['id']);
+          final recipeWithIngredients = Recipe.fromJson({
+            ...recipeData,
+            'ingredients': ingredients,
+          });
+          fallbackRecipesWithIngredients.add(recipeWithIngredients);
+        }
+
+        _popularRecipes = fallbackRecipesWithIngredients;
+        debugPrint('✅ Fallback successful: ${_popularRecipes.length} recipes loaded');
+        notifyListeners();
+      } catch (fallbackError) {
+        debugPrint('❌ Fallback also failed: $fallbackError');
+        _popularRecipes = [];
+        notifyListeners();
+      }
     } finally {
       _setLoading(false);
     }
