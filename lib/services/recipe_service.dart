@@ -579,13 +579,12 @@ class RecipeService extends ChangeNotifier {
             })
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
-      } else {
-        // Insert new review with rating only (no review text)
+      } else {        // Insert new review with rating only (no review text)
         await _supabaseService.client.from('recipe_reviews').insert({
           'user_id': userId,
           'recipe_id': recipeId,
           'rating': rating,
-          'review_text': null, // Can be null for rating-only reviews
+          'comment': null, // Fixed: using 'comment' instead of 'review_text'
           'created_at': DateTime.now().toIso8601String(),
         });
       }
@@ -893,28 +892,25 @@ class RecipeService extends ChangeNotifier {
 
   // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
-    try {
-      final response = await _supabaseService.client
+    try {      final response = await _supabaseService.client
           .from('recipe_reviews')
           .select('''
             id,
             user_id,
             rating,
-            review_text,
+            comment,
             created_at
           ''')
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');
-
-      return response
+      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');      return response
           .map<Map<String, dynamic>>(
             (review) => {
               'id': review['id']?.toString() ?? '',
               'user_id': review['user_id']?.toString() ?? '',
               'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-              'comment': review['review_text']?.toString() ?? '',
+              'comment': review['comment']?.toString() ?? '', // Fixed: using 'comment' instead of 'review_text'
               'date': review['created_at']?.toString() ?? '',
               'user_name':
                   'User', // Default name, bisa diambil dari user_profiles nanti
@@ -949,26 +945,24 @@ class RecipeService extends ChangeNotifier {
           .eq('user_id', userId)
           .eq('recipe_id', recipeId);
 
-      if (existingReviews.isNotEmpty) {
-        // Update existing review
+      if (existingReviews.isNotEmpty) {        // Update existing review
         await _supabaseService.client
             .from('recipe_reviews')
             .update({
               'rating': rating,
-              'review_text': comment,
+              'comment': comment, // Fixed: using 'comment' instead of 'review_text'
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
 
         debugPrint('✅ Updated review for recipe: $recipeId');
-      } else {
-        // Insert new review
+      } else {        // Insert new review
         await _supabaseService.client.from('recipe_reviews').insert({
           'user_id': userId,
           'recipe_id': recipeId,
           'rating': rating,
-          'review_text': comment,
+          'comment': comment, // Fixed: using 'comment' instead of 'review_text'
           'created_at': DateTime.now().toIso8601String(),
         });
 
