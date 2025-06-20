@@ -467,20 +467,15 @@ class DataService {
       debugPrint('Error fetching user profile: $e');
       return null;
     }
-  }
-
-  /// Get community posts
+  }  /// Get community posts
   Future<List<CommunityPost>> getCommunityPosts() async {
     try {
       debugPrint('🔍 Fetching community posts from database...');
-
-      // Pertama cek struktur table community_posts
-      final checkResponse = await _supabaseService.client
-          .from('community_posts')
-          .select('*')
-          .limit(3);
-      debugPrint('🔍 Sample data from community_posts: $checkResponse');
-
+      
+      // Debug data first
+      await debugUserAndPostData();
+      
+      // Use manual join instead of automatic join to avoid foreign key issues
       final response = await _supabaseService.client
           .from('community_posts')
           .select('*')
@@ -488,33 +483,255 @@ class DataService {
 
       debugPrint('📋 Raw community posts response: $response');
       debugPrint('✅ Fetched ${response.length} community posts');
+      
+      // Debug each post individually
+      for (int i = 0; i < response.length; i++) {
+        final post = response[i];
+        debugPrint('📝 Post $i: id=${post['id']}, user_id=${post['user_id']}, content="${post['content']?.toString().substring(0, 20) ?? 'empty'}..."');
+      }
 
-      final posts =
-          response.map<CommunityPost>((post) {
-            return CommunityPost(
-              id: post['id']?.toString() ?? '',
-              userId: post['user_id']?.toString() ?? '',
-              userName:
-                  'User', // Sementara pakai default, nanti join dengan user table
-              userImageUrl: null,
-              timestamp: DateTime.parse(
-                post['created_at'] ?? DateTime.now().toIso8601String(),
-              ),
-              content: post['content']?.toString(),
-              imageUrl: post['image_url']?.toString(),
-              category: post['category']?.toString(),
-              likeCount: 0, // TODO: implement likes count
-              commentCount: 0, // TODO: implement comments count
-              isLiked: false, // TODO: implement user like status
-              taggedIngredients: null, // TODO: implement if needed
-            );
-          }).toList();
+      // Get user profiles for all user_ids in posts
+      final userIds = response
+          .map((post) => post['user_id']?.toString())
+          .where((id) => id != null)
+          .toSet()
+          .cast<String>() // Ensure all IDs are non-null strings
+          .toList();
 
-      debugPrint('📝 Mapped ${posts.length} community posts');
+      debugPrint('🔍 Extracted user IDs from posts: $userIds');Map<String, Map<String, dynamic>> userProfiles = {};
+        if (userIds.isNotEmpty) {
+        try {
+          debugPrint('🔍 Fetching user profiles for IDs: $userIds');
+          
+          // First, let's check if user_profiles table has any data at all
+          final allProfilesCheck = await _supabaseService.client
+              .from('user_profiles')
+              .select('id, name, image_url')
+              .limit(10);
+          debugPrint('📊 Sample user_profiles in database: $allProfilesCheck');
+          debugPrint('📊 Total profiles found in sample: ${allProfilesCheck.length}');
+          
+          final profilesResponse = await _supabaseService.client
+              .from('user_profiles')
+              .select('id, name, image_url')
+              .inFilter('id', userIds);
+          
+          debugPrint('👥 Raw user profiles response: $profilesResponse');
+          
+          for (final profile in profilesResponse) {
+            userProfiles[profile['id']] = profile;
+            debugPrint('✅ Mapped profile: ${profile['id']} -> ${profile['name']}');
+          }
+          debugPrint('👥 Fetched ${userProfiles.length} user profiles total');} catch (profileError) {
+          debugPrint('⚠️ Warning: Could not fetch user profiles: $profileError');          // Create default profiles for unknown users
+          for (final userId in userIds) {
+            if (!userProfiles.containsKey(userId)) {
+              userProfiles[userId] = {
+                'id': userId,
+                'name': 'User ${userId.length > 8 ? userId.substring(0, 8) : userId}', // Show first 8 chars of ID
+                'image_url': null,
+              };
+            }
+          }
+          debugPrint('🔄 Created ${userProfiles.length} default user profiles');
+        }
+      } else {
+        debugPrint('⚠️ No user IDs found to fetch profiles for');
+      }      final posts = response.map<CommunityPost>((post) {
+        final userId = post['user_id']?.toString() ?? '';
+        final userProfile = userProfiles[userId];
+        
+        debugPrint('📝 Processing post: ${post['id']} by user: $userId');
+        debugPrint('👤 User profile found: ${userProfile != null}');
+        if (userProfile != null) {
+          debugPrint('👤 User name: ${userProfile['name']}');
+        } else {
+          debugPrint('❌ No profile found for user: $userId');
+          debugPrint('🔍 Available profile IDs: ${userProfiles.keys.toList()}');
+        }
+
+        return CommunityPost(
+          id: post['id']?.toString() ?? '',
+          userId: userId,
+          userName: userProfile?['name']?.toString() ?? 'Anonymous User',
+          userImageUrl: userProfile?['image_url']?.toString(),
+          timestamp: DateTime.parse(
+            post['created_at'] ?? DateTime.now().toIso8601String(),
+          ),
+          content: post['content']?.toString(),
+          imageUrl: post['image_url']?.toString(),
+          category: post['category']?.toString(),
+          likeCount: post['like_count']?.toInt() ?? 0,
+          commentCount: post['comment_count']?.toInt() ?? 0,
+          isLiked: false, // TODO: implement user like status check
+          taggedIngredients: null, // TODO: implement if needed
+        );
+      }).toList();
+
+      debugPrint('🎯 Successfully mapped ${posts.length} community posts with user data');
       return posts;
     } catch (e) {
       debugPrint('❌ Error fetching community posts: $e');
       return [];
+    }
+  }
+
+  /// Debug method to check user_profiles and community_posts data
+  Future<void> debugUserAndPostData() async {
+    try {
+      debugPrint('🔍 ====== DEBUGGING USER AND POST DATA ======');
+      
+      // Check all user_profiles
+      final allProfiles = await _supabaseService.client
+          .from('user_profiles')
+          .select('*')
+          .order('created_at', ascending: false);
+      
+      debugPrint('👥 Total user profiles in database: ${allProfiles.length}');
+      for (int i = 0; i < allProfiles.length && i < 5; i++) {
+        final profile = allProfiles[i];
+        debugPrint('   Profile $i: id=${profile['id']}, name="${profile['name']}", email="${profile['email']}", created=${profile['created_at']}');
+      }
+      
+      // Check all community_posts
+      final allPosts = await _supabaseService.client
+          .from('community_posts')
+          .select('*')
+          .order('created_at', ascending: false);
+      
+      debugPrint('📋 Total community posts in database: ${allPosts.length}');
+      for (int i = 0; i < allPosts.length && i < 5; i++) {
+        final post = allPosts[i];
+        debugPrint('   Post $i: id=${post['id']}, user_id="${post['user_id']}", content="${(post['content']?.toString() ?? '').length > 30 ? (post['content']?.toString().substring(0, 30) ?? '') + '...' : post['content']?.toString() ?? 'empty'}", created=${post['created_at']}');
+      }
+      
+      // Check if user_ids in posts exist in user_profiles
+      final postUserIds = allPosts
+          .map((post) => post['user_id']?.toString())
+          .where((id) => id != null)
+          .toSet()
+          .cast<String>()
+          .toList();
+      
+      final profileUserIds = allProfiles
+          .map((profile) => profile['id']?.toString())
+          .where((id) => id != null)
+          .toSet()
+          .cast<String>()
+          .toList();
+      
+      debugPrint('🔗 User IDs in posts: $postUserIds');
+      debugPrint('🔗 User IDs in profiles: $profileUserIds');
+      
+      final missingProfiles = postUserIds.where((id) => !profileUserIds.contains(id)).toList();
+      final orphanProfiles = profileUserIds.where((id) => !postUserIds.contains(id)).toList();
+      
+      if (missingProfiles.isNotEmpty) {
+        debugPrint('❌ Posts with missing user profiles: $missingProfiles');
+      } else {
+        debugPrint('✅ All posts have corresponding user profiles');
+      }
+      
+      if (orphanProfiles.isNotEmpty) {
+        debugPrint('⚠️ User profiles without posts: $orphanProfiles');
+      }
+      
+      // Check current user
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser != null) {
+        debugPrint('👤 Current user: ${currentUser.id}, email: ${currentUser.email}');
+        
+        final currentUserProfile = await _supabaseService.client
+            .from('user_profiles')
+            .select('*')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+        
+        if (currentUserProfile != null) {
+          debugPrint('✅ Current user profile found: ${currentUserProfile['name']}');
+        } else {
+          debugPrint('❌ Current user profile NOT found in database!');
+        }
+      } else {
+        debugPrint('⚠️ No current user logged in');
+      }
+      
+      debugPrint('🔍 ====== END DEBUGGING ======');
+    } catch (e) {
+      debugPrint('❌ Error during debugging: $e');
+    }
+  }
+
+  /// Create test data for debugging purposes
+  Future<void> createTestDataIfNeeded() async {
+    try {
+      debugPrint('🧪 Checking if test data is needed...');
+      
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('⚠️ No user logged in, cannot create test data');
+        return;
+      }
+      
+      // Check if current user has a profile
+      final userProfile = await _supabaseService.client
+          .from('user_profiles')
+          .select('*')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+      
+      if (userProfile == null) {
+        debugPrint('🧪 Creating test user profile for current user...');
+        final profileData = {
+          'id': currentUser.id,
+          'name': currentUser.email?.split('@')[0] ?? 'Test User',
+          'email': currentUser.email,
+          'image_url': null,
+          'saved_recipes_count': 0,
+          'posts_count': 0,
+          'is_notifications_enabled': true,
+          'language': 'id',
+          'is_dark_mode_enabled': false,
+        };
+        
+        await _supabaseService.client
+            .from('user_profiles')
+            .insert(profileData);
+        
+        debugPrint('✅ Test user profile created');
+      } else {
+        debugPrint('✅ User profile already exists: ${userProfile['name']}');
+      }
+      
+      // Check if there are any posts by current user
+      final userPosts = await _supabaseService.client
+          .from('community_posts')
+          .select('*')
+          .eq('user_id', currentUser.id);
+      
+      if (userPosts.isEmpty) {
+        debugPrint('🧪 Creating test community post...');
+        final postData = {
+          'user_id': currentUser.id,
+          'content': 'Test post untuk debug - ${DateTime.now().toIso8601String()}',
+          'image_url': null,
+          'category': 'Test',
+          'like_count': 0,
+          'comment_count': 0,
+          'is_featured': false,
+        };
+        
+        await _supabaseService.client
+            .from('community_posts')
+            .insert(postData);
+        
+        debugPrint('✅ Test community post created');
+      } else {
+        debugPrint('✅ User already has ${userPosts.length} posts');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Error creating test data: $e');
     }
   }
 }

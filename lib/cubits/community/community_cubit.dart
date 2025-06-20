@@ -1,17 +1,21 @@
 import 'package:bloc/bloc.dart';
 import '../../models/community_post.dart';
 import '../../services/data_service.dart';
+import '../../services/supabase_service.dart';
 import 'dart:typed_data';
 import 'community_state.dart';
 
 class CommunityCubit extends Cubit<CommunityState> {
   final DataService _dataService;
+  final SupabaseService _supabaseService = SupabaseService.instance;
 
-  CommunityCubit(this._dataService) : super(const CommunityState());
-  // Initialize and fetch community posts
+  CommunityCubit(this._dataService) : super(const CommunityState());  // Initialize and fetch community posts
   Future<void> initialize() async {
     emit(state.copyWith(status: CommunityStatus.loading));
     try {
+      // Create test data if needed for debugging
+      await _dataService.createTestDataIfNeeded();
+      
       final posts = await _dataService.getCommunityPosts();
 
       // Extract all unique categories
@@ -123,7 +127,6 @@ class CommunityCubit extends Cubit<CommunityState> {
       );
     }
   }
-
   // Create a new community post
   Future<void> createPost({
     required String content,
@@ -135,27 +138,79 @@ class CommunityCubit extends Cubit<CommunityState> {
     emit(state.copyWith(status: CommunityStatus.posting));
 
     try {
-      // In a real app, this would upload the image to storage
-      // and create the post in the database
+      // Get current user
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User must be logged in to create posts');
+      }
 
-      // Mock post creation with local data only
+      // Get user profile for display name
+      String userName = 'User';
+      String? userImageUrl;
+      
+      try {
+        final userProfile = await _supabaseService.client
+            .from('user_profiles')
+            .select('name, image_url')
+            .eq('id', currentUser.id)
+            .single();
+        
+        userName = userProfile['name'] ?? 'User';
+        userImageUrl = userProfile['image_url'];
+      } catch (e) {
+        // Fallback to email or default name if profile not found
+        userName = currentUser.email?.split('@')[0] ?? 'User';
+      }
+
+      // TODO: Upload image to storage if imageBytes is provided
+      String? uploadedImageUrl;
+      if (imageBytes != null) {
+        // For now, we'll skip image upload and just use null
+        // In a real app, you would upload to Supabase Storage here
+        uploadedImageUrl = null;
+      }
+
+      // Insert post into database
+      final postData = {
+        'user_id': currentUser.id,
+        'content': content,
+        'image_url': uploadedImageUrl,
+        'category': category,
+        'like_count': 0,
+        'comment_count': 0,
+        'is_featured': false,
+      };
+
+      final insertedPost = await _supabaseService.client
+          .from('community_posts')
+          .insert(postData)
+          .select()
+          .single();
+
+      // Create CommunityPost object from inserted data
       final newPost = CommunityPost(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id', // This would come from AuthService
-        userName: 'Current User', // This would come from AuthService
-        timestamp: DateTime.now(),
+        id: insertedPost['id'].toString(),
+        userId: currentUser.id,
+        userName: userName,
+        userImageUrl: userImageUrl,
+        timestamp: DateTime.parse(insertedPost['created_at']),
         content: content,
-        imageUrl: imageBytes != null ? 'mock_image_url' : null,
+        imageUrl: uploadedImageUrl,
         category: category,
         taggedIngredients: taggedIngredients,
         likeCount: 0,
         commentCount: 0,
       );
 
-      // Add the new post to the list
+      // Add the new post to the list (at the beginning since it's newest)
       final updatedPosts = [newPost, ...state.posts];
+      final updatedAllPosts = [newPost, ...state.allPosts];
 
-      emit(state.copyWith(posts: updatedPosts, status: CommunityStatus.loaded));
+      emit(state.copyWith(
+        posts: updatedPosts,
+        allPosts: updatedAllPosts,
+        status: CommunityStatus.loaded,
+      ));
     } catch (e) {
       emit(
         state.copyWith(

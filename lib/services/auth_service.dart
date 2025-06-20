@@ -36,7 +36,9 @@ class AuthService extends ChangeNotifier {
   void _handleAuthStateChange(AuthState event) {
     debugPrint('🔄 Auth state changed: ${event.event}');
     if (event.event == AuthChangeEvent.signedIn) {
-      debugPrint('✅ User signed in, loading profile for: ${event.session?.user.id}');
+      debugPrint(
+        '✅ User signed in, loading profile for: ${event.session?.user.id}',
+      );
       _loadUserProfile(event.session?.user.id);
     } else if (event.event == AuthChangeEvent.signedOut) {
       debugPrint('❌ User signed out');
@@ -45,6 +47,7 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   // Check current session
   Future<void> _checkCurrentSession() async {
     debugPrint('🔍 Checking current session...');
@@ -59,6 +62,7 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   // Load user profile from database
   Future<void> _loadUserProfile(String? userId) async {
     if (userId == null) return;
@@ -90,6 +94,8 @@ class AuthService extends ChangeNotifier {
   // Create user profile in database
   Future<void> _createUserProfile(User user) async {
     try {
+      debugPrint('🔧 Creating user profile for: ${user.id}');
+
       final profileData = {
         'id': user.id,
         'name':
@@ -103,39 +109,91 @@ class AuthService extends ChangeNotifier {
         'is_dark_mode_enabled': false,
       };
 
-      await _supabase.from('user_profiles').insert(profileData);
+      debugPrint('📝 Profile data: $profileData');
+
+      // Use upsert to handle potential conflicts
+      final response =
+          await _supabase
+              .from('user_profiles')
+              .upsert(profileData)
+              .select()
+              .single();
+
+      debugPrint('✅ User profile created successfully: $response');
 
       // Load the newly created profile
       await _loadUserProfile(user.id);
     } catch (e) {
-      debugPrint('Error creating user profile: $e');
-      _setError('Failed to create user profile: $e');
+      debugPrint('❌ Error creating user profile: $e');
+
+      // If it's an RLS error, try to handle it gracefully
+      if (e.toString().contains('row-level security policy')) {
+        debugPrint(
+          '🔒 RLS policy violation detected. User may need to be authenticated properly.',
+        );
+        // Set a temporary user profile with limited data
+        _currentUser = UserProfile(
+          id: user.id,
+          name: user.email?.split('@')[0] ?? 'User',
+          email: user.email ?? '',
+          savedRecipesCount: 0,
+          postsCount: 0,
+          isNotificationsEnabled: true,
+          language: 'id',
+          isDarkModeEnabled: false,
+        );
+        _isAuthenticated = true;
+        notifyListeners();
+
+        // Show user a message about profile setup
+        _setError(
+          'Profile setup incomplete. Please complete your profile in settings.',
+        );
+      } else {
+        _setError('Failed to create user profile: $e');
+      }
     }
   }
 
   // Sign up with email and password
   Future<void> signUpWithEmail(String email, String password) async {
     _setLoading(true);
+    _setError(null); // Clear previous errors
     try {
+      debugPrint('📝 Attempting to sign up with email: $email');
+
       final AuthResponse res = await _supabase.auth.signUp(
         email: email,
         password: password,
       );
+
       if (res.user != null) {
+        debugPrint('✅ User signed up successfully: ${res.user!.id}');
+
+        // Wait a moment for the auth session to be established
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Try to create user profile
         await _createUserProfile(res.user!);
+
+        debugPrint('🎉 Sign up process completed successfully');
       } else {
         _setError('Sign up failed: No user returned.');
+        debugPrint('❌ Sign up failed: No user returned');
       }
     } on AuthException catch (e) {
+      debugPrint('❌ Auth exception during sign up: ${e.message}');
       _setError(e.message);
       rethrow;
     } catch (e) {
-      _setError('An unexpected error occurred during sign up.');
+      debugPrint('❌ Unexpected error during sign up: $e');
+      _setError('An unexpected error occurred during sign up: $e');
       rethrow;
     } finally {
       _setLoading(false);
     }
   }
+
   // Sign in with email and password
   Future<void> signInWithEmail(String email, String password) async {
     _setLoading(true);
@@ -181,6 +239,7 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
     }
   }
+
   // Check if user is authenticated
   Future<bool> checkAuth() async {
     debugPrint('🔐 Checking authentication status...');
@@ -190,17 +249,21 @@ class AuthService extends ChangeNotifier {
     debugPrint('🎯 Authentication check result: $_isAuthenticated');
     return _isAuthenticated;
   }
+
   // Login (alias signInWithEmail)
   Future<bool> login(String email, String password) async {
     try {
       await signInWithEmail(email, password);
       // Wait for authentication state to update
       int attempts = 0;
-      while (!isAuthenticated && attempts < 50) { // Max 5 seconds wait
+      while (!isAuthenticated && attempts < 50) {
+        // Max 5 seconds wait
         await Future.delayed(const Duration(milliseconds: 100));
         attempts++;
       }
-      debugPrint('🔍 Login result after wait: isAuthenticated=$isAuthenticated, attempts=$attempts');
+      debugPrint(
+        '🔍 Login result after wait: isAuthenticated=$isAuthenticated, attempts=$attempts',
+      );
       return isAuthenticated;
     } catch (e) {
       debugPrint('❌ Login method caught error: $e');
@@ -279,6 +342,24 @@ class AuthService extends ChangeNotifier {
       _setError('Failed to delete account: $e');
       return false;
     }
+  }
+
+  // Method to manually retry profile creation
+  Future<void> retryProfileCreation() async {
+    final user = _supabase.auth.currentUser;
+    if (user != null && _currentUser == null) {
+      debugPrint('🔄 Retrying profile creation for user: ${user.id}');
+      await _createUserProfile(user);
+    } else if (_currentUser != null) {
+      debugPrint('ℹ️ User profile already exists');
+    } else {
+      debugPrint('❌ No authenticated user found');
+    }
+  }
+
+  // Method to check if user needs profile setup
+  bool get needsProfileSetup {
+    return _isAuthenticated && _currentUser == null;
   }
 
   void _setError(String? error) {

@@ -145,14 +145,15 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error testing recipe connection: $e');
     }
-  }  // Fetch popular recipes
+  } // Fetch popular recipes
+
   Future<void> fetchPopularRecipes() async {
     _setLoading(true);
     _clearError();
 
     try {
       debugPrint('🔍 Fetching popular recipes from main recipes table...');
-      
+
       // Use main recipes table instead of popular_recipes view
       // Sort by rating and review_count to get popular recipes
       final response = await _supabaseService.client
@@ -185,7 +186,7 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       _setError('Failed to load popular recipes: $e');
       debugPrint('❌ Error fetching popular recipes: $e');
-      
+
       // Fallback: Get any recipes if no highly rated ones exist
       try {
         debugPrint('🔄 Trying fallback: fetching any available recipes...');
@@ -207,7 +208,9 @@ class RecipeService extends ChangeNotifier {
         }
 
         _popularRecipes = fallbackRecipesWithIngredients;
-        debugPrint('✅ Fallback successful: ${_popularRecipes.length} recipes loaded');
+        debugPrint(
+          '✅ Fallback successful: ${_popularRecipes.length} recipes loaded',
+        );
         notifyListeners();
       } catch (fallbackError) {
         debugPrint('❌ Fallback also failed: $fallbackError');
@@ -597,7 +600,6 @@ class RecipeService extends ChangeNotifier {
       notifyListeners();
     }
   }
-
   // Submit a rating for a recipe
   Future<void> rateRecipe(String recipeId, double rating) async {
     try {
@@ -611,26 +613,34 @@ class RecipeService extends ChangeNotifier {
       // Check if the user has already rated this recipe
       final existingReviews = await _supabaseService.client
           .from('recipe_reviews')
-          .select()
+          .select('id, comment')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);
-
-      if (existingReviews.isNotEmpty) {
-        // Update existing review rating
-        await _supabaseService.client
+          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+        // Update existing review rating only, preserve comment
+        final existingComment = existingReviews.first['comment'];
+        final updateData = <String, dynamic>{
+          'rating': rating,
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+        
+        // Preserve existing comment if it exists
+        if (existingComment != null) {
+          updateData['comment'] = existingComment;
+        }
+          await _supabaseService.client
             .from('recipe_reviews')
-            .update({
-              'rating': rating,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
+            .update(updateData)
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
-      } else {        // Insert new review with rating only (no review text)
+            
+        debugPrint('✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}');
+      } else {
+        // Insert new review with rating only (no review text)
         await _supabaseService.client.from('recipe_reviews').insert({
           'user_id': userId,
           'recipe_id': recipeId,
           'rating': rating,
-          'comment': null, // Fixed: using 'comment' instead of 'review_text'
+          'comment': null, // No comment when only rating
           'created_at': DateTime.now().toIso8601String(),
         });
       }
@@ -666,10 +676,18 @@ class RecipeService extends ChangeNotifier {
           categories: _currentRecipe!.categories,
           isSaved: _currentRecipe!.isSaved,
         );
-        notifyListeners();
-      }
+        notifyListeners();      }
 
+      // Verify the review was updated correctly (debug)
+      final verifyReview = await _supabaseService.client
+          .from('recipe_reviews')
+          .select('rating, comment')
+          .eq('user_id', userId)
+          .eq('recipe_id', recipeId)
+          .single();
+      
       debugPrint('✅ Successfully rated recipe: $recipeId with rating: $rating');
+      debugPrint('📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}');
     } catch (e) {
       _setError('Failed to submit rating: $e');
       debugPrint('❌ Error rating recipe: $e');
@@ -938,7 +956,8 @@ class RecipeService extends ChangeNotifier {
 
   // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
-    try {      final response = await _supabaseService.client
+    try {
+      final response = await _supabaseService.client
           .from('recipe_reviews')
           .select('''
             id,
@@ -950,13 +969,16 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');      return response
+      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');
+      return response
           .map<Map<String, dynamic>>(
             (review) => {
               'id': review['id']?.toString() ?? '',
               'user_id': review['user_id']?.toString() ?? '',
               'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-              'comment': review['comment']?.toString() ?? '', // Fixed: using 'comment' instead of 'review_text'
+              'comment':
+                  review['comment']?.toString() ??
+                  '', // Fixed: using 'comment' instead of 'review_text'
               'date': review['created_at']?.toString() ?? '',
               'user_name':
                   'User', // Default name, bisa diambil dari user_profiles nanti
@@ -989,33 +1011,28 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_reviews')
           .select('id')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);
-
-      if (existingReviews.isNotEmpty) {        // Update existing review
+          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+        // Update existing review, preserve created_at
         await _supabaseService.client
             .from('recipe_reviews')
             .update({
               'rating': rating,
-              'comment': comment, // Fixed: using 'comment' instead of 'review_text'
+              'comment': comment,
               'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('user_id', userId)
-            .eq('recipe_id', recipeId);
-
-        debugPrint('✅ Updated review for recipe: $recipeId');
-      } else {        // Insert new review
+            })            .eq('id', existingReviews.first['id']);
+        debugPrint('✅ Review updated successfully for recipe: $recipeId (preserved created_at)');
+      } else {
+        // Insert new review
         await _supabaseService.client.from('recipe_reviews').insert({
-          'user_id': userId,
           'recipe_id': recipeId,
+          'user_id': userId,
           'rating': rating,
-          'comment': comment, // Fixed: using 'comment' instead of 'review_text'
-          'created_at': DateTime.now().toIso8601String(),
+          'comment': comment,
         });
-
-        debugPrint('✅ Submitted new review for recipe: $recipeId');
+        debugPrint('✅ New review submitted successfully for recipe: $recipeId');
       }
 
-      // Update average rating di tabel recipes
+      // Update average rating in the recipes table
       await _updateRecipeAverageRating(recipeId);
 
       return true;

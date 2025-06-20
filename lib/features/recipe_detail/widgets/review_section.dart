@@ -44,9 +44,23 @@ class _ReviewSectionState extends State<ReviewSection> {
 
     try {
       final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);
+
+      // Check if current user has already reviewed this recipe
+      final authState = context.read<AuthCubit>().state;
+      bool userHasReviewed = false;
+
+      if (authState.status == AuthStatus.authenticated) {
+        final currentUserId = authState.user?.id;
+        userHasReviewed = reviews.any(
+          (review) => review['user_id'] == currentUserId,
+        );
+        debugPrint('👤 User $currentUserId has reviewed: $userHasReviewed');
+      }
+
       if (mounted) {
         setState(() {
           _reviews = reviews;
+          _hasRated = userHasReviewed;
           _isLoadingReviews = false;
         });
       }
@@ -675,26 +689,37 @@ class _ReviewSectionState extends State<ReviewSection> {
 
       if (!success) {
         throw Exception('Gagal mengirim ulasan');
-      }
-
-      // Call the callback to rate the recipe (for updating local state)
+      } // Call the callback to rate the recipe (for updating local state)
       widget.onRateRecipe(_userRating, _reviewController.text.trim());
 
-      // Reload reviews to show the new one
+      // Reload reviews to show the new/updated one
       await _loadReviews();
 
-      // Reset form and update state
-      setState(() {
-        _hasRated = true;
-        _reviewController.clear();
-        _userRating = 0;
-      });
+      // Don't set _hasRated = true if we want to allow review updates
+      // Instead, check if current user has reviewed after reloading
+      final authState = context.read<AuthCubit>().state;
+      if (authState.status == AuthStatus.authenticated) {
+        final currentUserId = authState.user?.id;
+        final userHasReviewed = _reviews.any(
+          (review) => review['user_id'] == currentUserId,
+        );
+
+        setState(() {
+          _hasRated = userHasReviewed;
+          _reviewController.clear();
+          _userRating = 0;
+        });
+      }
 
       // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Terima kasih atas ulasan Anda!'),
+          SnackBar(
+            content: Text(
+              _hasRated
+                  ? 'Ulasan Anda telah diperbarui!'
+                  : 'Terima kasih atas ulasan Anda!',
+            ),
             backgroundColor: AppColors.success,
           ),
         );

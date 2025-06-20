@@ -11,6 +11,7 @@ import 'services/notification_service.dart';
 import 'core/theme/theme_service.dart';
 import 'core/config/supabase_config.dart';
 import 'services/data_service.dart';
+import 'debug_check.dart';
 
 // Import cubits
 import 'cubits/auth/auth_cubit.dart';
@@ -23,9 +24,11 @@ import 'cubits/theme/theme_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   // Initialize Supabase
   await SupabaseConfig.initialize();
+
+  // Run debug check
+  await DebugCheck.runDebugCheck();
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([

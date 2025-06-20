@@ -139,20 +139,25 @@ class AuthDialog {
                               );
                             },
                             child: const Text('Lupa Password?'),
-                          ),                          ElevatedButton(
+                          ),
+                          ElevatedButton(
                             onPressed:
                                 state.status == AuthStatus.loading
                                     ? null
                                     : () async {
                                       if (formKey.currentState!.validate()) {
-                                        final success = await context.read<AuthCubit>().signIn(
-                                          emailController.text.trim(),
-                                          passwordController.text,
-                                        );
+                                        final success = await context
+                                            .read<AuthCubit>()
+                                            .signIn(
+                                              emailController.text.trim(),
+                                              passwordController.text,
+                                            );
 
                                         // Wait for the auth state to fully update
-                                        await Future.delayed(const Duration(milliseconds: 100));
-                                        
+                                        await Future.delayed(
+                                          const Duration(milliseconds: 100),
+                                        );
+
                                         if (success && context.mounted) {
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(

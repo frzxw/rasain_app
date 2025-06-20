@@ -30,6 +30,7 @@ class AuthCubit extends Cubit<AuthState> {
       );
     }
   }
+
   // Sign in with email and password
   Future<bool> signIn(String email, String password) async {
     emit(state.copyWith(status: AuthStatus.loading));
@@ -47,7 +48,7 @@ class AuthCubit extends Cubit<AuthState> {
       } else {
         // Wait a bit more for the auth state to propagate
         await Future.delayed(const Duration(milliseconds: 200));
-        
+
         if (_authService.isAuthenticated) {
           emit(
             state.copyWith(
