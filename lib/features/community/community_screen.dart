@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../cubits/community/community_state.dart';
+import '../../cubits/auth/auth_cubit.dart';
+import '../../cubits/auth/auth_state.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
 
@@ -108,14 +111,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             padding: const EdgeInsets.all(16),
                             itemCount: state.posts.length,
                             itemBuilder: (context, index) {
-                              final post = state.posts[index];
-                              return PostCard(
+                              final post = state.posts[index];                              return PostCard(
                                 post: post,
-                                onLike:
-                                    () => context
-                                        .read<CommunityCubit>()
-                                        .toggleLikePost(post.id),
-                                onComment: () => _showComments(post),
+                                onLike: () => _handleLikePost(post.id),
+                                onComment: () => _handleCommentPost(post),
                                 onShare: () => _sharePost(post),
                               );
                             },
@@ -454,8 +453,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
     );
   }
-
   Future<void> _showCreatePostDialog() async {
+    // Check if user is authenticated
+    final authState = context.read<AuthCubit>().state;
+    if (authState.status != AuthStatus.authenticated) {
+      // Show login dialog if user is not authenticated
+      _showLoginPrompt();
+      return;
+    }
+
     final TextEditingController contentController = TextEditingController();
     String? selectedCategory;
     List<String> selectedIngredients = [];
@@ -709,5 +715,94 @@ class _CommunityScreenState extends State<CommunityScreen> {
       },
     ); // Refresh posts after creating a new one
     context.read<CommunityCubit>().initialize();
+  }  void _showLoginPrompt() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.login,
+              color: AppColors.primary,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Login Diperlukan',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Anda perlu masuk terlebih dahulu untuk membuat postingan di komunitas.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Nanti',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(            onPressed: () {
+              Navigator.of(dialogContext).pop(); // Close dialog first
+              // Navigate using GoRouter
+              context.go('/profile');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 12,
+              ),
+            ),
+            child: const Text(
+              'Masuk',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Handle like post with authentication check
+  void _handleLikePost(String postId) {
+    final authState = context.read<AuthCubit>().state;
+    if (authState.status != AuthStatus.authenticated) {
+      _showLoginPrompt();
+      return;
+    }
+    
+    // User is authenticated, proceed with like
+    context.read<CommunityCubit>().toggleLikePost(postId);
+  }
+
+  // Handle comment post with authentication check
+  void _handleCommentPost(CommunityPost post) {
+    final authState = context.read<AuthCubit>().state;
+    if (authState.status != AuthStatus.authenticated) {
+      _showLoginPrompt();
+      return;
+    }
+    
+    // User is authenticated, proceed with showing comments
+    _showComments(post);
   }
 }
