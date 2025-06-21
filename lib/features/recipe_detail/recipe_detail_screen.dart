@@ -773,12 +773,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             children: [
               // Cook Time Card
               if (recipe.cookTime != null)
-                Expanded(
-                  child: _buildEnhancedInfoCard(
+                Expanded(                  child: _buildEnhancedInfoCard(
                     context,
                     icon: Icons.timer_outlined,
                     label: 'Waktu',
-                    value: recipe.cookTime!,
+                    value: '${recipe.cookTime} menit',
                     color: Colors.orange,
                   ),
                 ),
@@ -809,7 +808,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     context,
                     icon: Icons.attach_money,
                     label: 'Biaya',
-                    value: recipe.estimatedCost!,
+                    value: 'Rp ${recipe.estimatedCost!}',
                     color: Colors.green,
                   ),
                 ),

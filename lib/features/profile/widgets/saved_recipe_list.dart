@@ -121,9 +121,8 @@ class SavedRecipeList extends StatelessWidget {
                                 size: AppSizes.iconXS,
                                 color: AppColors.textSecondary,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                recipe.cookTime!,
+                              const SizedBox(width: 4),                              Text(
+                                '${recipe.cookTime} menit',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -136,9 +135,8 @@ class SavedRecipeList extends StatelessWidget {
                           Row(
                             children: [
                               
-                              const SizedBox(width: 4),
-                              Text(
-                                'Est. ${recipe.estimatedCost}',
+                              const SizedBox(width: 4),                              Text(
+                                'Est. Rp ${recipe.estimatedCost}',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],

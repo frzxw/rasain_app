@@ -98,9 +98,8 @@ class PantrySuggestions extends StatelessWidget {
                     if (recipe.estimatedCost != null)
                       Row(
                         children: [
-                          const SizedBox(width: 4),
-                          Text(
-                            'Est. Total: ${recipe.estimatedCost}',
+                          const SizedBox(width: 4),                          Text(
+                            'Est. Total: Rp ${recipe.estimatedCost}',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w500,
                               color: AppColors.success,

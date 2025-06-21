@@ -162,12 +162,11 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
                       children: [
                         // Quick stats
                         Row(
-                          children: [
-                            _buildStatCard(Icons.timer, 'Waktu', recipe.cookTime ?? '-'),
+                          children: [                            _buildStatCard(Icons.timer, 'Waktu', recipe.cookTime != null ? '${recipe.cookTime} menit' : '-'),
                             const SizedBox(width: 12),
                             _buildStatCard(Icons.people, 'Porsi', recipe.servings?.toString() ?? '-'),
                             const SizedBox(width: 12),
-                            _buildStatCard(Icons.local_offer, 'Biaya', recipe.estimatedCost ?? '-'),
+                            _buildStatCard(Icons.local_offer, 'Biaya', recipe.estimatedCost != null ? 'Rp ${recipe.estimatedCost}' : '-'),
                           ],
                         ),
                         const SizedBox(height: 24),

@@ -116,8 +116,7 @@ class WhatsCookingStream extends StatelessWidget {
                     children: [
                       // Cook Time
                       if (recipe.cookTime != null)
-                        Row(
-                          children: [
+                        Row(                          children: [
                             const Icon(
                               Icons.access_time,
                               size: AppSizes.iconS,
@@ -125,7 +124,7 @@ class WhatsCookingStream extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              recipe.cookTime!,
+                              '${recipe.cookTime} menit',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
