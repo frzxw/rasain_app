@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../constants/sizes.dart';
 import '../theme/colors.dart';
 import '../../cubits/auth/auth_cubit.dart';
@@ -354,12 +355,34 @@ class AuthDialog {
                                           nameController.text,
                                           emailController.text.trim(),
                                           passwordController.text,
-                                        );
-
-                                        // Check if registration was successful by examining the new state
+                                        ); // Check if registration was successful by examining the new state
                                         final newState =
                                             context.read<AuthCubit>().state;
                                         if (newState.status ==
+                                                AuthStatus
+                                                    .emailVerificationPending &&
+                                            context.mounted) {
+                                          Navigator.pop(context);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Pendaftaran berhasil! Silakan verifikasi email Anda.',
+                                              ),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                          // Navigate to email verification screen
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                                if (context.mounted) {
+                                                  context.go(
+                                                    '/email-verification',
+                                                  );
+                                                }
+                                              });
+                                        } else if (newState.status ==
                                                 AuthStatus.authenticated &&
                                             context.mounted) {
                                           Navigator.pop(context);

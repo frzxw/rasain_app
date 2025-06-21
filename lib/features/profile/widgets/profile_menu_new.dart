@@ -710,7 +710,7 @@ class _ProfileMenuState extends State<ProfileMenu> {
                                         final success = await context
                                             .read<AuthCubit>()
                                             .deleteAccount(
-                                              passwordController.text,
+                                              password: passwordController.text,
                                             );
 
                                         if (success && dialogContext.mounted) {

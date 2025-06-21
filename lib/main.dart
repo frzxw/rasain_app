@@ -10,6 +10,7 @@ import 'services/chat_service.dart';
 import 'services/notification_service.dart';
 import 'core/theme/theme_service.dart';
 import 'core/config/supabase_config.dart';
+import 'core/config/auth_listener.dart';
 import 'services/data_service.dart';
 import 'debug_check.dart';
 
@@ -29,7 +30,6 @@ void main() async {
 
   // Run debug check
   await DebugCheck.runDebugCheck();
-
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -71,7 +71,14 @@ void main() async {
         BlocProvider(
           create: (context) => ThemeCubit(themeService)..initialize(),
         ),
-        BlocProvider(create: (context) => AuthCubit(authService)),
+        BlocProvider(
+          create: (context) {
+            final authCubit = AuthCubit(authService);
+            // Initialize AuthListener after AuthCubit is created
+            AuthListener(authService, authCubit);
+            return authCubit;
+          },
+        ),
         BlocProvider(create: (context) => RecipeCubit(recipeService)),
         BlocProvider(create: (context) => PantryCubit(pantryService)),
         BlocProvider(create: (context) => ChatCubit(chatService)),

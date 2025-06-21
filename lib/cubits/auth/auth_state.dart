@@ -1,7 +1,14 @@
 import 'package:equatable/equatable.dart';
 import '../../models/user_profile.dart';
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
+enum AuthStatus {
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  emailVerificationPending,
+  error,
+}
 
 class AuthState extends Equatable {
   final UserProfile? user;
