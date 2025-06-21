@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/sizes.dart';
@@ -73,45 +72,16 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
-    ); // Check authentication and show form if authenticated
-    _checkAuthenticationAndShowForm();    // Listen untuk auth state changes dengan tambahan stream listener
+    );
+
+    // Check authentication and show form if authenticated
+    _checkAuthenticationAndShowForm();
+
+    // Listen untuk auth state changes
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (mounted) {
-        final wasAuthenticated = _isUserAuthenticated();
-        final isNowAuthenticated = data.session != null;
-        
-        // Jika user baru saja login, tampilkan form dengan animasi
-        if (isNowAuthenticated && !wasAuthenticated) {
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (mounted) {
-              _refreshAuthState();
-              // Scroll to top untuk memudahkan user melihat form
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-              );
-            }
-          });
-        } else {
-          // Delay sedikit untuk memastikan state sudah ter-update
-          Future.delayed(const Duration(milliseconds: 150), () {
-            if (mounted) {
-              _checkAuthenticationAndShowForm();
-            }
-          });
-        }
+        _checkAuthenticationAndShowForm();
       }
-    });
-
-    // Tambahan: Listen untuk perubahan current user secara langsung
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Check auth state setelah widget selesai build
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          _checkAuthenticationAndShowForm();
-        }
-      });
     });
   }
 
@@ -131,96 +101,22 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   void _checkAuthenticationAndShowForm() {
     if (_isUserAuthenticated()) {
       // Delay untuk memberikan efek animasi yang smooth
-      Future.delayed(const Duration(milliseconds: 100), () {
+      Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           _animationController.forward();
         }
       });
     } else {
-      if (mounted) {
-        _animationController.reverse();
-      }
+      _animationController.reverse();
     }
   }
 
   bool _isUserAuthenticated() {
     return Supabase.instance.client.auth.currentUser != null;
   }
-  void _refreshAuthState() {
-    // Force refresh auth state dan form
-    if (mounted) {
-      setState(() {
-        // Trigger rebuild
-      });
-      _checkAuthenticationAndShowForm();
-      
-      // Jika ada data form yang sudah diisi, beri tahu user bahwa data masih tersimpan
-      if (_hasFormData()) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Row(
-                  children: [
-                    Icon(Icons.save_outlined, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Data form Anda masih tersimpan dan siap dilanjutkan!'),
-                  ],
-                ),
-                backgroundColor: Colors.blue,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        });
-      }
-    }
-  }
 
-  // Method untuk memeriksa apakah user sudah mengisi form
-  bool _hasFormData() {
-    return _nameController.text.trim().isNotEmpty ||
-           _descriptionController.text.trim().isNotEmpty ||
-           _servingController.text.trim().isNotEmpty ||
-           _cookingTimeController.text.trim().isNotEmpty ||
-           _selectedCategory != null ||
-           _ingredients.isNotEmpty ||
-           _instructions.isNotEmpty ||
-           _selectedImages.isNotEmpty;
-  }  void _navigateToLogin() async {
-    final hasData = _hasFormData();
-    
-    // Show login dialog with callback to return to upload form
-    AuthDialog.showLoginDialog(
-      context,
-      redirectMessage: hasData 
-          ? 'Login untuk melanjutkan upload resep Anda. Data yang sudah diisi akan tetap tersimpan.'
-          : 'Login untuk mulai membuat resep baru',
-      onLoginSuccess: () {
-        // After successful login, trigger form animation and state refresh
-        _refreshAuthState();
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    hasData 
-                        ? 'Login berhasil! Data Anda masih tersimpan, silakan lanjutkan.'
-                        : 'Login berhasil! Sekarang Anda bisa membuat resep.',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      },
-    );
+  void _navigateToLogin() {
+    AuthDialog.showLoginDialog(context);
   }
 
   @override
@@ -230,9 +126,8 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
       body: BlocConsumer<UploadRecipeCubit, UploadRecipeState>(
         listener: (context, state) {
           if (state.status == UploadRecipeStatus.success) {
-            // Refresh user recipes dan all recipes setelah upload berhasil
+            // Refresh user recipes setelah upload berhasil
             context.read<RecipeCubit>().refreshUserRecipes();
-            context.read<RecipeCubit>().refreshAllRecipes();
 
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -355,9 +250,8 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
       ),
     );
   }
+
   Widget _buildLoginPrompt() {
-    final hasData = _hasFormData();
-    
     return Container(
       margin: const EdgeInsets.all(AppSizes.paddingL),
       padding: const EdgeInsets.all(AppSizes.paddingL),
@@ -377,49 +271,24 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
               color: AppColors.primary,
             ),
             textAlign: TextAlign.center,
-          ),          const SizedBox(height: AppSizes.marginS),          Text(
-            hasData 
-                ? 'Silakan login untuk melanjutkan upload resep yang sedang Anda buat'
-                : 'Silakan login untuk dapat membagikan resep Anda ke komunitas Rasain',
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Text(
+            'Silakan login untuk dapat membagikan resep Anda ke komunitas Rasain',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSizes.marginS),
-          // Tampilkan info data tersimpan hanya jika user sudah mengisi form
-          if (hasData) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.save_outlined, color: Colors.green, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Data yang sudah Anda isi akan tetap tersimpan setelah login',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: AppSizes.marginL),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _navigateToLogin,
-              icon: const Icon(Icons.login, color: Colors.white),              label: Text(
-                hasData ? 'Login & Lanjutkan Upload' : 'Login Sekarang',
-                style: const TextStyle(
+              icon: const Icon(Icons.login, color: Colors.white),
+              label: const Text(
+                'Login Sekarang',
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -599,19 +468,16 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
             border: OutlineInputBorder(),
           ),
           items:
-              _categories.map((String category) {
-                return DropdownMenuItem<String>(
-                  value: category,
-                  child: Text(category),
-                );
+              _categories.map((category) {
+                return DropdownMenuItem(value: category, child: Text(category));
               }).toList(),
-          onChanged: (newValue) {
+          onChanged: (value) {
             setState(() {
-              _selectedCategory = newValue;
+              _selectedCategory = value;
             });
           },
           validator: (value) {
-            if (value == null || value.isEmpty) {
+            if (value == null) {
               return 'Pilih kategori resep';
             }
             return null;
@@ -619,7 +485,7 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
         ),
         const SizedBox(height: AppSizes.marginM),
 
-        // Serving and Cooking Time
+        // Servings and Cooking Time
         Row(
           children: [
             Expanded(
@@ -628,9 +494,15 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Porsi',
-                  hintText: 'Contoh: 4',
+                  hintText: '4',
                   border: OutlineInputBorder(),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Masukkan jumlah porsi';
+                  }
+                  return null;
+                },
               ),
             ),
             const SizedBox(width: AppSizes.marginM),
@@ -639,10 +511,16 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
                 controller: _cookingTimeController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Waktu (menit)',
-                  hintText: 'Contoh: 30',
+                  labelText: 'Waktu Masak (menit)',
+                  hintText: '30',
                   border: OutlineInputBorder(),
                 ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Masukkan waktu masak';
+                  }
+                  return null;
+                },
               ),
             ),
           ],
@@ -694,22 +572,21 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
             ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSizes.marginS),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
-            children:
-                _ingredients
-                    .map(
-                      (ingredient) => Chip(
-                        label: Text(ingredient),
-                        onDeleted: () {
-                          setState(() {
-                            _ingredients.remove(ingredient);
-                          });
-                        },
-                      ),
-                    )
-                    .toList(),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _ingredients.length,
+            itemBuilder: (context, index) {
+              return Card(
+                child: ListTile(
+                  title: Text(_ingredients[index]),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeIngredient(index),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ],
@@ -760,24 +637,28 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
             ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSizes.marginS),
-          Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
-            children:
-                _instructions
-                    .asMap()
-                    .entries
-                    .map(
-                      (entry) => Chip(
-                        label: Text('${entry.key + 1}. ${entry.value}'),
-                        onDeleted: () {
-                          setState(() {
-                            _instructions.removeAt(entry.key);
-                          });
-                        },
-                      ),
-                    )
-                    .toList(),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _instructions.length,
+            itemBuilder: (context, index) {
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.primary,
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(_instructions[index]),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _removeInstruction(index),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ],
@@ -874,9 +755,16 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   void _addIngredient(String ingredient) {
     if (ingredient.trim().isNotEmpty) {
       setState(() {
-        _ingredients.add(ingredient.trim());        _ingredientController.clear();
+        _ingredients.add(ingredient.trim());
+        _ingredientController.clear();
       });
     }
+  }
+
+  void _removeIngredient(int index) {
+    setState(() {
+      _ingredients.removeAt(index);
+    });
   }
 
   void _addInstruction(String instruction) {
@@ -886,6 +774,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
         _instructionController.clear();
       });
     }
+  }
+
+  void _removeInstruction(int index) {
+    setState(() {
+      _instructions.removeAt(index);
+    });
   }
 
   void _uploadRecipe() {

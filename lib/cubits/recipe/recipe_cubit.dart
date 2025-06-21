@@ -39,6 +39,12 @@ class RecipeCubit extends Cubit<RecipeState> {
       for (var recipe in _recipeService.recommendedRecipes) {
         uniqueRecipes[recipe.id] = recipe;
       }
+      for (var recipe in _recipeService.userRecipes) {
+        uniqueRecipes[recipe.id] = recipe;
+      }
+      for (var recipe in _recipeService.allRecipes) {
+        uniqueRecipes[recipe.id] = recipe;
+      }
 
       final allRecipes = uniqueRecipes.values.toList();
 

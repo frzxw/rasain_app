@@ -15,6 +15,7 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> _savedRecipes = [];
   List<Recipe> _recommendedRecipes = [];
   List<Recipe> _userRecipes = []; // Add user recipes
+  List<Recipe> _allRecipes = [];
 
   Recipe? _currentRecipe;
 
@@ -28,6 +29,7 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> get savedRecipes => _savedRecipes;
   List<Recipe> get recommendedRecipes => _recommendedRecipes;
   List<Recipe> get userRecipes => _userRecipes; // Add getter
+  List<Recipe> get allRecipes => _allRecipes;
   Recipe? get currentRecipe => _currentRecipe;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -43,6 +45,7 @@ class RecipeService extends ChangeNotifier {
       fetchRecommendedRecipes(),
       fetchPantryRecipes(), // Added this call to initialize pantry recipes
       fetchUserRecipes(), // Add user recipes fetch
+      fetchAllRecipes(),
     ]);
   }
 
@@ -162,8 +165,40 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       print('❌ Error testing recipe connection: $e');
     }
-  } // Fetch popular recipes
+  }
 
+  // Fetch all recipes
+  Future<void> fetchAllRecipes() async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select()
+          .order('created_at', ascending: false);
+
+      List<Recipe> recipesWithDetails = [];
+      for (final recipeData in response) {
+        final ingredients = await getRecipeIngredients(recipeData['id']);
+        final instructions = await getRecipeInstructions(recipeData['id']);
+        final recipeWithDetails = Recipe.fromJson({
+          ...recipeData,
+          'ingredients': ingredients,
+          'instructions': instructions,
+        });
+        recipesWithDetails.add(recipeWithDetails);
+      }
+
+      _allRecipes = recipesWithDetails;
+      notifyListeners();
+    } catch (e) {
+      _setError('Failed to load all recipes: $e');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Fetch popular recipes
   Future<void> fetchPopularRecipes() async {
     _setLoading(true);
     _clearError();
@@ -1683,7 +1718,9 @@ class RecipeService extends ChangeNotifier {
         return;
       }
 
-      print('🔍 Fetching user recipes for user: $userId');      // Fetch recipes created by the user
+      print(
+        '🔍 Fetching user recipes for user: $userId',
+      ); // Fetch recipes created by the user
       final response = await _supabaseService.client
           .from('recipes')
           .select('''
