@@ -42,7 +42,11 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
   }  Future<void> _loadComments() async {
     setState(() => _isLoading = true);
     try {
+      debugPrint('🔍 CommentsOverlay: Loading comments for post ${widget.postId}');
+      
       final comments = await context.read<CommunityCubit>().getPostComments(widget.postId);
+      
+      debugPrint('🔍 CommentsOverlay: Received ${comments.length} comments');
       
       if (mounted) {
         setState(() {
@@ -51,6 +55,7 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
         });
       }
     } catch (e) {
+      debugPrint('❌ CommentsOverlay: Error loading comments: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -66,7 +71,7 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
         );
       }
     }
-  }  Future<void> _submitComment() async {
+  }Future<void> _submitComment() async {
     if (_commentController.text.trim().isEmpty) return;
 
     setState(() => _isSubmitting = true);
