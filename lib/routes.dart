@@ -7,6 +7,9 @@ import 'features/community/community_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/recipe_detail/modern_recipe_detail_screen.dart';
 import 'features/notifications/notifications_screen.dart'; // Added notifications screen
+import 'features/auth/login_screen.dart';
+import 'features/auth/register_screen.dart';
+import 'features/auth/email_verification_screen.dart';
 import 'core/widgets/bottom_nav.dart';
 import 'features/welcome_screen/welcome_screen.dart';
 
@@ -20,7 +23,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String recipeDetail = '/recipe';
 }
-  
+
 // Creating a key for the scaffold to control the bottom navigation
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -36,6 +39,25 @@ GoRouter createRouter() {
         path: '/welcome',
         name: 'welcome',
         builder: (context, state) => const WelcomeScreen(),
+      ),
+      // Auth routes
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/email-verification',
+        name: 'email_verification',
+        builder: (context, state) => const EmailVerificationScreen(),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

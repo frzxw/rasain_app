@@ -124,17 +124,18 @@ class AuthService extends ChangeNotifier {
       // Load the newly created profile
       await _loadUserProfile(user.id);
     } catch (e) {
-      debugPrint('❌ Error creating user profile: $e');
-
-      // If it's an RLS error, try to handle it gracefully
+      debugPrint(
+        '❌ Error creating user profile: $e',
+      ); // If it's an RLS error, try to handle it gracefully
       if (e.toString().contains('row-level security policy')) {
         debugPrint(
-          '🔒 RLS policy violation detected. User may need to be authenticated properly.',
+          '🔒 RLS policy violation detected - this is expected for unverified users',
         );
         // Set a temporary user profile with limited data
         _currentUser = UserProfile(
           id: user.id,
-          name: user.email?.split('@')[0] ?? 'User',
+          name:
+              user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
           email: user.email ?? '',
           savedRecipesCount: 0,
           postsCount: 0,
@@ -142,21 +143,24 @@ class AuthService extends ChangeNotifier {
           language: 'id',
           isDarkModeEnabled: false,
         );
-        _isAuthenticated = true;
-        notifyListeners();
-
-        // Show user a message about profile setup
-        _setError(
-          'Profile setup incomplete. Please complete your profile in settings.',
+        debugPrint(
+          '📝 Created temporary profile in memory: ${_currentUser?.name}',
         );
+        // Don't set error or authentication status - let the email verification flow handle it
+        notifyListeners();
       } else {
         _setError('Failed to create user profile: $e');
+        rethrow;
       }
     }
   }
 
   // Sign up with email and password
-  Future<void> signUpWithEmail(String email, String password) async {
+  Future<void> signUpWithEmail(
+    String email,
+    String password, {
+    String? name,
+  }) async {
     _setLoading(true);
     _setError(null); // Clear previous errors
     try {
@@ -165,6 +169,7 @@ class AuthService extends ChangeNotifier {
       final AuthResponse res = await _supabase.auth.signUp(
         email: email,
         password: password,
+        data: name != null ? {'name': name} : null,
       );
 
       if (res.user != null) {
@@ -273,14 +278,16 @@ class AuthService extends ChangeNotifier {
 
   // Register (alias signUpWithEmail)
   Future<bool> register(String name, String email, String password) async {
+    debugPrint('📝 Registering user: $email with name: $name');
     try {
-      await signUpWithEmail(email, password);
-      // Optionally update name after registration
-      if (currentUser != null && name.isNotEmpty) {
-        await updateProfile(currentUser!.copyWith(name: name));
-      }
-      return isAuthenticated;
-    } catch (_) {
+      await signUpWithEmail(email, password, name: name);
+
+      // Even if profile creation fails due to RLS, signup was successful
+      // The user just needs to verify email first
+      debugPrint('✅ Registration completed - email verification required');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Registration failed: $e');
       return false;
     }
   }
