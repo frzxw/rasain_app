@@ -24,11 +24,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<String> _categories = []; // Start empty, load from database
-
   String _selectedCategory = 'All';
   bool _isSearching = false;
   bool _isImageSearching = false;
-  bool _isFiltering = false;
 
   // Filter state
   RangeValues _priceRange = const RangeValues(0, 100000);
@@ -276,8 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
           },
         ),
-        const SizedBox(height: AppSizes.marginL),
-        _buildSectionTitle('Masak Apa Hari Ini?'),
+        const SizedBox(height: AppSizes.marginL),        _buildSectionTitle('Masak Apa Hari Ini?'),
         const SizedBox(height: AppSizes.marginS),
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
@@ -288,8 +285,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 state.errorMessage ?? 'Error loading recipes',
               );
             }
+            
+            // Gabungkan resep dari berbagai sumber, prioritaskan user recipes
+            final List<Recipe> todayRecipes = [];
+            
+            // Tambahkan user recipes di posisi teratas (max 2)
+            if (state.userRecipes.isNotEmpty) {
+              todayRecipes.addAll(state.userRecipes.take(2));
+            }
+            
+            // Tambahkan resep lainnya hingga total 5
+            final otherRecipes = state.recipes
+                .where((recipe) => !todayRecipes.any((userRecipe) => userRecipe.id == recipe.id))
+                .take(5 - todayRecipes.length)
+                .toList();
+            todayRecipes.addAll(otherRecipes);
+            
             return WhatsCookingStream(
-              recipes: state.recipes.take(5).toList(),
+              recipes: todayRecipes,
               isLoading: false,
             );
           },
