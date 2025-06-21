@@ -9,6 +9,7 @@ import '../../cubits/auth/auth_state.dart';
 import '../../cubits/recipe/recipe_cubit.dart';
 import '../../cubits/recipe/recipe_state.dart';
 import '../../models/user_profile.dart';
+import 'edit_profile_screen.dart';
 import 'widgets/saved_recipe_list.dart';
 import 'widgets/user_recipe_list.dart';
 import 'widgets/profile_menu_new.dart';
@@ -230,6 +231,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 label: 'Postingan', // Changed to Indonesian
               ),
             ],
+          ),
+
+          const SizedBox(height: AppSizes.marginL),
+
+          // Edit Profile Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditProfileScreen(userProfile: user),
+                  ),
+                );
+
+                if (result == true && context.mounted) {
+                  // Refresh profile data
+                  context.read<AuthCubit>().initialize();
+                }
+              },
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Profile'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSizes.paddingM,
+                ),
+              ),
+            ),
           ),
         ],
       ),

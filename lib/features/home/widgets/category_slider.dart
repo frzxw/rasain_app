@@ -17,7 +17,7 @@ class CategorySlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Add 'All' as the first category
-    final allCategories = ['All', ...categories];
+    final allCategories = [ ...categories];
     
     return SizedBox(
       height: AppSizes.categoryChipHeight,

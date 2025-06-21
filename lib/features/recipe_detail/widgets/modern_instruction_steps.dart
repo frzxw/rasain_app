@@ -212,6 +212,7 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                     ],
                   ),
             ),
+          
 
             // Progress indicator
             if (_isCookingMode)
