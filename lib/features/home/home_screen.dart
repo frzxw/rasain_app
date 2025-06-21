@@ -150,7 +150,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: TextField(
-                controller: _searchController,                decoration: InputDecoration(
+                controller: _searchController,
+                decoration: InputDecoration(
                   hintText: 'Cari resep...',
                   prefixIcon: const Icon(
                     Icons.search,
@@ -585,7 +586,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'All') {
       debugPrint('📋 Loading all recipes');
       context.read<RecipeCubit>().initialize();
-    } else {      debugPrint('🔍 Filtering by category: $category');
+    } else {
+      debugPrint('🔍 Filtering by category: $category');
       context.read<RecipeCubit>().filterByCategory(category);
     }
   }
