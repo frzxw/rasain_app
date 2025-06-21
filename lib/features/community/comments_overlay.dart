@@ -4,7 +4,6 @@ import '../../models/post_comment.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../core/theme/colors.dart';
 import '../../core/constants/sizes.dart';
-import '../../services/data_service.dart';
 
 class CommentsOverlay extends StatefulWidget {
   final String postId;
@@ -40,13 +39,10 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();
-  }
-  Future<void> _loadComments() async {
+  }  Future<void> _loadComments() async {
     setState(() => _isLoading = true);
     try {
-      debugPrint('🔄 Loading comments for post: ${widget.postId}');
       final comments = await context.read<CommunityCubit>().getPostComments(widget.postId);
-      debugPrint('📥 Received ${comments.length} comments');
       
       if (mounted) {
         setState(() {
@@ -55,7 +51,6 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
         });
       }
     } catch (e) {
-      debugPrint('❌ Error loading comments: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,15 +66,11 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
         );
       }
     }
-  }
-  Future<void> _submitComment() async {
+  }  Future<void> _submitComment() async {
     if (_commentController.text.trim().isEmpty) return;
 
     setState(() => _isSubmitting = true);
     try {
-      debugPrint('📝 Submitting comment: ${_commentController.text.trim()}');
-      debugPrint('📍 Post ID: ${widget.postId}');
-      
       await context.read<CommunityCubit>().addComment(
         widget.postId,
         _commentController.text.trim(),
@@ -88,7 +79,6 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
       _commentController.clear();
       _commentFocusNode.unfocus();
       
-      debugPrint('✅ Comment submitted, reloading comments...');
       await _loadComments(); // Refresh comments
       
       if (mounted) {
@@ -100,7 +90,6 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
         );
       }
     } catch (e) {
-      debugPrint('❌ Error submitting comment: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -155,21 +144,8 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                Row(
+                ),                Row(
                   children: [
-                    // Debug button (remove in production)
-                    if (true) // Set to false in production
-                      IconButton(
-                        icon: const Icon(Icons.bug_report, size: 20),
-                        onPressed: () async {
-                          final dataService = DataService();
-                          await dataService.testCommentConnection();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Check debug console for test results')),
-                          );
-                        },
-                      ),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),

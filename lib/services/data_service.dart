@@ -1245,9 +1245,7 @@ class DataService {
 
       debugPrint('✅ Comment insertion result: $result');
 
-      // Update comment count in the post
-      await _updatePostCommentCount(postId);
-
+      // Database trigger will automatically update comment_count in community_posts table
       debugPrint('✅ Comment created successfully with ID: ${result['id']}');
       return true;
     } catch (e) {
@@ -1308,31 +1306,7 @@ class DataService {
       
       debugPrint('🧪 Database connection test completed');
     } catch (e) {
-      debugPrint('❌ Database connection test failed: $e');
-    }
-  }
-
-  /// Update the comment count for a post
-  Future<void> _updatePostCommentCount(String postId) async {
-    try {
-      // Get current comment count
-      final response = await _supabaseService.client
-          .from('post_comments')
-          .select('id')
-          .eq('post_id', postId);
-
-      final commentCount = response.length;
-
-      // Update the post's comment count
-      await _supabaseService.client
-          .from('community_posts')
-          .update({'comment_count': commentCount})
-          .eq('id', postId);
-
-      debugPrint('✅ Updated comment count for post $postId: $commentCount');
-    } catch (e) {
-      debugPrint('❌ Error updating comment count: $e');
-    }
+      debugPrint('❌ Database connection test failed: $e');    }
   }
 
   /// Delete a comment (only by the author)
@@ -1344,7 +1318,7 @@ class DataService {
         return false;
       }
 
-      // Get the comment to check ownership and get post_id
+      // Get the comment to check ownership
       final commentResponse = await _supabaseService.client
           .from('post_comments')
           .select('user_id, post_id')
@@ -1356,19 +1330,13 @@ class DataService {
         return false;
       }
 
-      final postId = commentResponse['post_id'];
-
       // Delete the comment
       await _supabaseService.client
           .from('post_comments')
           .delete()
           .eq('id', commentId);
 
-      // Update comment count
-      if (postId != null) {
-        await _updatePostCommentCount(postId);
-      }
-
+      // Database trigger will automatically update comment_count in community_posts table
       debugPrint('✅ Comment deleted successfully');
       return true;
     } catch (e) {
