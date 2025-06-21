@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:rasain_app/core/widgets/shimmer_widget.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../core/constants/sizes.dart';
@@ -151,19 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
+                controller: _searchController,                decoration: InputDecoration(
                   hintText: 'Cari resep...',
                   prefixIcon: const Icon(
                     Icons.search,
                     color: AppColors.textSecondary,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    onPressed: _handleImageSearch,
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -594,42 +585,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'All') {
       debugPrint('📋 Loading all recipes');
       context.read<RecipeCubit>().initialize();
-    } else {
-      debugPrint('🔍 Filtering by category: $category');
+    } else {      debugPrint('🔍 Filtering by category: $category');
       context.read<RecipeCubit>().filterByCategory(category);
-    }
-  }
-
-  Future<void> _handleImageSearch() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      imageQuality: 85,
-    );
-
-    if (image == null) return;
-
-    setState(() {
-      _isSearching = true;
-      _isImageSearching = true;
-    });
-
-    try {
-      final bytes = await image.readAsBytes();
-      await context.read<RecipeCubit>().searchRecipesByImage(bytes, image.name);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal memproses gambar. Silakan coba lagi.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isImageSearching = false;
-      });
     }
   }
 
