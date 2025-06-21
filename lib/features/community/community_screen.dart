@@ -12,6 +12,7 @@ import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/auth/auth_state.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
+import 'comments_overlay.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -345,102 +346,20 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
-    );
-  }
-  // Like functionality is now handled directly by CommunityCubit.toggleLikePost
+    );  }
 
+  // Like functionality is now handled directly by CommunityCubit.toggleLikePost
+  
   void _showComments(CommunityPost post) {
-    // Implementation for showing comments would go here
-    // This could be a bottom sheet or a new screen
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusL),
-        ),
+      backgroundColor: Colors.transparent,
+      builder: (context) => CommentsOverlay(
+        postId: post.id,
+        postContent: post.content ?? 'Community Post',
+        currentCommentCount: post.commentCount,
       ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(AppSizes.paddingM),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Komentar (${post.commentCount})',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(AppSizes.paddingM),
-                    itemCount: 0, // This would be replaced with actual comments
-                    itemBuilder: (context, index) {
-                      return const Center(
-                        child: Text('Comments functionality coming soon'),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: AppSizes.paddingM,
-                    right: AppSizes.paddingM,
-                    top: AppSizes.paddingM,
-                    bottom:
-                        MediaQuery.of(context).viewInsets.bottom +
-                        AppSizes.paddingM,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Tambahkan komentar...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusL,
-                              ),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSizes.paddingM,
-                              vertical: AppSizes.paddingS,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.marginM),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: AppColors.primary),
-                        onPressed: () {
-                          // Send comment logic would go here
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 

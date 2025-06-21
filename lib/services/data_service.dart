@@ -3,6 +3,7 @@ import '../models/recipe.dart';
 import '../models/pantry_item.dart';
 import '../models/user_profile.dart';
 import '../models/community_post.dart';
+import '../models/post_comment.dart';
 import 'supabase_service.dart';
 import 'local_storage_service.dart';
 
@@ -1087,8 +1088,325 @@ class DataService {
         debugPrint('✅ User already has ${userPosts.length} posts');
       }
       
+    } catch (e) {      debugPrint('❌ Error creating test data: $e');
+    }
+  }
+
+  // ===== COMMENT METHODS =====  /// Get comments for a specific post
+  Future<List<PostComment>> getPostComments(String postId) async {
+    try {
+      debugPrint('🔍 Fetching comments for post: $postId');
+      
+      // First, check if the post exists
+      final postCheck = await _supabaseService.client
+          .from('community_posts')
+          .select('id')
+          .eq('id', postId)
+          .maybeSingle();
+      
+      if (postCheck == null) {
+        debugPrint('❌ Post not found: $postId');
+        return [];
+      }
+      
+      debugPrint('✅ Post exists, fetching comments...');
+      
+      // Simple query first without JOIN to test connectivity
+      final response = await _supabaseService.client
+          .from('post_comments')
+          .select('*')
+          .eq('post_id', postId)
+          .order('created_at', ascending: true);
+
+      debugPrint('📋 Comments query response: ${response.length} comments found');
+      debugPrint('📋 Raw response data: $response');
+
+      if (response.isEmpty) {
+        debugPrint('📋 No comments found for post: $postId');
+        return [];
+      }
+
+      // Get unique user IDs for fetching user profiles
+      final userIds = response
+          .map((comment) => comment['user_id']?.toString())
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+
+      debugPrint('👤 Found ${userIds.length} unique user IDs: $userIds');
+
+      // Fetch user profiles
+      Map<String, Map<String, dynamic>> userMap = {};
+      if (userIds.isNotEmpty) {
+        try {
+          final usersResponse = await _supabaseService.client
+              .from('user_profiles')
+              .select('id, name, image_url')
+              .inFilter('id', userIds);
+
+          debugPrint('👤 User profiles response: $usersResponse');
+
+          for (final user in usersResponse) {
+            if (user['id'] != null) {
+              userMap[user['id'].toString()] = user;
+            }
+          }
+          debugPrint('👤 Created user map with ${userMap.length} entries');
+        } catch (userError) {
+          debugPrint('⚠️ Error fetching user profiles: $userError');
+          // Continue without user data
+        }
+      }
+
+      // Parse comments
+      final comments = response.map<PostComment>((comment) {
+        final userId = comment['user_id']?.toString() ?? '';
+        final userData = userMap[userId];
+        
+        debugPrint('📝 Parsing comment: ${comment['id']} by user $userId');
+        
+        return PostComment(
+          id: comment['id']?.toString() ?? '',
+          postId: comment['post_id']?.toString() ?? '',
+          userId: userId,
+          parentCommentId: comment['parent_comment_id']?.toString(),
+          content: comment['content']?.toString() ?? '',
+          likeCount: comment['like_count']?.toInt() ?? 0,
+          createdAt: DateTime.parse(
+            comment['created_at'] ?? DateTime.now().toIso8601String(),
+          ),
+          updatedAt: DateTime.parse(
+            comment['updated_at'] ?? DateTime.now().toIso8601String(),
+          ),
+          authorName: userData?['name']?.toString() ?? 'Unknown User',
+          authorAvatar: userData?['image_url']?.toString(),
+        );
+      }).toList();
+
+      debugPrint('✅ Successfully parsed ${comments.length} comments');
+      return comments;
     } catch (e) {
-      debugPrint('❌ Error creating test data: $e');
+      debugPrint('❌ Error fetching comments: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
+      debugPrint('❌ Error details: ${e.toString()}');
+      return [];
+    }
+  }  /// Create a new comment for a post
+  Future<bool> createComment({
+    required String postId,
+    required String content,
+    String? parentCommentId,
+  }) async {
+    try {
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ User not authenticated');
+        return false;
+      }
+
+      if (content.trim().isEmpty) {
+        debugPrint('❌ Comment content is empty');
+        return false;
+      }
+
+      debugPrint('💬 Creating comment for post: $postId');
+      debugPrint('👤 User ID: ${currentUser.id}');
+      debugPrint('📝 Comment content: ${content.substring(0, content.length.clamp(0, 50))}...');
+
+      // First check if the post exists
+      final postExists = await _supabaseService.client
+          .from('community_posts')
+          .select('id')
+          .eq('id', postId)
+          .maybeSingle();
+
+      if (postExists == null) {
+        debugPrint('❌ Post does not exist: $postId');
+        return false;
+      }
+
+      debugPrint('✅ Post exists, creating comment...');
+
+      final commentData = {
+        'post_id': postId,
+        'user_id': currentUser.id,
+        'parent_comment_id': parentCommentId,
+        'content': content.trim(),
+        'like_count': 0,
+      };
+
+      debugPrint('📤 Comment data to insert: $commentData');
+
+      final result = await _supabaseService.client
+          .from('post_comments')
+          .insert(commentData)
+          .select()
+          .single();
+
+      debugPrint('✅ Comment insertion result: $result');
+
+      // Update comment count in the post
+      await _updatePostCommentCount(postId);
+
+      debugPrint('✅ Comment created successfully with ID: ${result['id']}');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error creating comment: $e');
+      debugPrint('❌ Error type: ${e.runtimeType}');
+      
+      // Provide specific error information
+      final errorMessage = e.toString().toLowerCase();
+      if (errorMessage.contains('23503')) {
+        debugPrint('❌ Foreign key constraint violation - post or user not found');
+      } else if (errorMessage.contains('23505')) {
+        debugPrint('❌ Duplicate comment detected');
+      } else if (errorMessage.contains('42501') || errorMessage.contains('permission')) {
+        debugPrint('❌ Permission denied - check RLS policies');
+      } else if (errorMessage.contains('network') || errorMessage.contains('connection')) {
+        debugPrint('❌ Network/connection error');
+      }
+      
+      return false;
+    }
+  }
+
+  /// Test database connection for comments
+  Future<void> testCommentConnection() async {
+    try {
+      debugPrint('🧪 Testing comment database connection...');
+      
+      // Test 1: Check if post_comments table exists
+      final tableTest = await _supabaseService.client
+          .from('post_comments')
+          .select('count')
+          .limit(1);
+      
+      debugPrint('✅ post_comments table accessible: $tableTest');
+      
+      // Test 2: Check authentication
+      final currentUser = _supabaseService.client.auth.currentUser;
+      debugPrint('👤 Current user: ${currentUser?.id ?? 'Not authenticated'}');
+      
+      // Test 3: Check if we can read community_posts
+      final postsTest = await _supabaseService.client
+          .from('community_posts')
+          .select('id')
+          .limit(1);
+      
+      debugPrint('✅ community_posts table accessible: ${postsTest.length} posts found');
+      
+      // Test 4: Check user_profiles access
+      if (currentUser != null) {
+        final profileTest = await _supabaseService.client
+            .from('user_profiles')
+            .select('id, name')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+        
+        debugPrint('✅ User profile: $profileTest');
+      }
+      
+      debugPrint('🧪 Database connection test completed');
+    } catch (e) {
+      debugPrint('❌ Database connection test failed: $e');
+    }
+  }
+
+  /// Update the comment count for a post
+  Future<void> _updatePostCommentCount(String postId) async {
+    try {
+      // Get current comment count
+      final response = await _supabaseService.client
+          .from('post_comments')
+          .select('id')
+          .eq('post_id', postId);
+
+      final commentCount = response.length;
+
+      // Update the post's comment count
+      await _supabaseService.client
+          .from('community_posts')
+          .update({'comment_count': commentCount})
+          .eq('id', postId);
+
+      debugPrint('✅ Updated comment count for post $postId: $commentCount');
+    } catch (e) {
+      debugPrint('❌ Error updating comment count: $e');
+    }
+  }
+
+  /// Delete a comment (only by the author)
+  Future<bool> deleteComment(String commentId) async {
+    try {
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ User not authenticated');
+        return false;
+      }
+
+      // Get the comment to check ownership and get post_id
+      final commentResponse = await _supabaseService.client
+          .from('post_comments')
+          .select('user_id, post_id')
+          .eq('id', commentId)
+          .single();
+
+      if (commentResponse['user_id'] != currentUser.id) {
+        debugPrint('❌ User not authorized to delete this comment');
+        return false;
+      }
+
+      final postId = commentResponse['post_id'];
+
+      // Delete the comment
+      await _supabaseService.client
+          .from('post_comments')
+          .delete()
+          .eq('id', commentId);
+
+      // Update comment count
+      if (postId != null) {
+        await _updatePostCommentCount(postId);
+      }
+
+      debugPrint('✅ Comment deleted successfully');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error deleting comment: $e');
+      return false;
+    }
+  }
+
+  /// Like/unlike a comment
+  Future<bool> toggleCommentLike(String commentId) async {
+    try {
+      final currentUser = _supabaseService.client.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ User not authenticated');
+        return false;
+      }
+
+      // For now, just increment/decrement the like count
+      // In a real app, you'd want to track individual likes in a separate table
+      final currentComment = await _supabaseService.client
+          .from('post_comments')
+          .select('like_count')
+          .eq('id', commentId)
+          .single();
+
+      final currentLikes = currentComment['like_count'] as int? ?? 0;
+      final newLikes = currentLikes + 1; // Simple increment for now
+
+      await _supabaseService.client
+          .from('post_comments')
+          .update({'like_count': newLikes})
+          .eq('id', commentId);
+
+      debugPrint('✅ Comment like toggled successfully');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error toggling comment like: $e');
+      return false;
     }
   }
 }
