@@ -211,16 +211,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 margin: const EdgeInsets.symmetric(
                   horizontal: AppSizes.marginL,
                 ),
-              ),              _buildStatItem(
+              ),
+              _buildStatItem(
                 context,
                 count: user.postsCount,
                 label: 'Postingan', // Changed to Indonesian
               ),
             ],
           ),
-          
+
           const SizedBox(height: AppSizes.marginL),
-          
+
           // Edit Profile Button
           SizedBox(
             width: double.infinity,
@@ -231,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     builder: (context) => EditProfileScreen(userProfile: user),
                   ),
                 );
-                
+
                 if (result == true && context.mounted) {
                   // Refresh profile data
                   context.read<AuthCubit>().initialize();

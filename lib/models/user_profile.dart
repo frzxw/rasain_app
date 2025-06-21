@@ -49,6 +49,7 @@ class UserProfile {
       'is_dark_mode_enabled': isDarkModeEnabled,
     };
   }
+
   // Create a copy of user profile with modifications
   UserProfile copyWith({
     String? id,
@@ -70,7 +71,8 @@ class UserProfile {
       bio: bio ?? this.bio,
       savedRecipesCount: savedRecipesCount ?? this.savedRecipesCount,
       postsCount: postsCount ?? this.postsCount,
-      isNotificationsEnabled: isNotificationsEnabled ?? this.isNotificationsEnabled,
+      isNotificationsEnabled:
+          isNotificationsEnabled ?? this.isNotificationsEnabled,
       language: language ?? this.language,
       isDarkModeEnabled: isDarkModeEnabled ?? this.isDarkModeEnabled,
     );

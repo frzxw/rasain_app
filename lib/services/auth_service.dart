@@ -95,7 +95,8 @@ class AuthService extends ChangeNotifier {
   // Create user profile in database
   Future<void> _createUserProfile(User user) async {
     try {
-      debugPrint('🔧 Creating user profile for: ${user.id}');      final profileData = {
+      debugPrint('🔧 Creating user profile for: ${user.id}');
+      final profileData = {
         'id': user.id,
         'name':
             user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
@@ -130,7 +131,7 @@ class AuthService extends ChangeNotifier {
       if (e.toString().contains('row-level security policy')) {
         debugPrint(
           '🔒 RLS policy violation detected - this is expected for unverified users',
-        );        // Set a temporary user profile with limited data
+        ); // Set a temporary user profile with limited data
         _currentUser = UserProfile(
           id: user.id,
           name:
@@ -296,6 +297,7 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     await signOut();
   }
+
   // Update profile with image upload support
   Future<bool> updateProfile({
     String? name,
@@ -314,15 +316,16 @@ class AuthService extends ChangeNotifier {
 
     try {
       final userId = _currentUser!.id;
-      String? imageUrl = _currentUser!.imageUrl;      // Upload avatar if provided
+      String? imageUrl = _currentUser!.imageUrl; // Upload avatar if provided
       if (avatarBytes != null && avatarFileName != null) {
         try {
           // Use a more generic path structure
-          final avatarPath = '$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-          
+          final avatarPath =
+              '$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
           // Try uploading to a public bucket first, fallback to avatars
           String bucketName = 'avatars';
-          
+
           await _supabase.storage
               .from(bucketName)
               .uploadBinary(avatarPath, Uint8List.fromList(avatarBytes));
@@ -330,16 +333,19 @@ class AuthService extends ChangeNotifier {
           imageUrl = _supabase.storage
               .from(bucketName)
               .getPublicUrl(avatarPath);
-              
-          debugPrint('✅ Avatar uploaded successfully to $bucketName: $imageUrl');
+
+          debugPrint(
+            '✅ Avatar uploaded successfully to $bucketName: $imageUrl',
+          );
         } catch (e) {
           debugPrint('❌ Error uploading avatar to avatars bucket: $e');
-          
+
           // Fallback: try uploading to a different bucket or handle differently
           try {
             // Alternative: Upload to public bucket with different name
-            final avatarPath = 'user_avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-            
+            final avatarPath =
+                'user_avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
             await _supabase.storage
                 .from('public')
                 .uploadBinary(avatarPath, Uint8List.fromList(avatarBytes));
@@ -347,11 +353,15 @@ class AuthService extends ChangeNotifier {
             imageUrl = _supabase.storage
                 .from('public')
                 .getPublicUrl(avatarPath);
-                
-            debugPrint('✅ Avatar uploaded successfully to public bucket: $imageUrl');
+
+            debugPrint(
+              '✅ Avatar uploaded successfully to public bucket: $imageUrl',
+            );
           } catch (e2) {
             debugPrint('❌ Error uploading avatar to public bucket: $e2');
-            _setError('Failed to upload avatar. Please check storage permissions.');
+            _setError(
+              'Failed to upload avatar. Please check storage permissions.',
+            );
             return false;
           }
         }
@@ -460,6 +470,7 @@ class AuthService extends ChangeNotifier {
     _error = error;
     notifyListeners();
   }
+
   void _setLoading(bool isLoading) {
     _isLoading = isLoading;
     notifyListeners();

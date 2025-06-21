@@ -13,10 +13,7 @@ import '../../models/user_profile.dart';
 class EditProfileScreen extends StatefulWidget {
   final UserProfile userProfile;
 
-  const EditProfileScreen({
-    super.key,
-    required this.userProfile,
-  });
+  const EditProfileScreen({super.key, required this.userProfile});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -80,24 +77,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<ImageSource?> _showImageSourceDialog() async {
     return showDialog<ImageSource>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pilih Sumber Gambar'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Kamera'),
-              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Pilih Sumber Gambar'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Kamera'),
+                  onTap: () => Navigator.of(context).pop(ImageSource.camera),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeri'),
+                  onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Galeri'),
-              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -111,7 +109,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final success = await context.read<AuthCubit>().updateProfile(
         name: _nameController.text.trim(),
-        bio: _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
+        bio:
+            _bioController.text.trim().isEmpty
+                ? null
+                : _bioController.text.trim(),
         avatarBytes: _selectedImageBytes?.toList(),
         avatarFileName: _selectedImageName,
       );
@@ -145,63 +146,64 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: const CustomAppBar(
-          title: 'Edit Profile',
-        ),
-        body: BlocListener<AuthCubit, AuthState>(
-          listener: (context, state) {
-            if (state.status == AuthStatus.error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage ?? 'Terjadi kesalahan'),
-                  backgroundColor: AppColors.error,
-                ),
-              );
-            }
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSizes.paddingM),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: AppSizes.marginM),
-                  
-                  // Profile Picture Section
-                  _buildProfilePictureSection(),
-                  
-                  const SizedBox(height: AppSizes.marginXL),
-                  
-                  // Name Field
-                  _buildNameField(),
-                  
-                  const SizedBox(height: AppSizes.marginL),
-                  
-                  // Bio Field
-                  _buildBioField(),
-                  
-                  const SizedBox(height: AppSizes.marginXL * 2),
-                  
-                  // Save Button
-                  BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, state) {
-                      final isLoading = _isLoading || state.status == AuthStatus.loading;                      return CustomButton(
-                        label: 'Simpan Perubahan',
-                        onPressed: isLoading ? null : _handleSaveProfile,
-                        isLoading: isLoading,
-                        isFullWidth: true,
-                      );
-                    },
-                  ),
-                  
-                  const SizedBox(height: AppSizes.marginL),
-                ],
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: const CustomAppBar(title: 'Edit Profile'),
+      body: BlocListener<AuthCubit, AuthState>(
+        listener: (context, state) {
+          if (state.status == AuthStatus.error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Terjadi kesalahan'),
+                backgroundColor: AppColors.error,
               ),
+            );
+          }
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSizes.paddingM),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: AppSizes.marginM),
+
+                // Profile Picture Section
+                _buildProfilePictureSection(),
+
+                const SizedBox(height: AppSizes.marginXL),
+
+                // Name Field
+                _buildNameField(),
+
+                const SizedBox(height: AppSizes.marginL),
+
+                // Bio Field
+                _buildBioField(),
+
+                const SizedBox(height: AppSizes.marginXL * 2),
+
+                // Save Button
+                BlocBuilder<AuthCubit, AuthState>(
+                  builder: (context, state) {
+                    final isLoading =
+                        _isLoading || state.status == AuthStatus.loading;
+                    return CustomButton(
+                      label: 'Simpan Perubahan',
+                      onPressed: isLoading ? null : _handleSaveProfile,
+                      isLoading: isLoading,
+                      isFullWidth: true,
+                    );
+                  },
+                ),
+
+                const SizedBox(height: AppSizes.marginL),
+              ],
             ),
           ),
         ),
+      ),
     );
   }
 
@@ -216,10 +218,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primary,
-                width: 3,
-              ),
+              border: Border.all(color: AppColors.primary, width: 3),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.2),
@@ -229,68 +228,69 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             ),
             child: ClipOval(
-              child: _selectedImageBytes != null
-                  ? Image.memory(
-                      _selectedImageBytes!,
-                      fit: BoxFit.cover,
-                      width: 120,
-                      height: 120,
-                    )
-                  : widget.userProfile.imageUrl != null && widget.userProfile.imageUrl!.isNotEmpty
+              child:
+                  _selectedImageBytes != null
+                      ? Image.memory(
+                        _selectedImageBytes!,
+                        fit: BoxFit.cover,
+                        width: 120,
+                        height: 120,
+                      )
+                      : widget.userProfile.imageUrl != null &&
+                          widget.userProfile.imageUrl!.isNotEmpty
                       ? Image.network(
-                          widget.userProfile.imageUrl!,
-                          fit: BoxFit.cover,
-                          width: 120,
-                          height: 120,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: 120,
-                              height: 120,
-                              color: AppColors.surface,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        widget.userProfile.imageUrl!,
+                        fit: BoxFit.cover,
+                        width: 120,
+                        height: 120,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 120,
+                            height: 120,
+                            color: AppColors.surface,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
                                 ),
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: 120,
-                              height: 120,
-                              color: AppColors.surface,
-                              child: const Icon(
-                                Icons.person,
-                                size: 60,
-                                color: AppColors.textSecondary,
-                              ),
-                            );
-                          },
-                        )
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 120,
+                            height: 120,
+                            color: AppColors.surface,
+                            child: const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: AppColors.textSecondary,
+                            ),
+                          );
+                        },
+                      )
                       : Container(
-                          width: 120,
-                          height: 120,
-                          color: AppColors.surface,
-                          child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: AppColors.textSecondary,
-                          ),
+                        width: 120,
+                        height: 120,
+                        color: AppColors.surface,
+                        child: const Icon(
+                          Icons.person,
+                          size: 60,
+                          color: AppColors.textSecondary,
                         ),
+                      ),
             ),
           ),
         ),
-        
+
         const SizedBox(height: AppSizes.marginM),
-        
+
         // Change Photo Button
         TextButton.icon(
           onPressed: _pickImage,
-          icon: const Icon(
-            Icons.camera_alt,
-            color: AppColors.primary,
-          ),
+          icon: const Icon(Icons.camera_alt, color: AppColors.primary),
           label: const Text(
             'Ubah Foto Profile',
             style: TextStyle(
@@ -299,7 +299,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
         ),
-        
+
         if (_selectedImageBytes != null) ...[
           const SizedBox(height: AppSizes.marginS),
           Text(
@@ -313,7 +313,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ],
     );
-  }  void _handleSaveProfile() {
+  }
+
+  void _handleSaveProfile() {
     _saveProfile();
   }
 
@@ -346,6 +348,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         prefixIcon: Icon(Icons.edit_note),
       ),
       maxLines: 3,
-      maxLength: 200,    );
+      maxLength: 200,
+    );
   }
 }

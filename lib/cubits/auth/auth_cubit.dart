@@ -156,7 +156,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-
   // Reset password with email
   Future<bool> resetPassword(String email) async {
     emit(state.copyWith(status: AuthStatus.loading));
@@ -347,10 +346,7 @@ class AuthCubit extends Cubit<AuthState> {
       }
     } catch (e) {
       emit(
-        state.copyWith(
-          status: AuthStatus.error,
-          errorMessage: e.toString(),
-        ),
+        state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
       );
       return false;
     }
