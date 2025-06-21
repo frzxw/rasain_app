@@ -389,41 +389,13 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  
-                  // Comment text
+                    // Comment text
                   Text(
                     comment.content,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.4,
                       color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Like button
-                  GestureDetector(
-                    onTap: () {
-                      // TODO: Implement comment like functionality
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.favorite_border,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          comment.likeCount.toString(),
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
