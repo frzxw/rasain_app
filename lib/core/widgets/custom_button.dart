@@ -17,7 +17,7 @@ enum ButtonSize {
 
 class CustomButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final ButtonVariant variant;
   final ButtonSize size;
   final IconData? icon;
@@ -26,11 +26,10 @@ class CustomButton extends StatelessWidget {
   final bool isFullWidth;
   final bool disabled;
   final TextStyle? textStyle;
-
   const CustomButton({
     super.key,
     required this.label,
-    required this.onPressed,
+    this.onPressed,
     this.variant = ButtonVariant.primary,
     this.size = ButtonSize.medium,
     this.icon,

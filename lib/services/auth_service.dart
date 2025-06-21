@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -94,14 +95,13 @@ class AuthService extends ChangeNotifier {
   // Create user profile in database
   Future<void> _createUserProfile(User user) async {
     try {
-      debugPrint('🔧 Creating user profile for: ${user.id}');
-
-      final profileData = {
+      debugPrint('🔧 Creating user profile for: ${user.id}');      final profileData = {
         'id': user.id,
         'name':
             user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
         'email': user.email,
         'image_url': user.userMetadata?['avatar_url'],
+        'bio': null,
         'saved_recipes_count': 0,
         'posts_count': 0,
         'is_notifications_enabled': true,
@@ -130,13 +130,13 @@ class AuthService extends ChangeNotifier {
       if (e.toString().contains('row-level security policy')) {
         debugPrint(
           '🔒 RLS policy violation detected - this is expected for unverified users',
-        );
-        // Set a temporary user profile with limited data
+        );        // Set a temporary user profile with limited data
         _currentUser = UserProfile(
           id: user.id,
           name:
               user.userMetadata?['name'] ?? user.email?.split('@')[0] ?? 'User',
           email: user.email ?? '',
+          bio: null,
           savedRecipesCount: 0,
           postsCount: 0,
           isNotificationsEnabled: true,
@@ -296,19 +296,106 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     await signOut();
   }
+  // Update profile with image upload support
+  Future<bool> updateProfile({
+    String? name,
+    String? bio,
+    List<int>? avatarBytes,
+    String? avatarFileName,
+    UserProfile? updatedProfile, // For backward compatibility
+  }) async {
+    if (!_isAuthenticated || _currentUser == null) {
+      _setError('User not authenticated');
+      return false;
+    }
 
-  // Update profile
-  Future<bool> updateProfile(UserProfile updatedProfile) async {
+    _setLoading(true);
+    _setError(null);
+
     try {
-      await _supabase
-          .from('user_profiles')
-          .update(updatedProfile.toJson())
-          .eq('id', updatedProfile.id);
-      await _loadUserProfile(updatedProfile.id);
+      final userId = _currentUser!.id;
+      String? imageUrl = _currentUser!.imageUrl;      // Upload avatar if provided
+      if (avatarBytes != null && avatarFileName != null) {
+        try {
+          // Use a more generic path structure
+          final avatarPath = '$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          
+          // Try uploading to a public bucket first, fallback to avatars
+          String bucketName = 'avatars';
+          
+          await _supabase.storage
+              .from(bucketName)
+              .uploadBinary(avatarPath, Uint8List.fromList(avatarBytes));
+
+          imageUrl = _supabase.storage
+              .from(bucketName)
+              .getPublicUrl(avatarPath);
+              
+          debugPrint('✅ Avatar uploaded successfully to $bucketName: $imageUrl');
+        } catch (e) {
+          debugPrint('❌ Error uploading avatar to avatars bucket: $e');
+          
+          // Fallback: try uploading to a different bucket or handle differently
+          try {
+            // Alternative: Upload to public bucket with different name
+            final avatarPath = 'user_avatars/$userId/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+            
+            await _supabase.storage
+                .from('public')
+                .uploadBinary(avatarPath, Uint8List.fromList(avatarBytes));
+
+            imageUrl = _supabase.storage
+                .from('public')
+                .getPublicUrl(avatarPath);
+                
+            debugPrint('✅ Avatar uploaded successfully to public bucket: $imageUrl');
+          } catch (e2) {
+            debugPrint('❌ Error uploading avatar to public bucket: $e2');
+            _setError('Failed to upload avatar. Please check storage permissions.');
+            return false;
+          }
+        }
+      }
+
+      // Handle backward compatibility or use individual params
+      if (updatedProfile != null) {
+        await _supabase
+            .from('user_profiles')
+            .update(updatedProfile.toJson())
+            .eq('id', updatedProfile.id);
+        await _loadUserProfile(updatedProfile.id);
+      } else {
+        // Update profile data with individual params
+        final updateData = <String, dynamic>{};
+        if (name != null) updateData['name'] = name;
+        if (bio != null) updateData['bio'] = bio;
+        if (imageUrl != null) updateData['image_url'] = imageUrl;
+
+        if (updateData.isNotEmpty) {
+          await _supabase
+              .from('user_profiles')
+              .update(updateData)
+              .eq('id', userId);
+
+          // Update local user profile
+          _currentUser = _currentUser!.copyWith(
+            name: name,
+            bio: bio,
+            imageUrl: imageUrl,
+          );
+
+          debugPrint('✅ Profile updated successfully');
+          notifyListeners();
+        }
+      }
+
       return true;
     } catch (e) {
+      debugPrint('❌ Error updating profile: $e');
       _setError('Failed to update profile: $e');
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -373,7 +460,6 @@ class AuthService extends ChangeNotifier {
     _error = error;
     notifyListeners();
   }
-
   void _setLoading(bool isLoading) {
     _isLoading = isLoading;
     notifyListeners();

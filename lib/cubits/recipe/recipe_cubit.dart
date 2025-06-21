@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
 import 'recipe_state.dart';
@@ -154,7 +155,6 @@ class RecipeCubit extends Cubit<RecipeState> {
       return await _recipeService.getRecipeCategories();
     } catch (e) {
       return [
-        'All',
         'Makanan Utama',
         'Pedas',
         'Tradisional',
@@ -181,6 +181,32 @@ class RecipeCubit extends Cubit<RecipeState> {
           status: RecipeStatus.error,
           errorMessage: 'Failed to filter recipes: $e',
         ),
+      );
+    }
+  }
+
+  // Filter recipes by price and time
+  Future<void> filterRecipes({
+    RangeValues? priceRange,
+    RangeValues? timeRange,
+    String? category,
+  }) async {
+    debugPrint(
+      '🔍 RecipeCubit: Filtering recipes with price: $priceRange, time: $timeRange, category: $category',
+    );
+    emit(state.copyWith(status: RecipeStatus.loading));
+    try {
+      final filteredRecipes = await _recipeService.filterRecipes(
+        priceRange: priceRange,
+        timeRange: timeRange,
+        category: category,
+      );
+      emit(
+        state.copyWith(recipes: filteredRecipes, status: RecipeStatus.loaded),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
       );
     }
   }

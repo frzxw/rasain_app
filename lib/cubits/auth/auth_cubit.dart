@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import '../../models/user_profile.dart';
 import '../../services/auth_service.dart';
 import 'auth_state.dart';
 
@@ -157,33 +156,6 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  // Update user profile
-  Future<void> updateProfile(UserProfile updatedProfile) async {
-    emit(state.copyWith(status: AuthStatus.loading));
-    try {
-      final success = await _authService.updateProfile(updatedProfile);
-
-      if (success) {
-        emit(
-          state.copyWith(
-            user: _authService.currentUser,
-            status: AuthStatus.authenticated,
-          ),
-        );
-      } else {
-        emit(
-          state.copyWith(
-            status: AuthStatus.error,
-            errorMessage: _authService.error ?? "Profile update failed",
-          ),
-        );
-      }
-    } catch (e) {
-      emit(
-        state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
-      );
-    }
-  }
 
   // Reset password with email
   Future<bool> resetPassword(String email) async {
@@ -303,7 +275,9 @@ class AuthCubit extends Cubit<AuthState> {
         language: language,
       );
 
-      final success = await _authService.updateProfile(updatedUser);
+      final success = await _authService.updateProfile(
+        updatedProfile: updatedUser,
+      );
 
       if (success) {
         emit(
@@ -322,6 +296,61 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(
         state.copyWith(status: AuthStatus.error, errorMessage: e.toString()),
+      );
+      return false;
+    }
+  }
+
+  // Update user profile (name, bio, avatar)
+  Future<bool> updateProfile({
+    String? name,
+    String? bio,
+    List<int>? avatarBytes,
+    String? avatarFileName,
+  }) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    if (state.user == null) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "User is not authenticated",
+        ),
+      );
+      return false;
+    }
+
+    try {
+      final success = await _authService.updateProfile(
+        name: name,
+        bio: bio,
+        avatarBytes: avatarBytes,
+        avatarFileName: avatarFileName,
+      );
+
+      if (success) {
+        emit(
+          state.copyWith(
+            user: _authService.currentUser,
+            status: AuthStatus.authenticated,
+          ),
+        );
+        return true;
+      } else {
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: _authService.error ?? "Profile update failed",
+          ),
+        );
+        return false;
+      }
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: e.toString(),
+        ),
       );
       return false;
     }
