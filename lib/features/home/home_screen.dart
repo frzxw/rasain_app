@@ -7,6 +7,8 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../cubits/recipe/recipe_cubit.dart';
 import '../../cubits/recipe/recipe_state.dart';
+import '../../cubits/pantry/pantry_cubit.dart';
+import '../../cubits/pantry/pantry_state.dart';
 import '../../models/recipe.dart';
 import 'widgets/category_slider.dart';
 import 'widgets/recipe_carousel.dart';
@@ -46,12 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _searchController.addListener(_onSearchChanged);    WidgetsBinding.instance.addPostFrameCallback((_) {
       final recipeCubit = context.read<RecipeCubit>();
       if (recipeCubit.state.status == RecipeStatus.initial) {
         recipeCubit.initialize();
       }
+      // Fetch pantry-based recipes for "Dari Dapur Anda" section
+      recipeCubit.fetchPantryBasedRecipes();
       _loadCategories();
     });
   }
@@ -101,7 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -123,6 +125,29 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 _buildModernHomeContent(),
             ],
+    return BlocListener<PantryCubit, PantryState>(      listener: (context, state) {
+        // Refresh pantry-based recipes when pantry items change
+        if (state.status == PantryStatus.loaded) {
+          context.read<RecipeCubit>().fetchPantryBasedRecipes();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _refreshHomeData,
+            color: AppColors.primary,
+            child: CustomScrollView(
+              slivers: [
+                _buildSliverAppBar(),
+                if (_isSearching)
+                  _buildSearchResults()
+                else if (_selectedCategory != 'All')
+                  _buildCategoryResults()
+                else
+                  _buildHomeContent(),
+              ],
+            ),
           ),
         ),
       ),
@@ -207,47 +232,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 _onSearchChanged();
               },
             );
-          },
-        ),
-
-        const SizedBox(height: AppSizes.marginL), // Featured Recipes Section
-        SectionHeader(
-          title: 'Resep Pilihan',
-          subtitle: 'Rekomendasi chef terbaik untuk kamu',
-          icon: Icons.star,
-          iconColor: AppColors.primary,
-          onSeeAllTap: () {
-            // TODO: Navigate to featured recipes
-          },
-        ),
+          },        ),
+        const SizedBox(height: AppSizes.marginL),
+        _buildPantrySectionHeader(),
         const SizedBox(height: AppSizes.marginS),
 
         // Recipe Content based on state
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
-            switch (state.status) {
-              case RecipeStatus.loading:
-                return const LoadingState(
-                  message: 'Memuat resep terbaik...',
-                  showAnimation: true,
-                );
-
-              case RecipeStatus.loaded:
-                if (state.recipes.isEmpty) {
-                  return EmptyState.noRecipes(
-                    onUploadTap: () => context.push('/upload-recipe'),
-                  );
-                }
-                return RecipeCarousel(recipes: state.recipes.take(10).toList());
-
-              case RecipeStatus.error:
-                return _buildErrorWidget(
-                  state.errorMessage ?? 'Terjadi kesalahan',
-                );
-
-              default:
-                return const SizedBox.shrink();
+            if (state.status == RecipeStatus.loading && state.pantryBasedRecipes.isEmpty) {
+              return RecipeCarousel(recipes: const [], isLoading: true);
+            } else if (state.status == RecipeStatus.error) {
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading pantry recipes',
+              );
             }
+            
+            // Use pantry-based recipes from the state
+            final pantryRecipes = state.pantryBasedRecipes;
+            
+            // If no pantry recipes available, show helpful message
+            if (pantryRecipes.isEmpty) {
+              return _buildEmptyPantryRecipesWidget();
+            }
+            
+            return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
           },
         ),
         const SizedBox(height: AppSizes.marginL),
@@ -597,10 +606,62 @@ class _HomeScreenState extends State<HomeScreen> {
       _isSearching = false;
       _searchController.clear();
       _selectedCategory = 'All';
-    });
-
-    // Reload initial data
+    });    // Reload initial data
     context.read<RecipeCubit>().initialize();
+    // Also refresh pantry-based recipes
+    context.read<RecipeCubit>().fetchPantryBasedRecipes();
+  }
+
+  Widget _buildEmptyPantryRecipesWidget() {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.marginM),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.kitchen_outlined,
+            size: AppSizes.iconXL,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          Text(
+            'Belum Ada Resep dari Dapur Anda',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Text(
+            'Tambahkan bahan-bahan ke pantry Anda untuk mendapatkan rekomendasi resep yang bisa dibuat',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          ElevatedButton.icon(
+            onPressed: () {
+              context.push('/pantry');
+            },
+            icon: const Icon(Icons.add, color: Colors.white),
+            label: const Text('Isi Pantry', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingL,
+                vertical: AppSizes.paddingM,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorWidget(String errorMessage) {
@@ -635,6 +696,51 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPantrySectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dari Dapur Anda',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSizes.marginXS),
+                BlocBuilder<RecipeCubit, RecipeState>(
+                  builder: (context, state) {
+                    final pantryRecipesCount = state.pantryBasedRecipes.length;
+                    return Text(
+                      pantryRecipesCount > 0 
+                          ? '$pantryRecipesCount resep yang bisa dibuat dari bahan di pantry Anda'
+                          : 'Resep berdasarkan bahan di pantry Anda',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              context.push('/pantry');
+            },
+            icon: const Icon(
+              Icons.kitchen_outlined,
+              color: AppColors.primary,
+            ),
+            tooltip: 'Kelola Pantry',
+          ),
+        ],
       ),
     );
   }

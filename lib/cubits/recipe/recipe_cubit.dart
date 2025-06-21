@@ -66,7 +66,6 @@ class RecipeCubit extends Cubit<RecipeState> {
       categoryRecipeMap.forEach((category, recipeMap) {
         categoryRecipes[category] = recipeMap.values.toList();
       });
-
       emit(
         state.copyWith(
           recipes: allRecipes,
@@ -78,6 +77,9 @@ class RecipeCubit extends Cubit<RecipeState> {
           status: RecipeStatus.loaded,
         ),
       );
+
+      // Fetch pantry-based recipes if available
+      await fetchPantryBasedRecipes();
     } catch (e) {
       emit(
         state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),

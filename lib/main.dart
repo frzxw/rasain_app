@@ -84,6 +84,9 @@ void main() async {
         BlocProvider(
           create: (context) => UploadRecipeCubit(recipeService: recipeService),
         ),
+        ),        BlocProvider(create: (context) => RecipeCubit(recipeService)),
+        BlocProvider(create: (context) => PantryCubit(pantryService, recipeService)),
+        BlocProvider(create: (context) => ChatCubit(chatService)),
         BlocProvider(
           create: (context) => NotificationCubit(notificationService),
         ),
