@@ -632,7 +632,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ],
         ),
         content: const Text(
-          'Anda perlu masuk terlebih dahulu untuk membuat postingan di komunitas.',
+          'Anda perlu masuk terlebih dahulu untuk mengakses fitur komunitas.',
           style: TextStyle(fontSize: 16),
         ),
         actions: [
