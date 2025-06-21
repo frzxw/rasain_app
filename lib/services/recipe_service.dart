@@ -1060,12 +1060,10 @@ class RecipeService extends ChangeNotifier {
       }
     }
 
-    return recipesWithDetails;
-  }
-
-  // Get reviews for a specific recipe from recipe_reviews table
+    return recipesWithDetails;  }  // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
     try {
+      // Use JOIN with user_profiles like community service does
       final response = await _supabaseService.client
           .from('recipe_reviews')
           .select('''
@@ -1073,28 +1071,43 @@ class RecipeService extends ChangeNotifier {
             user_id,
             rating,
             comment,
-            created_at
+            created_at,
+            user_profiles!inner(
+              name,
+              image_url
+            )
           ''')
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
       debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');
-      return response
-          .map<Map<String, dynamic>>(
-            (review) => {
-              'id': review['id']?.toString() ?? '',
-              'user_id': review['user_id']?.toString() ?? '',
-              'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-              'comment':
-                  review['comment']?.toString() ??
-                  '', // Fixed: using 'comment' instead of 'review_text'
-              'date': review['created_at']?.toString() ?? '',
-              'user_name':
-                  'User', // Default name, bisa diambil dari user_profiles nanti
-              'user_image': null,
-            },
-          )
-          .toList();
+      
+      return response.map<Map<String, dynamic>>((review) {
+        final userProfile = review['user_profiles'];
+        
+        // Handle user profile data like community service does
+        final userName = userProfile is List && userProfile.isNotEmpty 
+            ? userProfile[0]['name']?.toString() ?? 'Anonymous User'
+            : userProfile is Map 
+                ? userProfile['name']?.toString() ?? 'Anonymous User'
+                : 'Anonymous User';
+        
+        final userImageUrl = userProfile is List && userProfile.isNotEmpty 
+            ? userProfile[0]['image_url']?.toString()
+            : userProfile is Map 
+                ? userProfile['image_url']?.toString()
+                : null;
+
+        return {
+          'id': review['id']?.toString() ?? '',
+          'user_id': review['user_id']?.toString() ?? '',
+          'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
+          'comment': review['comment']?.toString() ?? '',
+          'date': review['created_at']?.toString() ?? '',
+          'user_name': userName,
+          'user_image': userImageUrl,
+        };
+      }).toList();
     } catch (e) {
       debugPrint('❌ Error fetching reviews for recipe $recipeId: $e');
       return [];
