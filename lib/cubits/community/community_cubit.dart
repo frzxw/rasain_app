@@ -16,7 +16,7 @@ class CommunityCubit extends Cubit<CommunityState> {
       // Create test data if needed for debugging
       await _dataService.createTestDataIfNeeded();
       
-      final posts = await _dataService.getCommunityPosts();
+      final posts = await _dataService.getCommunityPostsSecure();
 
       // Extract all unique categories
       final categories = ['Semua'];

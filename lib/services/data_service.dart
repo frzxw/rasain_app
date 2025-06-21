@@ -467,12 +467,76 @@ class DataService {
       debugPrint('Error fetching user profile: $e');
       return null;
     }
-  }  /// Get community posts
+  }
+
+  /// Get community posts
   Future<List<CommunityPost>> getCommunityPosts() async {
     try {
       debugPrint('🔍 Fetching community posts from database...');
       
-      // Debug data first
+      // Try JOIN query first for better performance
+      try {
+        final response = await _supabaseService.client
+            .from('community_posts')
+            .select('''
+              id,
+              user_id,
+              content,
+              image_url,
+              category,
+              like_count,
+              comment_count,
+              created_at,
+              updated_at,
+              user_profiles!inner(
+                name,
+                image_url
+              )
+            ''')
+            .order('created_at', ascending: false);
+
+        debugPrint('📋 Community posts with JOIN response: $response');
+
+        final posts = response.map<CommunityPost>((post) {
+          final userProfile = post['user_profiles'];
+          final userName = userProfile is List && userProfile.isNotEmpty 
+              ? userProfile[0]['name']?.toString() ?? 'Community User'
+              : userProfile is Map 
+                  ? userProfile['name']?.toString() ?? 'Community User'
+                  : 'Community User';
+          
+          final userImageUrl = userProfile is List && userProfile.isNotEmpty 
+              ? userProfile[0]['image_url']?.toString()
+              : userProfile is Map 
+                  ? userProfile['image_url']?.toString()
+                  : null;
+
+          return CommunityPost(
+            id: post['id']?.toString() ?? '',
+            userId: post['user_id']?.toString() ?? '',
+            userName: userName,
+            userImageUrl: userImageUrl,
+            timestamp: DateTime.parse(
+              post['created_at'] ?? DateTime.now().toIso8601String(),
+            ),
+            content: post['content']?.toString(),
+            imageUrl: post['image_url']?.toString(),
+            category: post['category']?.toString(),
+            likeCount: post['like_count']?.toInt() ?? 0,
+            commentCount: post['comment_count']?.toInt() ?? 0,
+            isLiked: false,
+            taggedIngredients: null,
+          );
+        }).toList();
+
+        debugPrint('🎯 Successfully fetched ${posts.length} posts with JOIN');
+        return posts;
+      } catch (joinError) {
+        debugPrint('⚠️ JOIN query failed: $joinError');
+        debugPrint('🔄 Falling back to manual method...');
+      }
+      
+      // Fallback: manual method
       await debugUserAndPostData();
       
       // Use manual join instead of automatic join to avoid foreign key issues
@@ -576,6 +640,212 @@ class DataService {
     }
   }
 
+  /// Get community posts with improved user name resolution
+  Future<List<CommunityPost>> getCommunityPostsImproved() async {
+    try {
+      debugPrint('🔍 Fetching community posts with improved method...');
+      
+      // Try JOIN query first for better performance
+      try {
+        final response = await _supabaseService.client
+            .from('community_posts')
+            .select('''
+              id,
+              user_id,
+              content,
+              image_url,
+              category,
+              like_count,
+              comment_count,
+              created_at,
+              updated_at,
+              user_profiles!inner(
+                name,
+                image_url
+              )
+            ''')
+            .order('created_at', ascending: false);
+
+        debugPrint('📋 Community posts with JOIN response: $response');
+
+        final posts = response.map<CommunityPost>((post) {
+          final userProfile = post['user_profiles'];
+          final userName = userProfile is List && userProfile.isNotEmpty 
+              ? userProfile[0]['name']?.toString() ?? 'Community User'
+              : userProfile is Map 
+                  ? userProfile['name']?.toString() ?? 'Community User'
+                  : 'Community User';
+          
+          final userImageUrl = userProfile is List && userProfile.isNotEmpty 
+              ? userProfile[0]['image_url']?.toString()
+              : userProfile is Map 
+                  ? userProfile['image_url']?.toString()
+                  : null;
+
+          debugPrint('📝 Processing post: ${post['id']} by user: $userName');
+
+          return CommunityPost(
+            id: post['id']?.toString() ?? '',
+            userId: post['user_id']?.toString() ?? '',
+            userName: userName,
+            userImageUrl: userImageUrl,
+            timestamp: DateTime.parse(
+              post['created_at'] ?? DateTime.now().toIso8601String(),
+            ),
+            content: post['content']?.toString(),
+            imageUrl: post['image_url']?.toString(),
+            category: post['category']?.toString(),
+            likeCount: post['like_count']?.toInt() ?? 0,
+            commentCount: post['comment_count']?.toInt() ?? 0,
+            isLiked: false,
+            taggedIngredients: null,
+          );
+        }).toList();
+
+        debugPrint('🎯 Successfully fetched ${posts.length} posts with JOIN');
+        return posts;
+      } catch (joinError) {
+        debugPrint('⚠️ JOIN query failed: $joinError');
+        debugPrint('🔄 Falling back to manual method...');
+      }
+      
+      // Fallback: manual method
+      final response = await _supabaseService.client
+          .from('community_posts')
+          .select('*')
+          .order('created_at', ascending: false);
+
+      debugPrint('📋 Fallback: Raw community posts response: $response');
+
+      // Get user profiles for all user_ids in posts
+      final userIds = response
+          .map((post) => post['user_id']?.toString())
+          .where((id) => id != null)
+          .toSet()
+          .cast<String>()
+          .toList();
+
+      Map<String, Map<String, dynamic>> userProfiles = {};
+      if (userIds.isNotEmpty) {
+        try {
+          final profilesResponse = await _supabaseService.client
+              .from('user_profiles')
+              .select('id, name, image_url')
+              .inFilter('id', userIds);
+          
+          for (final profile in profilesResponse) {
+            userProfiles[profile['id']] = profile;
+          }
+        } catch (profileError) {
+          debugPrint('⚠️ Could not fetch user profiles: $profileError');
+        }
+      }
+
+      // Create default profiles for missing users
+      for (final userId in userIds) {
+        if (!userProfiles.containsKey(userId)) {
+          userProfiles[userId] = {
+            'id': userId,
+            'name': 'Community User',
+            'image_url': null,
+          };
+        }
+      }
+
+      final posts = response.map<CommunityPost>((post) {
+        final userId = post['user_id']?.toString() ?? '';
+        final userProfile = userProfiles[userId];
+        
+        return CommunityPost(
+          id: post['id']?.toString() ?? '',
+          userId: userId,
+          userName: userProfile?['name']?.toString() ?? 'Community User',
+          userImageUrl: userProfile?['image_url']?.toString(),
+          timestamp: DateTime.parse(
+            post['created_at'] ?? DateTime.now().toIso8601String(),
+          ),
+          content: post['content']?.toString(),
+          imageUrl: post['image_url']?.toString(),
+          category: post['category']?.toString(),
+          likeCount: post['like_count']?.toInt() ?? 0,
+          commentCount: post['comment_count']?.toInt() ?? 0,
+          isLiked: false,
+          taggedIngredients: null,
+        );
+      }).toList();
+
+      debugPrint('🎯 Fallback: Successfully mapped ${posts.length} community posts');
+      return posts;
+    } catch (e) {
+      debugPrint('❌ Error fetching community posts: $e');
+      return [];
+    }
+  }  /// Get community posts with user names (using secure view)
+  Future<List<CommunityPost>> getCommunityPostsSecure() async {
+    try {
+      debugPrint('🔍 Fetching community posts with user names...');
+      
+      // Use the secure public_user_info view that only exposes name and image_url
+      final response = await _supabaseService.client
+          .from('community_posts')
+          .select('''
+            id,
+            user_id,
+            content,
+            image_url,
+            category,
+            like_count,
+            comment_count,
+            created_at,
+            updated_at,
+            public_user_info!inner(
+              name,
+              image_url
+            )
+          ''')
+          .order('created_at', ascending: false);
+
+      debugPrint('📋 Community posts response: ${response.length} posts found');
+
+      final posts = response.map<CommunityPost>((post) {
+        final userProfile = post['public_user_info'];
+        final userName = userProfile is List && userProfile.isNotEmpty 
+            ? userProfile[0]['name']?.toString() ?? 'Community User'
+            : userProfile is Map 
+                ? userProfile['name']?.toString() ?? 'Community User'
+                : 'Community User';
+        
+        final userImageUrl = userProfile is List && userProfile.isNotEmpty 
+            ? userProfile[0]['image_url']?.toString()
+            : userProfile is Map 
+                ? userProfile['image_url']?.toString()
+                : null;
+
+        return CommunityPost(
+          id: post['id']?.toString() ?? '',
+          userId: post['user_id']?.toString() ?? '',
+          userName: userName,
+          userImageUrl: userImageUrl,
+          timestamp: DateTime.parse(
+            post['created_at'] ?? DateTime.now().toIso8601String(),
+          ),
+          content: post['content']?.toString(),
+          imageUrl: post['image_url']?.toString(),
+          category: post['category']?.toString(),
+          likeCount: post['like_count']?.toInt() ?? 0,
+          commentCount: post['comment_count']?.toInt() ?? 0,
+          isLiked: false,
+          taggedIngredients: null,
+        );
+      }).toList();
+
+      debugPrint('✅ Successfully fetched ${posts.length} community posts with user names');
+      return posts;
+    } catch (e) {
+      debugPrint('❌ Error fetching community posts: $e');
+      return [];
+    }
+  }
   /// Debug method to check user_profiles and community_posts data
   Future<void> debugUserAndPostData() async {
     try {
