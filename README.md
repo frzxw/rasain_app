@@ -1,108 +1,220 @@
-# Pemrograman Visual dan Piranti Bergerak
+# 🍳 Rasain App - Modern Recipe & Cooking Timer
 
----
+## 📱 Overview
 
-## Tugas 3
+Rasain App adalah aplikasi resep modern dengan fitur cooking timer interaktif, mode memasak step-by-step, dan sistem review terintegrasi. Dibuat dengan Flutter dan Supabase.
 
----
+## ✨ Key Features
 
-### Kelompok 24 Kelas Kamis
+### 🍽️ Recipe Management
+- **Modern Recipe Detail Page** - UI yang indah dan user-friendly
+- **Ingredient List** - Menampilkan quantity dan unit yang jelas
+- **Step-by-Step Instructions** - Panduan memasak yang detail
 
-Proyek ini dikembangkan oleh kelompok 24 sebagai bagian dari tugas 3 pada mata kuliah Pemrograman Visual dan Piranti Bergerak. Adapun anggota dari kelompok kami adalah:
+### ⏱️ Cooking Timer System
+- **Interactive Cooking Timer** - Timer countdown dengan animasi
+- **Cooking Mode** - Full-screen step-by-step cooking experience
+- **Live Clock** - Jam real-time saat memasak
+- **Session Timer** - Track total waktu memasak
 
-- 2305995 A Bintang Iftitah FJ
-- 2307589 Fariz Wibisono
-- 2308817 Hafidz Tantowi
-- 2309245 Hasbi Haqqul Fikri
-- 2308163 Putra Hadiyanto Nugroho
+### 🎨 User Experience
+- **Responsive Design** - Optimized untuk berbagai ukuran layar
+- **Animated UI** - Smooth animations dan transitions
+- **Color-coded Progress** - Visual feedback yang jelas
+- **Modern Material Design** - Clean dan intuitive interface
 
-## Deskripsi Aplikasi
+### 💾 Database Features
+- **Supabase Integration** - Real-time database
+- **Row Level Security** - Secure data access
+- **Recipe Instructions Timer** - Database-driven cooking timers
+- **User Profiles** - Personalized experience
 
----
+## 🛠️ Tech Stack
 
-Aplikasi **Rasain** adalah aplikasi berbasis Flutter yang menampilkan berbagai resep masakan Indonesia dengan detail lengkap. Aplikasi ini dirancang dengan pendekatan dwibahasa, menggunakan kode Bahasa Inggris untuk kolaborasi pengembang global sambil menampilkan konten kuliner dalam Bahasa Indonesia.
+- **Frontend**: Flutter (Dart)
+- **Backend**: Supabase
+- **Database**: PostgreSQL
+- **State Management**: Provider
+- **Routing**: GoRouter
+- **Authentication**: Supabase Auth
 
-## Demo Video
+## 📁 Project Structure
 
----
+```
+rasain_app/
+├── lib/
+│   ├── core/                    # Core utilities
+│   │   ├── config/             # App configuration
+│   │   ├── constants/          # App constants
+│   │   ├── theme/              # Theme and styling
+│   │   └── widgets/            # Reusable widgets
+│   ├── features/               # Feature modules
+│   │   ├── auth/               # Authentication
+│   │   ├── recipe_detail/      # Recipe detail & cooking
+│   │   ├── chat/               # Chat features
+│   │   └── admin/              # Admin features
+│   ├── models/                 # Data models
+│   ├── services/               # API services
+│   └── cubits/                 # State management
+├── database/                   # Database files
+│   ├── schema.sql              # Database schema
+│   ├── *_seeder.sql           # Data seeders
+│   └── *_fix.sql              # Database fixes
+├── scripts/                    # Utility scripts
+│   └── database/               # Database scripts
+├── docs/                       # Documentation
+└── public/                     # Public assets
+```
 
-<div align="center">
-    <video src="https://github.com/user-attachments/assets/6c2379ba-85b3-40b0-9cf4-c7c87970afe4" controls style="max-width: 100%; height: auto;">
-        Your browser does not support the video tag.
-    </video>
-</div>
+## 🚀 Getting Started
 
+### Prerequisites
+- Flutter SDK (>= 3.0.0)
+- Dart SDK (>= 3.0.0)
+- Supabase account
 
-## Fitur Utama
+### Installation
 
----
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd rasain_app
+   ```
 
-- **Eksplorasi Resep** – Jelajahi koleksi resep masakan Indonesia yang beragam.  
-- **Detail Resep** – Informasi lengkap tentang bahan, instruksi memasak, dan waktu persiapan.  
-- **Pencarian Cerdas** – Cari resep berdasarkan nama atau bahan.  
-- **Pencarian Gambar** – Temukan resep dengan mengunggah foto makanan.  
-- **Asisten Koki Virtual** – Dapatkan tips memasak, alternatif bahan, dan panduan langkah demi langkah.  
-- **Komunitas** – Bagikan pengalaman memasak dan terhubung dengan penggemar masakan lainnya.  
-- **Manajemen Dapur** – Kelola bahan yang Anda miliki dan dapatkan saran resep sesuai inventaris.  
-- **Profil Pengguna** – Simpan resep favorit dan pantau perjalanan memasak Anda.
+2. **Install dependencies**
+   ```bash
+   flutter pub get
+   ```
 
-## Teknologi yang Digunakan
+3. **Setup environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase credentials
+   ```
 
----
+4. **Setup database**
+   ```bash
+   # Run database schema and seeders
+   # See database/ folder for SQL files
+   ```
 
-- **Flutter** (versi 3.29.3)
-- **Dart**
-- **State Management:** Provider
-- **Navigation:** GoRouter
-- **UI Components:** Material Design
+5. **Run the app**
+   ```bash
+   flutter run
+   ```
 
-## Cara Install dan Menjalankan Aplikasi
+## 🗄️ Database Setup
 
----
+### 1. Schema Setup
+```sql
+-- Run database/schema.sql in your Supabase SQL editor
+```
 
-### **Clone Repository**
+### 2. Timer Seeder
+```powershell
+# Use PowerShell scripts for easy setup
+.\scripts\database\quick_timer_setup.ps1
+```
+
+### 3. Verification
+```sql
+SELECT COUNT(*) as total,
+       COUNT(CASE WHEN timer_minutes > 0 THEN 1 END) as with_timer
+FROM recipe_instructions;
+```
+
+## 🎯 Key Features Implementation
+
+### Recipe Detail with Cooking Timer
+- **ModernRecipeDetailScreen** - Main recipe view
+- **ModernIngredientList** - Enhanced ingredient display
+- **ModernInstructionSteps** - Step-by-step with timers
+- **CookingModeView** - Full-screen cooking experience
+
+### Timer System
+- **CookingTimer** - Animated countdown widget
+- **LiveClock** - Real-time clock display
+- **CookingSessionTimer** - Session time tracking
+- **CompactTimerDisplay** - Lightweight timer
+
+### Database Integration
+- **Recipe Service** - API integration
+- **Timer Seeder** - Populate cooking times
+- **RLS Policies** - Secure data access
+
+## 📚 Documentation
+
+Detailed documentation available in `docs/` folder:
+
+- **Cooking Timer Documentation** - Timer system details
+- **Database Setup Guide** - Database configuration
+- **PowerShell Setup Guide** - Script usage
+- **Feature Documentation** - Individual feature docs
+
+## 🧪 Testing
 
 ```bash
-git clone https://github.com/frzxw/rasain_app.git
-cd rasain_app
+# Run unit tests
+flutter test
+
+# Run integration tests
+flutter test integration_test/
 ```
 
-### **Install Dependencies**
+## 🚀 Deployment
 
-Pastikan Anda telah menginstal Flutter versi terbaru. Jika belum, unduh Flutter dari [situs resmi](https://flutter.dev/docs/get-started/install). Setelah itu, jalankan perintah berikut:
-
+### Android
 ```bash
-flutter pub get
+flutter build apk --release
 ```
 
-### **Menjalankan Aplikasi**
-
-Jalankan aplikasi di emulator atau perangkat fisik dengan perintah berikut:
-
+### iOS
 ```bash
-flutter run
+flutter build ios --release
 ```
 
-## Struktur Folder
+### Web
+```bash
+flutter build web --release
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👥 Team
+
+- **Developer**: [Your Name]
+- **Project**: Provis Semester 4 - Tugas 3
+
+## 🙏 Acknowledgments
+
+- Flutter team for the amazing framework
+- Supabase for the backend infrastructure
+- Material Design for UI guidelines
 
 ---
 
-```
-lib/
-├── main.dart             # Entry point aplikasi
-├── app.dart              # Konfigurasi aplikasi utama
-├── routes.dart           # Rute navigasi
-├── core/                 # Komponen utama
-│   ├── constants/        # Konstanta aplikasi
-│   ├── theme/            # Definisi tema UI
-│   └── widgets/          # Widget bersama
-├── features/             # Fitur aplikasi
-│   ├── home/             # Layar beranda 
-│   ├── recipe_detail/    # Detail resep
-│   ├── community/        # Forum komunitas
-│   ├── chat/             # Asisten koki virtual
-│   ├── profile/          # Profil pengguna
-│   └── pantry/           # Manajemen dapur
-├── models/               # Model data
-└── services/             # Layanan dan handler API
-```
+## 📱 Screenshots
+
+[Add screenshots of your app here]
+
+## 🔗 Links
+
+- [Supabase Dashboard](https://supabase.com/dashboard)
+- [Flutter Documentation](https://flutter.dev/docs)
+- [Material Design](https://material.io/)
+
+---
+
+**Status**: ✅ **Production Ready**  
+**Version**: 1.0.0  
+**Last Updated**: June 2025

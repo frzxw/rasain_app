@@ -26,7 +26,7 @@ class RecipeCard extends StatelessWidget {
     debugPrint('Building RecipeCard for recipe: ${recipe.name}');
     
     return GestureDetector(
-      onTap: () => GoRouter.of(context).push('/recipe/${recipe.id}'),
+      onTap: () => GoRouter.of(context).push('/recipe/${recipe.slug ?? recipe.id}'),
       child: Container(
         width: width,
         height: height,

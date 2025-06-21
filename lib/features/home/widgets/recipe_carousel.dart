@@ -56,7 +56,7 @@ class RecipeCarousel extends StatelessWidget {
         ),
         child: InkWell(
           onTap: () {
-            GoRouter.of(context).push('/recipe/${recipe.id}');
+            GoRouter.of(context).push('/recipe/${recipe.slug ?? recipe.id}');
           },
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
           child: Column(

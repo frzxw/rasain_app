@@ -30,12 +30,23 @@ class Recipe {
     this.categories,
     this.isSaved = false,
   });
+  // Helper function to generate URL-friendly slug
+  static String generateSlug(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), '') // Remove special characters
+        .replaceAll(RegExp(r'\s+'), '-') // Replace spaces with hyphens
+        .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
+        .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
+  }
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      slug: json['slug'] ?? json['name'].toString().toLowerCase().replaceAll(' ', '-'),
+      slug: json['slug']?.isNotEmpty == true 
+          ? json['slug'] 
+          : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
       reviewCount: json['review_count'],
@@ -58,12 +69,11 @@ class Recipe {
       isSaved: json['is_saved'] ?? false,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
-      'slug': slug ?? name.toLowerCase().replaceAll(' ', '-'),
+      'slug': slug ?? generateSlug(name),
       'image_url': imageUrl,
       'rating': rating,
       'review_count': reviewCount,

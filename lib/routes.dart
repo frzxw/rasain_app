@@ -5,7 +5,7 @@ import 'features/pantry/pantry_screen.dart';
 import 'features/chat/chat_screen.dart';
 import 'features/community/community_screen.dart';
 import 'features/profile/profile_screen.dart';
-import 'features/recipe_detail/recipe_detail_screen.dart';
+import 'features/recipe_detail/modern_recipe_detail_screen.dart';
 import 'features/notifications/notifications_screen.dart'; // Added notifications screen
 import 'core/widgets/bottom_nav.dart';
 import 'features/welcome_screen/welcome_screen.dart';
@@ -77,15 +77,14 @@ GoRouter createRouter() {
                     NoTransitionPage(child: const ProfileScreen()),
           ),
         ],
-      ),
-      GoRoute(
+      ),      GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/recipe/:id',
+        path: '/recipe/:slug',
         name: 'recipe_detail',
         builder: (context, state) {
-          // Use params() method instead of pathParameters property
-          final recipeId = state.params['id'] ?? '';
-          return RecipeDetailScreen(recipeId: recipeId);
+          // Use params() method to get recipe slug
+          final recipeSlug = state.params['slug'] ?? '';
+          return ModernRecipeDetailScreen(recipeSlug: recipeSlug);
         },
       ),
       GoRoute(

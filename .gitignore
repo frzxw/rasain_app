@@ -46,3 +46,30 @@ app.*.map.json
 
 # Environment variables
 .env
+
+# Temporary and debug files
+hot_reload_trigger.txt
+test_debug.dart
+*.tmp
+*.temp
+
+# Editor backup files
+*~
+*.bak
+*.orig
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Log files
+*.log
+logs/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# VS Code settings (optional)
+.vscode/settings.json
+.vscode/launch.json

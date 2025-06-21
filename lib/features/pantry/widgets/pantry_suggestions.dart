@@ -44,7 +44,7 @@ class PantrySuggestions extends StatelessWidget {
       child: InkWell(
         onTap: () {
           // Navigate to recipe detail
-          GoRouter.of(context).push('/recipe/${recipe.id}');
+          GoRouter.of(context).push('/recipe/${recipe.slug ?? recipe.id}');
         },
         borderRadius: BorderRadius.circular(AppSizes.radiusM),
         child: Padding(

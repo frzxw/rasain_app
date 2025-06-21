@@ -43,6 +43,20 @@ class RecipeService extends ChangeNotifier {
     ]);
   }
 
+  // Initialize service (call this on app startup)
+  Future<void> initializeService() async {
+    try {
+      debugPrint('🚀 Initializing Recipe Service...');
+      
+      // Update any recipes that don't have slugs
+      await updateRecipeSlugs();
+      
+      debugPrint('✅ Recipe Service initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Error initializing Recipe Service: $e');
+    }
+  }
+
   // Add a recipe to saved recipes
   Future<void> addToSaved(String recipeId) async {
     try {
@@ -456,6 +470,84 @@ class RecipeService extends ChangeNotifier {
   // Fetch single recipe by ID (menggunakan function baru dengan ingredients)
   Future<Recipe?> fetchRecipeById(String recipeId) async {
     return await fetchRecipeByIdWithIngredients(recipeId);
+  }  // Fetch single recipe by slug or ID (tries slug first, fallback to ID)
+  Future<Recipe?> fetchRecipeBySlug(String identifier) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      debugPrint('🔍 Fetching recipe by identifier: $identifier');
+
+      Map<String, dynamic> response;
+      
+      // First try to fetch by slug
+      try {
+        response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .eq('slug', identifier)
+            .single();
+        debugPrint('✅ Found recipe by slug: $identifier');
+      } catch (e) {
+        debugPrint('❌ No recipe found by slug: $identifier, trying ID...');
+        
+        // If slug fails, try by ID
+        response = await _supabaseService.client
+            .from('recipes')
+            .select()
+            .eq('id', identifier)
+            .single();
+        debugPrint('✅ Found recipe by ID: $identifier');
+      }
+
+      final recipeId = response['id'];
+      
+      // Get complete details (ingredients, instructions, reviews)
+      final details = await getRecipeDetails(recipeId);
+
+      // Check if recipe is saved
+      bool isSaved = false;
+      final userId = _supabaseService.client.auth.currentUser?.id;
+
+      if (userId != null) {
+        final savedCheck = await _supabaseService.client
+            .from('saved_recipes')
+            .select()
+            .eq('user_id', userId)
+            .eq('recipe_id', recipeId);
+
+        isSaved = savedCheck.isNotEmpty;
+      }
+
+      // Combine recipe data with all details
+      final recipeData = {
+        ...response,
+        'is_saved': isSaved,
+        'ingredients': details['ingredients'],
+        'instructions': details['instructions'],
+        'reviews': details['reviews'],
+      };
+
+      final recipe = Recipe.fromJson(recipeData);
+
+      _currentRecipe = recipe;
+      notifyListeners();
+
+      final ingredientsCount = (details['ingredients'] as List).length;
+      final instructionsCount = (details['instructions'] as List).length;
+      final reviewsCount = (details['reviews'] as List).length;
+
+      debugPrint(
+        '✅ Fetched complete recipe: $ingredientsCount ingredients, $instructionsCount instructions, $reviewsCount reviews',
+      );
+      return recipe;
+    } catch (e) {
+      debugPrint('❌ Error fetching recipe by identifier: $e');
+      _setError('Failed to load recipe details: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   // Get ingredients for a specific recipe from recipe_ingredients table
@@ -784,8 +876,7 @@ class RecipeService extends ChangeNotifier {
     try {
       debugPrint('🔍 Fetching recipes for category: $category');
 
-      if (category == 'All') {
-        // Return all recipes sorted by rating
+      if (category == 'All') {        // Return all recipes sorted by rating
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -825,8 +916,7 @@ class RecipeService extends ChangeNotifier {
 
         if (recipeIds.isEmpty) {
           debugPrint('⚠️ No recipes found for category: $category');
-          return [];
-        } // Finally, get the actual recipes
+          return [];        } // Finally, get the actual recipes
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -879,15 +969,18 @@ class RecipeService extends ChangeNotifier {
       debugPrint('📋 Response type: ${response.runtimeType}');
       debugPrint(
         '✅ Fetched ${response.length} instructions for recipe: $recipeId',
-      );
-      final instructions =
+      );      final instructions =
           response
               .map<Map<String, dynamic>>(
                 (instruction) => {
                   'id': instruction['id']?.toString() ?? '',
                   'text': instruction['instruction_text']?.toString() ?? '',
+                  'description': instruction['instruction_text']?.toString() ?? '',
+                  'image_url': instruction['image_url']?.toString(),
                   'imageUrl': instruction['image_url']?.toString(),
                   'step_number': instruction['step_number'] ?? 0,
+                  'timer_minutes': instruction['timer_minutes'],
+                  'duration': instruction['timer_minutes'],
                   'estimatedTime': instruction['timer_minutes'],
                   'temperature': null,
                   'notes': null,
@@ -1117,6 +1210,48 @@ class RecipeService extends ChangeNotifier {
         'average_rating': 0.0,
         'rating_distribution': {'5': 0, '4': 0, '3': 0, '2': 0, '1': 0},
       };
+    }
+  }
+
+  // Utility function to generate URL-friendly slug from recipe name
+  String generateSlug(String recipeName) {
+    return recipeName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), '') // Remove special characters
+        .replaceAll(RegExp(r'\s+'), '-') // Replace spaces with hyphens
+        .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
+        .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
+  }
+
+  // Updated function to ensure all recipes have proper slugs
+  Future<void> updateRecipeSlugs() async {
+    try {
+      debugPrint('🔧 Updating recipe slugs...');
+      
+      // Get all recipes without slugs or with empty slugs
+      final recipes = await _supabaseService.client
+          .from('recipes')
+          .select('id, name, slug')
+          .or('slug.is.null,slug.eq.');
+
+      debugPrint('📋 Found ${recipes.length} recipes needing slug updates');
+
+      for (final recipe in recipes) {
+        final recipeId = recipe['id'];
+        final recipeName = recipe['name'];
+        final newSlug = generateSlug(recipeName);
+
+        debugPrint('🔄 Updating recipe: $recipeName -> $newSlug');
+
+        await _supabaseService.client
+            .from('recipes')
+            .update({'slug': newSlug})
+            .eq('id', recipeId);
+      }
+
+      debugPrint('✅ Recipe slugs updated successfully');
+    } catch (e) {
+      debugPrint('❌ Error updating recipe slugs: $e');
     }
   }
 

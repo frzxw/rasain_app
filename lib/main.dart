@@ -35,7 +35,6 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
   // Create service instances
   final themeService = ThemeService();
   final authService = AuthService();
@@ -44,6 +43,9 @@ void main() async {
   final chatService = ChatService();
   final notificationService = NotificationService();
   final dataService = DataService();
+
+  // Initialize recipe service to ensure slugs are properly set
+  await recipeService.initializeService();
 
   // Set system UI overlay style for light mode
   SystemChrome.setSystemUIOverlayStyle(

@@ -10,14 +10,14 @@ import 'widgets/instruction_steps.dart';
 import 'widgets/review_section.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
-  final String recipeId;
-  final String? recipeSlug; // Added support for recipe slug
+  final String? recipeId;
+  final String? recipeSlug;
 
   const RecipeDetailScreen({
     super.key,
-    required this.recipeId,
+    this.recipeId,
     this.recipeSlug,
-  });
+  }) : assert(recipeId != null || recipeSlug != null, 'Either recipeId or recipeSlug must be provided');
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -26,14 +26,15 @@ class RecipeDetailScreen extends StatefulWidget {
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   int _currentStep = 0; // For tracking current instruction step
   bool _cookingMode = false; // Flag for step-by-step cooking mode
-
   @override
   void initState() {
-    super.initState();
-    // Load recipe details
+    super.initState();    // Load recipe details
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final recipeService = Provider.of<RecipeService>(context, listen: false);
-      recipeService.fetchRecipeById(widget.recipeId);
+      
+      // Use the combined fetch method that handles both slug and ID
+      final identifier = widget.recipeSlug ?? widget.recipeId!;
+      recipeService.fetchRecipeBySlug(identifier);
     });
   }
 

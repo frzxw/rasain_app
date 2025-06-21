@@ -458,10 +458,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
   }
-
   Widget _buildSearchResultItem(Recipe recipe) {
     return GestureDetector(
-      onTap: () => GoRouter.of(context).push('/recipe/${recipe.id}'),
+      onTap: () {
+        final identifier = recipe.slug?.isNotEmpty == true ? recipe.slug! : recipe.id;
+        GoRouter.of(context).push('/recipe/$identifier');
+      },
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
