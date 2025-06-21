@@ -57,9 +57,7 @@ class RecipeCubit extends Cubit<RecipeState> {
       final Map<String, List<Recipe>> categoryRecipes = {};
       categoryRecipeMap.forEach((category, recipeMap) {
         categoryRecipes[category] = recipeMap.values.toList();
-      });
-
-      emit(
+      });      emit(
         state.copyWith(
           recipes: allRecipes,
           featuredRecipes: popularRecipes,
@@ -69,6 +67,9 @@ class RecipeCubit extends Cubit<RecipeState> {
           status: RecipeStatus.loaded,
         ),
       );
+
+      // Fetch pantry-based recipes if available
+      await fetchPantryBasedRecipes();
     } catch (e) {
       emit(
         state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
@@ -229,5 +230,53 @@ class RecipeCubit extends Cubit<RecipeState> {
     final uniqueList = uniqueRecipes.values.toList();
     uniqueList.sort((a, b) => b.rating.compareTo(a.rating));
     return uniqueList;
+  }
+
+  // Fetch recipes based on user's pantry items
+  Future<void> fetchPantryBasedRecipes() async {
+    try {
+      debugPrint('🔍 RecipeCubit: Fetching pantry-based recipes');
+      await _recipeService.fetchPantryRecipes();
+      final pantryBasedRecipes = _recipeService.pantryRecipes;
+      
+      debugPrint('✅ RecipeCubit: Found ${pantryBasedRecipes.length} pantry-based recipes');
+      
+      emit(state.copyWith(
+        pantryBasedRecipes: pantryBasedRecipes,
+      ));
+    } catch (e) {
+      debugPrint('❌ RecipeCubit: Error fetching pantry-based recipes: $e');
+      emit(state.copyWith(
+        pantryBasedRecipes: [],
+        errorMessage: 'Failed to load pantry-based recipes: $e',
+      ));
+    }
+  }
+
+  // Get recipes that can be made with pantry ingredients
+  List<Recipe> getPantryCompatibleRecipes() {
+    return state.pantryBasedRecipes;
+  }
+
+  // Calculate how many ingredients user has for a recipe
+  double calculateIngredientMatchPercentage(Recipe recipe, List<String> pantryIngredients) {
+    if (recipe.ingredients == null || recipe.ingredients!.isEmpty) {
+      return 0.0;
+    }
+
+    int matchedIngredients = 0;
+    final totalIngredients = recipe.ingredients!.length;
+
+    for (final ingredient in recipe.ingredients!) {
+      final ingredientName = ingredient['name']?.toString().toLowerCase() ?? '';
+      
+      if (pantryIngredients.any((pantryItem) => 
+          ingredientName.contains(pantryItem.toLowerCase()) ||
+          pantryItem.toLowerCase().contains(ingredientName))) {
+        matchedIngredients++;
+      }
+    }
+
+    return matchedIngredients / totalIngredients;
   }
 }

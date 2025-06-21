@@ -80,9 +80,8 @@ void main() async {
             AuthListener(authService, authCubit);
             return authCubit;
           },
-        ),
-        BlocProvider(create: (context) => RecipeCubit(recipeService)),
-        BlocProvider(create: (context) => PantryCubit(pantryService)),
+        ),        BlocProvider(create: (context) => RecipeCubit(recipeService)),
+        BlocProvider(create: (context) => PantryCubit(pantryService, recipeService)),
         BlocProvider(create: (context) => ChatCubit(chatService)),
         BlocProvider(
           create: (context) => NotificationCubit(notificationService),

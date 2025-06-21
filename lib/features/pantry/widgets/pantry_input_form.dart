@@ -50,7 +50,6 @@ class _PantryInputFormState extends State<PantryInputForm> {
   List<String> _meatList = [];
   List<String> _dairyList = [];
   List<String> _spicesList = [];
-
   final List<String> _categories = [
     'Vegetables',
     'Fruits',
@@ -60,6 +59,8 @@ class _PantryInputFormState extends State<PantryInputForm> {
     'Spices',
     'Bakery',
     'Canned',
+    'Beverages',
+    'Snacks',
     'Other',
   ];
 
@@ -216,8 +217,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
+              children: [                // Header
                 Row(
                   children: [
                     // Back button
@@ -228,11 +228,23 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       constraints: const BoxConstraints(),
                     ),
                     const SizedBox(width: AppSizes.marginS),
-                    Text(
-                      widget.item != null ? 'Edit Bahan' : 'Tambah Bahan Baru',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.item != null ? 'Edit Bahan' : 'Tambah Bahan Baru',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          Text(
+                            'Type any ingredient, quantity, and details manually',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const Spacer(),
                     // Clear button
                     if (_nameController.text.isNotEmpty)
                       TextButton(
@@ -260,11 +272,10 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       'Nama Bahan',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
-                    const SizedBox(height: AppSizes.marginS),
-                    TextFormField(
+                    const SizedBox(height: AppSizes.marginS),                    TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        hintText: 'e.g. Tomat',
+                        hintText: 'Type any ingredient name (e.g. Tomat)',
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isSearching ? Icons.close : Icons.search,
@@ -280,6 +291,7 @@ class _PantryInputFormState extends State<PantryInputForm> {
                             });
                           },
                         ),
+                        helperText: 'You can type any ingredient name or search suggestions',
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSizes.paddingM,
                           vertical: AppSizes.paddingM,
@@ -412,11 +424,10 @@ class _PantryInputFormState extends State<PantryInputForm> {
                             ),
                             child: Row(
                               children: [
-                                Expanded(
-                                  child: TextFormField(
+                                Expanded(                                  child: TextFormField(
                                     controller: _unitController,
                                     decoration: const InputDecoration(
-                                      hintText: 'e.g. kg, pcs',
+                                      hintText: 'Type custom unit (e.g. kg, pcs, bunches)',
                                       contentPadding: EdgeInsets.symmetric(
                                         horizontal: AppSizes.paddingM,
                                         vertical: AppSizes.paddingM,
@@ -700,9 +711,14 @@ class _PantryInputFormState extends State<PantryInputForm> {
                                     break;
                                   case 'Bakery':
                                     icon = Icons.bakery_dining;
-                                    break;
-                                  case 'Canned':
+                                    break;                                  case 'Canned':
                                     icon = Icons.inventory;
+                                    break;
+                                  case 'Beverages':
+                                    icon = Icons.local_drink;
+                                    break;
+                                  case 'Snacks':
+                                    icon = Icons.cookie;
                                     break;
                                   default:
                                     icon = Icons.category;
@@ -861,31 +877,38 @@ class _PantryInputFormState extends State<PantryInputForm> {
       });
     }
   }
+  // Helper method to sanitize text input to prevent UTF-8 encoding issues
+  String _sanitizeText(String text) {
+    // Remove any invalid UTF-8 characters and trim whitespace
+    return text.trim()
+        .replaceAll(RegExp(r'[^\u0000-\u007F\u0080-\uFFFF]'), '') // Remove invalid unicode
+        .replaceAll(RegExp(r'[\uFFFD]'), ''); // Remove replacement characters
+  }
 
   void _handleSave() {
     if (_formKey.currentState!.validate()) {
       final price =
           _priceController.text.isNotEmpty
-              ? 'Rp${_priceController.text}'
+              ? 'Rp${_sanitizeText(_priceController.text)}'
               : null;
 
+      final quantityText = _sanitizeText(_quantityController.text);
+      final unitText = _sanitizeText(_unitController.text);
+      
       final quantity =
-          _quantityController.text.trim().isNotEmpty
-              ? _unitController.text.trim().isNotEmpty
-                  ? '${_quantityController.text.trim()} ${_unitController.text.trim()}'
-                  : _quantityController.text.trim()
+          quantityText.isNotEmpty
+              ? unitText.isNotEmpty
+                  ? '$quantityText $unitText'
+                  : quantityText
               : null;
 
       final PantryItem item = PantryItem(
         id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _nameController.text.trim(),
+        name: _sanitizeText(_nameController.text),
         quantity: quantity,
         expirationDate: _expirationDate,
         price: price,
-        unit:
-            _unitController.text.trim().isNotEmpty
-                ? _unitController.text.trim()
-                : null,
+        unit: unitText.isNotEmpty ? unitText : null,
         category: _selectedCategory != 'Other' ? _selectedCategory : null,
         storageLocation: _storageLocation,
         totalQuantity: _totalQuantity,
