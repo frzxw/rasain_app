@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/community_post.dart';
+import '../../models/post_comment.dart';
 import '../../services/data_service.dart';
 import '../../services/supabase_service.dart';
 import 'dart:typed_data';
@@ -250,39 +251,68 @@ class CommunityCubit extends Cubit<CommunityState> {
     } catch (e) {
       debugPrint('❌ Failed to create test post: $e');
     }
-  }
-
-  // Add a comment to a post
+  }  // Add a comment to a post
   Future<void> addComment(String postId, String comment) async {
-    // Find the post
-    final index = state.posts.indexWhere((p) => p.id == postId);
-    if (index == -1) return;
-
-    final post = state.posts[index];
-
-    // Update post locally first
-    final updatedPost = post.copyWith(commentCount: post.commentCount + 1);
-
-    final updatedPosts = List<CommunityPost>.from(state.posts);
-    updatedPosts[index] = updatedPost;
-
-    emit(state.copyWith(posts: updatedPosts));
-
-    // Add comment in database (would be implemented in a real app)
     try {
-      // await dataService.addComment(postId, comment);
-    } catch (e) {
-      // If there was an error, revert the change
-      final revertedPosts = List<CommunityPost>.from(state.posts);
-      revertedPosts[index] = post;
+      debugPrint('💬 Adding comment to post: $postId');
+      
+      final success = await _dataService.createComment(
+        postId: postId,
+        content: comment,
+      );
 
+      if (success) {
+        debugPrint('✅ Comment added successfully');
+        
+        // Refresh posts to update comment count
+        emit(state.copyWith(status: CommunityStatus.loading));
+        
+        // Get updated posts
+        List<CommunityPost> posts;
+        try {
+          posts = await _dataService.getCommunityPostsSecure();
+          if (posts.isEmpty) {
+            posts = await _dataService.getCommunityPostsAlternative();
+          }
+        } catch (e) {
+          debugPrint('⚠️ Primary method failed: $e, trying alternative...');
+          posts = await _dataService.getCommunityPostsAlternative();
+        }        emit(
+          state.copyWith(
+            posts: posts,
+            allPosts: posts,
+            status: CommunityStatus.loaded,
+          ),
+        );
+        
+        debugPrint('🔄 Posts refreshed after comment');
+      } else {
+        emit(
+          state.copyWith(
+            status: CommunityStatus.error,
+            errorMessage: 'Failed to add comment',
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error adding comment: $e');
       emit(
         state.copyWith(
-          posts: revertedPosts,
           status: CommunityStatus.error,
           errorMessage: 'Failed to add comment: ${e.toString()}',
         ),
       );
+    }
+  }
+
+  // Get comments for a specific post
+  Future<List<PostComment>> getPostComments(String postId) async {
+    try {
+      debugPrint('📋 Getting comments for post: $postId');
+      return await _dataService.getPostComments(postId);
+    } catch (e) {
+      debugPrint('❌ Error getting comments: $e');
+      return [];
     }
   }
 
