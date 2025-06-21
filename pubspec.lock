@@ -49,6 +49,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.0"
+<<<<<<< HEAD
   bloc:
     dependency: "direct main"
     description:
@@ -57,6 +58,8 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.1.4"
+=======
+>>>>>>> ca1f816e432b3efe7e3a34df56a91d31929ea5c3
   boolean_selector:
     dependency: transitive
     description:
