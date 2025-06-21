@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/community_post.dart';
 import '../../services/data_service.dart';
 import '../../services/supabase_service.dart';
@@ -10,13 +11,30 @@ class CommunityCubit extends Cubit<CommunityState> {
   final SupabaseService _supabaseService = SupabaseService.instance;
 
   CommunityCubit(this._dataService) : super(const CommunityState());  // Initialize and fetch community posts
-  Future<void> initialize() async {
-    emit(state.copyWith(status: CommunityStatus.loading));
+  Future<void> initialize() async {    emit(state.copyWith(status: CommunityStatus.loading));
     try {
+      debugPrint('🚀 Initializing Community...');
+      
       // Create test data if needed for debugging
       await _dataService.createTestDataIfNeeded();
       
-      final posts = await _dataService.getCommunityPosts();
+      // Debug current data state
+      await debugCommunityData();
+      
+      // Try the primary method first, fallback to alternative if it fails
+      List<CommunityPost> posts;
+      try {
+        posts = await _dataService.getCommunityPostsSecure();
+        if (posts.isEmpty) {
+          debugPrint('🔄 Primary method returned no posts, trying alternative...');
+          posts = await _dataService.getCommunityPostsAlternative();
+        }
+      } catch (e) {
+        debugPrint('⚠️ Primary method failed: $e, trying alternative...');
+        posts = await _dataService.getCommunityPostsAlternative();
+      }
+
+      debugPrint('📊 Found ${posts.length} community posts total');
 
       // Extract all unique categories
       final categories = ['Semua'];
@@ -221,6 +239,19 @@ class CommunityCubit extends Cubit<CommunityState> {
     }
   }
 
+  // Simple test method to create a community post for testing
+  Future<void> createTestPost() async {
+    try {
+      await createPost(
+        content: "Test post created at ${DateTime.now().toIso8601String()}",
+        category: "Test",
+      );
+      debugPrint('✅ Test post created successfully');
+    } catch (e) {
+      debugPrint('❌ Failed to create test post: $e');
+    }
+  }
+
   // Add a comment to a post
   Future<void> addComment(String postId, String comment) async {
     // Find the post
@@ -252,6 +283,17 @@ class CommunityCubit extends Cubit<CommunityState> {
           errorMessage: 'Failed to add comment: ${e.toString()}',
         ),
       );
+    }
+  }
+
+  // Debug method to check data availability
+  Future<void> debugCommunityData() async {
+    try {
+      debugPrint('🔍 ====== DEBUGGING COMMUNITY DATA ======');
+      await _dataService.debugUserAndPostData();
+      debugPrint('🔍 ======================================');
+    } catch (e) {
+      debugPrint('❌ Error during debug: $e');
     }
   }
 }
