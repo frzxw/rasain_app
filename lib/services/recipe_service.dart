@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/recipe.dart';
 import 'supabase_service.dart';
 
@@ -48,14 +49,14 @@ class RecipeService extends ChangeNotifier {
   // Initialize service (call this on app startup)
   Future<void> initializeService() async {
     try {
-      debugPrint('🚀 Initializing Recipe Service...');
+      print('🚀 Initializing Recipe Service...');
 
       // Update any recipes that don't have slugs
       await updateRecipeSlugs();
 
-      debugPrint('✅ Recipe Service initialized successfully');
+      print('✅ Recipe Service initialized successfully');
     } catch (e) {
-      debugPrint('❌ Error initializing Recipe Service: $e');
+      print('❌ Error initializing Recipe Service: $e');
     }
   }
 
@@ -122,44 +123,44 @@ class RecipeService extends ChangeNotifier {
   // Simple test untuk koneksi recipe dengan reviews
   Future<void> testRecipeConnection() async {
     try {
-      debugPrint('🧪 Testing recipe connection...');
+      print('🧪 Testing recipe connection...');
 
       // Gunakan recipe ID yang ada di screenshot dari attachment
       const String recipeId =
           'b4dc9eb8-9ac2-1bac-a45f-8dce47ecf62a'; // salah satu ID dari gambar
 
       // Test ambil instructions dulu
-      debugPrint('🔍 Testing instructions for recipe: $recipeId');
+      print('🔍 Testing instructions for recipe: $recipeId');
       final instructions = await getRecipeInstructions(recipeId);
-      debugPrint('📋 Instructions count: ${instructions.length}');
+      print('📋 Instructions count: ${instructions.length}');
 
       if (instructions.isNotEmpty) {
-        debugPrint('✅ Found instructions:');
+        print('✅ Found instructions:');
         for (var i = 0; i < instructions.length; i++) {
-          debugPrint('   Step ${i + 1}: ${instructions[i]['text']}');
+          print('   Step ${i + 1}: ${instructions[i]['text']}');
         }
       } else {
-        debugPrint('❌ No instructions found for recipe');
+        print('❌ No instructions found for recipe');
       }
 
       // Test ambil reviews
       final reviews = await getRecipeReviews(recipeId);
-      debugPrint('✅ Found ${reviews.length} reviews for recipe');
+      print('✅ Found ${reviews.length} reviews for recipe');
 
       if (reviews.isNotEmpty) {
         final firstReview = reviews.first;
-        debugPrint(
+        print(
           '   Sample review: ${firstReview['rating']}/5 - ${firstReview['comment']}',
         );
       }
 
       // Test review stats
       final stats = await getRecipeReviewStats(recipeId);
-      debugPrint(
+      print(
         '📊 Review stats: ${stats['average_rating']}/5 (${stats['total_reviews']} total)',
       );
     } catch (e) {
-      debugPrint('❌ Error testing recipe connection: $e');
+      print('❌ Error testing recipe connection: $e');
     }
   } // Fetch popular recipes
 
@@ -168,7 +169,7 @@ class RecipeService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🔍 Fetching popular recipes from main recipes table...');
+      print('🔍 Fetching popular recipes from main recipes table...');
 
       // Use main recipes table instead of popular_recipes view
       // Sort by rating and review_count to get popular recipes
@@ -180,7 +181,7 @@ class RecipeService extends ChangeNotifier {
           .order('review_count', ascending: false)
           .limit(10);
 
-      debugPrint('📋 Raw popular recipes response: $response');
+      print('📋 Raw popular recipes response: $response');
 
       // Get recipes with ingredients from recipe_ingredients table
       List<Recipe> popularRecipesWithIngredients = [];
@@ -195,17 +196,17 @@ class RecipeService extends ChangeNotifier {
 
       _popularRecipes = popularRecipesWithIngredients;
 
-      debugPrint(
+      print(
         '✅ Fetched ${_popularRecipes.length} popular recipes with complete details',
       );
       notifyListeners();
     } catch (e) {
       _setError('Failed to load popular recipes: $e');
-      debugPrint('❌ Error fetching popular recipes: $e');
+      print('❌ Error fetching popular recipes: $e');
 
       // Fallback: Get any recipes if no highly rated ones exist
       try {
-        debugPrint('🔄 Trying fallback: fetching any available recipes...');
+        print('🔄 Trying fallback: fetching any available recipes...');
         final fallbackResponse = await _supabaseService.client
             .from('recipes')
             .select()
@@ -224,12 +225,12 @@ class RecipeService extends ChangeNotifier {
         }
 
         _popularRecipes = fallbackRecipesWithIngredients;
-        debugPrint(
+        print(
           '✅ Fallback successful: ${_popularRecipes.length} recipes loaded',
         );
         notifyListeners();
       } catch (fallbackError) {
-        debugPrint('❌ Fallback also failed: $fallbackError');
+        print('❌ Fallback also failed: $fallbackError');
         _popularRecipes = [];
         notifyListeners();
       }
@@ -396,7 +397,7 @@ class RecipeService extends ChangeNotifier {
         _recommendedRecipes =
             response.map<Recipe>((recipe) => Recipe.fromJson(recipe)).toList();
 
-        debugPrint(
+        print(
           '✅ Fetched ${_recommendedRecipes.length} recommended recipes (non-personalized)',
         );
         notifyListeners();
@@ -457,13 +458,13 @@ class RecipeService extends ChangeNotifier {
             response.map<Recipe>((recipe) => Recipe.fromJson(recipe)).toList();
       }
 
-      debugPrint(
+      print(
         '✅ Fetched ${_recommendedRecipes.length} personalized recommended recipes',
       );
       notifyListeners();
     } catch (e) {
       _setError('Failed to load recommended recipes: $e');
-      debugPrint('❌ Error fetching recommended recipes: $e');
+      print('❌ Error fetching recommended recipes: $e');
     } finally {
       _setLoading(false);
     }
@@ -479,7 +480,7 @@ class RecipeService extends ChangeNotifier {
     _clearError();
 
     try {
-      debugPrint('🔍 Fetching recipe by identifier: $identifier');
+      print('🔍 Fetching recipe by identifier: $identifier');
 
       Map<String, dynamic> response;
 
@@ -491,9 +492,9 @@ class RecipeService extends ChangeNotifier {
                 .select()
                 .eq('slug', identifier)
                 .single();
-        debugPrint('✅ Found recipe by slug: $identifier');
+        print('✅ Found recipe by slug: $identifier');
       } catch (e) {
-        debugPrint('❌ No recipe found by slug: $identifier, trying ID...');
+        print('❌ No recipe found by slug: $identifier, trying ID...');
 
         // If slug fails, try by ID
         response =
@@ -502,7 +503,7 @@ class RecipeService extends ChangeNotifier {
                 .select()
                 .eq('id', identifier)
                 .single();
-        debugPrint('✅ Found recipe by ID: $identifier');
+        print('✅ Found recipe by ID: $identifier');
       }
 
       final recipeId = response['id'];
@@ -542,12 +543,12 @@ class RecipeService extends ChangeNotifier {
       final instructionsCount = (details['instructions'] as List).length;
       final reviewsCount = (details['reviews'] as List).length;
 
-      debugPrint(
+      print(
         '✅ Fetched complete recipe: $ingredientsCount ingredients, $instructionsCount instructions, $reviewsCount reviews',
       );
       return recipe;
     } catch (e) {
-      debugPrint('❌ Error fetching recipe by identifier: $e');
+      print('❌ Error fetching recipe by identifier: $e');
       _setError('Failed to load recipe details: $e');
       return null;
     } finally {
@@ -571,9 +572,7 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('id', ascending: true);
 
-      debugPrint(
-        '✅ Fetched ${response.length} ingredients for recipe: $recipeId',
-      );
+      print('✅ Fetched ${response.length} ingredients for recipe: $recipeId');
 
       return response
           .map<Map<String, dynamic>>(
@@ -591,7 +590,7 @@ class RecipeService extends ChangeNotifier {
           )
           .toList();
     } catch (e) {
-      debugPrint('❌ Error fetching ingredients for recipe $recipeId: $e');
+      print('❌ Error fetching ingredients for recipe $recipeId: $e');
       return [];
     }
   } // Update fetchRecipeById to include ingredients, instructions, and reviews from database tables
@@ -644,7 +643,7 @@ class RecipeService extends ChangeNotifier {
       final instructionsCount = (details['instructions'] as List).length;
       final reviewsCount = (details['reviews'] as List).length;
 
-      debugPrint(
+      print(
         '✅ Fetched complete recipe: $ingredientsCount ingredients, $instructionsCount instructions, $reviewsCount reviews',
       );
       return recipe;
@@ -732,7 +731,7 @@ class RecipeService extends ChangeNotifier {
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
 
-        debugPrint(
+        print(
           '✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}',
         );
       } else {
@@ -789,13 +788,13 @@ class RecipeService extends ChangeNotifier {
               .eq('recipe_id', recipeId)
               .single();
 
-      debugPrint('✅ Successfully rated recipe: $recipeId with rating: $rating');
-      debugPrint(
+      print('✅ Successfully rated recipe: $recipeId with rating: $rating');
+      print(
         '📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}',
       );
     } catch (e) {
       _setError('Failed to submit rating: $e');
-      debugPrint('❌ Error rating recipe: $e');
+      print('❌ Error rating recipe: $e');
     }
   }
 
@@ -823,11 +822,11 @@ class RecipeService extends ChangeNotifier {
       final recipes =
           response.map<Recipe>((recipe) => Recipe.fromJson(recipe)).toList();
 
-      debugPrint('✅ Found ${recipes.length} recipes matching "$query" by name');
+      print('✅ Found ${recipes.length} recipes matching "$query" by name');
       return recipes;
     } catch (e) {
       _setError('Failed to search recipes: $e');
-      debugPrint('❌ Error searching recipes: $e');
+      print('❌ Error searching recipes: $e');
       return [];
     } finally {
       _setLoading(false);
@@ -862,7 +861,7 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_images')
           .getPublicUrl(path);
 
-      debugPrint('✅ Image uploaded to Supabase Storage: $imageUrl');
+      print('✅ Image uploaded to Supabase Storage: $imageUrl');
 
       // For now, just return popular recipes since we don't have AI image recognition
       // In a real implementation, you'd have a Supabase Edge Function or other service for image analysis
@@ -887,7 +886,7 @@ class RecipeService extends ChangeNotifier {
   // Filter recipes by category
   Future<List<Recipe>> getRecipesByCategory(String category) async {
     try {
-      debugPrint('🔍 Fetching recipes for category: $category');
+      print('🔍 Fetching recipes for category: $category');
 
       if (category == 'All') {
         // Return all recipes sorted by rating
@@ -897,11 +896,11 @@ class RecipeService extends ChangeNotifier {
             .order('rating', ascending: false)
             .limit(50);
 
-        debugPrint('✅ Found ${response.length} recipes for "All" category');
+        print('✅ Found ${response.length} recipes for "All" category');
         return response.map((recipe) => Recipe.fromJson(recipe)).toList();
       } else {
         // Filter by specific category using junction table with explicit join
-        debugPrint('🔗 Using explicit join query for category: $category');
+        print('🔗 Using explicit join query for category: $category');
 
         // First, get the category ID
         final categoryResponse =
@@ -912,7 +911,7 @@ class RecipeService extends ChangeNotifier {
                 .single();
 
         final categoryId = categoryResponse['id'];
-        debugPrint('📋 Category ID for "$category": $categoryId');
+        print('📋 Category ID for "$category": $categoryId');
         // Then get recipe IDs that belong to this category
         final mappingResponse = await _supabaseService.client
             .from('recipe_categories_recipes')
@@ -924,12 +923,12 @@ class RecipeService extends ChangeNotifier {
                 .map((mapping) => mapping['recipe_id'] as String)
                 .toList();
 
-        debugPrint(
+        print(
           '📋 Found ${recipeIds.length} recipe IDs for category: $category',
         );
 
         if (recipeIds.isEmpty) {
-          debugPrint('⚠️ No recipes found for category: $category');
+          print('⚠️ No recipes found for category: $category');
           return [];
         } // Finally, get the actual recipes
         final response = await _supabaseService.client
@@ -939,18 +938,16 @@ class RecipeService extends ChangeNotifier {
             .order('rating', ascending: false)
             .limit(50);
 
-        debugPrint(
-          '✅ Found ${response.length} recipes for category: $category',
-        );
+        print('✅ Found ${response.length} recipes for category: $category');
         if (response.isNotEmpty) {
-          debugPrint('📋 Sample recipe: ${response.first['name']}');
+          print('📋 Sample recipe: ${response.first['name']}');
         }
         return response.map((recipe) => Recipe.fromJson(recipe)).toList();
       }
     } catch (e) {
-      debugPrint('❌ Error fetching recipes by category: $e');
-      debugPrint('🔧 Error type: ${e.runtimeType}');
-      debugPrint('🔧 Error details: ${e.toString()}');
+      print('❌ Error fetching recipes by category: $e');
+      print('🔧 Error type: ${e.runtimeType}');
+      print('🔧 Error details: ${e.toString()}');
       return [];
     }
   } // Get instructions for a specific recipe from recipe_instructions table
@@ -959,14 +956,14 @@ class RecipeService extends ChangeNotifier {
     String recipeId,
   ) async {
     try {
-      debugPrint('🔍 Fetching instructions for recipe: $recipeId');
+      print('🔍 Fetching instructions for recipe: $recipeId');
 
       // Cek apakah table ada dan isinya
       final checkTable = await _supabaseService.client
           .from('recipe_instructions')
           .select('*')
           .limit(5);
-      debugPrint('🔍 Sample data from recipe_instructions table: $checkTable');
+      print('🔍 Sample data from recipe_instructions table: $checkTable');
       final response = await _supabaseService.client
           .from('recipe_instructions')
           .select('''
@@ -980,11 +977,9 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('step_number', ascending: true);
 
-      debugPrint('📋 Raw instructions response: $response');
-      debugPrint('📋 Response type: ${response.runtimeType}');
-      debugPrint(
-        '✅ Fetched ${response.length} instructions for recipe: $recipeId',
-      );
+      print('📋 Raw instructions response: $response');
+      print('📋 Response type: ${response.runtimeType}');
+      print('✅ Fetched ${response.length} instructions for recipe: $recipeId');
       final instructions =
           response
               .map<Map<String, dynamic>>(
@@ -1005,10 +1000,10 @@ class RecipeService extends ChangeNotifier {
               )
               .toList();
 
-      debugPrint('📝 Processed instructions: $instructions');
+      print('📝 Processed instructions: $instructions');
       return instructions;
     } catch (e) {
-      debugPrint('❌ Error fetching instructions for recipe $recipeId: $e');
+      print('❌ Error fetching instructions for recipe $recipeId: $e');
       return [];
     }
   }
@@ -1029,7 +1024,7 @@ class RecipeService extends ChangeNotifier {
         'reviews': results[2],
       };
     } catch (e) {
-      debugPrint('❌ Error fetching recipe details for $recipeId: $e');
+      print('❌ Error fetching recipe details for $recipeId: $e');
       return {
         'ingredients': <Map<String, dynamic>>[],
         'instructions': <Map<String, dynamic>>[],
@@ -1055,7 +1050,7 @@ class RecipeService extends ChangeNotifier {
         });
         recipesWithDetails.add(recipeWithDetails);
       } catch (e) {
-        debugPrint('❌ Error processing recipe ${data['id']}: $e');
+        print('❌ Error processing recipe ${data['id']}: $e');
         // Tambahkan recipe tanpa details sebagai fallback
         recipesWithDetails.add(Recipe.fromJson(data));
       }
@@ -1079,7 +1074,7 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      debugPrint('✅ Fetched ${response.length} reviews for recipe: $recipeId');
+      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');
       return response
           .map<Map<String, dynamic>>(
             (review) => {
@@ -1097,7 +1092,7 @@ class RecipeService extends ChangeNotifier {
           )
           .toList();
     } catch (e) {
-      debugPrint('❌ Error fetching reviews for recipe $recipeId: $e');
+      print('❌ Error fetching reviews for recipe $recipeId: $e');
       return [];
     }
   }
@@ -1132,7 +1127,7 @@ class RecipeService extends ChangeNotifier {
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('id', existingReviews.first['id']);
-        debugPrint(
+        print(
           '✅ Review updated successfully for recipe: $recipeId (preserved created_at)',
         );
       } else {
@@ -1143,7 +1138,7 @@ class RecipeService extends ChangeNotifier {
           'rating': rating,
           'comment': comment,
         });
-        debugPrint('✅ New review submitted successfully for recipe: $recipeId');
+        print('✅ New review submitted successfully for recipe: $recipeId');
       }
 
       // Update average rating in the recipes table
@@ -1151,7 +1146,7 @@ class RecipeService extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('❌ Error submitting review: $e');
+      print('❌ Error submitting review: $e');
       _setError('Failed to submit review: $e');
       return false;
     }
@@ -1176,12 +1171,12 @@ class RecipeService extends ChangeNotifier {
             .update({'rating': avgRating, 'review_count': allRatings.length})
             .eq('id', recipeId);
 
-        debugPrint(
+        print(
           '✅ Updated average rating for recipe $recipeId: $avgRating (${allRatings.length} reviews)',
         );
       }
     } catch (e) {
-      debugPrint('❌ Error updating average rating: $e');
+      print('❌ Error updating average rating: $e');
     }
   }
 
@@ -1225,7 +1220,7 @@ class RecipeService extends ChangeNotifier {
         'rating_distribution': distribution,
       };
     } catch (e) {
-      debugPrint('❌ Error getting review stats: $e');
+      print('❌ Error getting review stats: $e');
       return {
         'total_reviews': 0,
         'average_rating': 0.0,
@@ -1247,7 +1242,7 @@ class RecipeService extends ChangeNotifier {
   // Updated function to ensure all recipes have proper slugs
   Future<void> updateRecipeSlugs() async {
     try {
-      debugPrint('🔧 Updating recipe slugs...');
+      print('🔧 Updating recipe slugs...');
 
       // Get all recipes without slugs or with empty slugs
       final recipes = await _supabaseService.client
@@ -1255,14 +1250,14 @@ class RecipeService extends ChangeNotifier {
           .select('id, name, slug')
           .or('slug.is.null,slug.eq.');
 
-      debugPrint('📋 Found ${recipes.length} recipes needing slug updates');
+      print('📋 Found ${recipes.length} recipes needing slug updates');
 
       for (final recipe in recipes) {
         final recipeId = recipe['id'];
         final recipeName = recipe['name'];
         final newSlug = generateSlug(recipeName);
 
-        debugPrint('🔄 Updating recipe: $recipeName -> $newSlug');
+        print('🔄 Updating recipe: $recipeName -> $newSlug');
 
         await _supabaseService.client
             .from('recipes')
@@ -1270,9 +1265,9 @@ class RecipeService extends ChangeNotifier {
             .eq('id', recipeId);
       }
 
-      debugPrint('✅ Recipe slugs updated successfully');
+      print('✅ Recipe slugs updated successfully');
     } catch (e) {
-      debugPrint('❌ Error updating recipe slugs: $e');
+      print('❌ Error updating recipe slugs: $e');
     }
   }
 
@@ -1297,21 +1292,27 @@ class RecipeService extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
-      // Create recipe data
+      String? imageUrl;
+
+      // Upload image to Supabase Storage if provided
+      if (images != null && images.isNotEmpty) {
+        imageUrl = await _uploadRecipeImage(images.first, name);
+      } // Create recipe data matching database schema
       final recipeData = {
         'name': name,
-        'description': description,
-        'servings': servings,
-        'cooking_time': cookingTime,
-        'category': category,
-        'user_id': userId,
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-        'rating': 0.0,
-        'rating_count': 0,
-        'is_premium': false,
         'slug': _generateSlug(name),
+        'image_url': imageUrl,
+        'rating': 0.00,
+        'review_count': 0,
+        'estimated_cost': null,
+        'cook_time': cookingTime.toString(), // Convert to string without "min"
+        'servings': servings,
+        'description': description,
+        'created_by': userId,
       };
+
+      // Debug log
+      print('📋 Recipe data to insert: $recipeData');
 
       // Insert recipe into database
       final response =
@@ -1320,9 +1321,14 @@ class RecipeService extends ChangeNotifier {
               .insert(recipeData)
               .select()
               .single();
-
       final recipeId = response['id'] as String;
-      debugPrint('✅ Recipe created with ID: $recipeId');
+      print('✅ Recipe created with ID: $recipeId');
+
+      // Skip category insertion for now due to schema issue
+      // Will be handled in a future update
+      if (category.isNotEmpty) {
+        print('📋 Category "$category" will be added in future update');
+      }
 
       // Add ingredients
       if (ingredients.isNotEmpty) {
@@ -1330,7 +1336,7 @@ class RecipeService extends ChangeNotifier {
             ingredients.asMap().entries.map((entry) {
               return {
                 'recipe_id': recipeId,
-                'name': entry.value,
+                'ingredient_name': entry.value,
                 'order_index': entry.key,
               };
             }).toList();
@@ -1339,7 +1345,7 @@ class RecipeService extends ChangeNotifier {
             .from('recipe_ingredients')
             .insert(ingredientData);
 
-        debugPrint('✅ ${ingredients.length} ingredients added');
+        print('✅ ${ingredients.length} ingredients added');
       }
 
       // Add instructions
@@ -1349,7 +1355,7 @@ class RecipeService extends ChangeNotifier {
               return {
                 'recipe_id': recipeId,
                 'step_number': entry.key + 1,
-                'instruction': entry.value,
+                'instruction_text': entry.value,
               };
             }).toList();
 
@@ -1357,23 +1363,64 @@ class RecipeService extends ChangeNotifier {
             .from('recipe_instructions')
             .insert(instructionData);
 
-        debugPrint('✅ ${instructions.length} instructions added');
-      } // TODO: Handle image uploads to Supabase Storage
-      // For now, we'll skip image handling as it requires additional setup
+        print('✅ ${instructions.length} instructions added');
+      }
 
-      debugPrint('🎉 Recipe "$name" created successfully!');
+      print('🎉 Recipe "$name" created successfully!');
 
       // Refresh user recipes to include the new recipe
       await fetchUserRecipes();
 
+      // Refresh all recipes to update home screen
+      await initialize();
+
       return recipeId;
     } catch (e) {
       _error = 'Failed to create recipe: ${e.toString()}';
-      debugPrint('❌ Error creating recipe: $e');
+      print('❌ Error creating recipe: $e');
       return null;
     } finally {
       _setLoading(false);
       notifyListeners();
+    }
+  }
+
+  /// Upload recipe image to Supabase Storage
+  Future<String?> _uploadRecipeImage(dynamic image, String recipeName) async {
+    try {
+      final fileName =
+          '${_generateSlug(recipeName)}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      late final Uint8List imageBytes;
+
+      // Handle different image types
+      if (image is XFile) {
+        imageBytes = await image.readAsBytes();
+      } else if (image is Uint8List) {
+        imageBytes = image;
+      } else {
+        throw Exception('Unsupported image type');
+      }
+
+      // Upload to recipes bucket
+      final response = await _supabaseService.client.storage
+          .from('recipes')
+          .uploadBinary(fileName, imageBytes);
+
+      if (response.isNotEmpty) {
+        // Get public URL
+        final imageUrl = _supabaseService.client.storage
+            .from('recipes')
+            .getPublicUrl(fileName);
+
+        print('✅ Recipe image uploaded: $imageUrl');
+        return imageUrl;
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Error uploading recipe image: $e');
+      return null;
     }
   }
 
@@ -1394,7 +1441,7 @@ class RecipeService extends ChangeNotifier {
   }
 
   void _setError(String errorMessage) {
-    debugPrint(errorMessage);
+    print(errorMessage);
     _error = errorMessage;
     notifyListeners();
   }
@@ -1450,7 +1497,7 @@ class RecipeService extends ChangeNotifier {
 
   Future<List<String>> getRecipeCategories() async {
     try {
-      debugPrint('🔍 Fetching categories from recipe_categories table...');
+      print('🔍 Fetching categories from recipe_categories table...');
       final response = await _supabaseService.client
           .from('recipe_categories')
           .select('name')
@@ -1461,14 +1508,14 @@ class RecipeService extends ChangeNotifier {
               .map<String>((category) => category['name'] as String)
               .toList();
 
-      debugPrint('✅ Found ${categories.length} categories from database');
-      debugPrint('📋 Categories: ${categories.join(', ')}');
+      print('✅ Found ${categories.length} categories from database');
+      print('📋 Categories: ${categories.join(', ')}');
 
       // Add "All" at the beginning only if not already present
       final result = ['All', ...categories];
       return result;
     } catch (e) {
-      debugPrint('❌ Error fetching categories: $e');
+      print('❌ Error fetching categories: $e');
       // Return just 'All' if database fails - don't hardcode categories
       return ['All'];
     }
@@ -1483,25 +1530,25 @@ class RecipeService extends ChangeNotifier {
           .select('id, name')
           .limit(3);
 
-      debugPrint('🧪 Testing recipe ingredients connection...');
+      print('🧪 Testing recipe ingredients connection...');
 
       for (final recipe in recipes) {
         final recipeId = recipe['id'];
         final recipeName = recipe['name'];
 
-        debugPrint('📝 Recipe: $recipeName (ID: $recipeId)');
+        print('📝 Recipe: $recipeName (ID: $recipeId)');
 
         final ingredients = await getRecipeIngredients(recipeId);
 
         if (ingredients.isNotEmpty) {
-          debugPrint('✅ Found ${ingredients.length} ingredients:');
+          print('✅ Found ${ingredients.length} ingredients:');
           for (final ingredient in ingredients) {
-            debugPrint(
+            print(
               '   - ${ingredient['name']} (${ingredient['quantity']} ${ingredient['unit']})',
             );
           }
         } else {
-          debugPrint('❌ No ingredients found for this recipe');
+          print('❌ No ingredients found for this recipe');
 
           // Debug: cek apakah ada data di recipe_ingredients dengan recipe_id ini
           final debugCheck = await _supabaseService.client
@@ -1509,19 +1556,17 @@ class RecipeService extends ChangeNotifier {
               .select('ingredient_name, quantity, unit')
               .eq('recipe_id', recipeId);
 
-          debugPrint(
-            '   🔍 Direct check found ${debugCheck.length} ingredients',
-          );
+          print('   🔍 Direct check found ${debugCheck.length} ingredients');
           for (final ing in debugCheck) {
-            debugPrint(
+            print(
               '   - ${ing['ingredient_name']} (${ing['quantity']} ${ing['unit']})',
             );
           }
         }
-        debugPrint('');
+        print('');
       }
     } catch (e) {
-      debugPrint('❌ Error testing recipe ingredients: $e');
+      print('❌ Error testing recipe ingredients: $e');
     }
   } // Quick test untuk recipe tertentu yang ada di screenshot
 
@@ -1530,7 +1575,7 @@ class RecipeService extends ChangeNotifier {
       // Test dengan recipe ID yang terlihat di screenshot: Soto Ayam Lamongan
       const String recipeId = 'a3cb8da7-8fb1-0a9b-f34e-7cbd3ba4e08d';
 
-      debugPrint('🧪 Testing specific recipe: $recipeId');
+      print('🧪 Testing specific recipe: $recipeId');
 
       // Ambil data recipe
       final recipe =
@@ -1541,7 +1586,7 @@ class RecipeService extends ChangeNotifier {
               .maybeSingle();
 
       if (recipe != null) {
-        debugPrint('✅ Recipe found: ${recipe['name']}');
+        print('✅ Recipe found: ${recipe['name']}');
 
         // Ambil ingredients
         final ingredients = await _supabaseService.client
@@ -1549,9 +1594,9 @@ class RecipeService extends ChangeNotifier {
             .select('ingredient_name, quantity, unit')
             .eq('recipe_id', recipeId);
 
-        debugPrint('✅ Found ${ingredients.length} ingredients:');
+        print('✅ Found ${ingredients.length} ingredients:');
         for (final ingredient in ingredients) {
-          debugPrint(
+          print(
             '   - ${ingredient['ingredient_name']} (${ingredient['quantity']} ${ingredient['unit']})',
           );
         }
@@ -1563,35 +1608,35 @@ class RecipeService extends ChangeNotifier {
             .eq('recipe_id', recipeId)
             .order('step_number');
 
-        debugPrint('✅ Found ${instructions.length} instructions:');
+        print('✅ Found ${instructions.length} instructions:');
         for (final instruction in instructions) {
-          debugPrint(
+          print(
             '   ${instruction['step_number']}. ${instruction['instruction_text']}',
           );
         }
 
         // Ambil reviews
         final reviews = await getRecipeReviews(recipeId);
-        debugPrint('✅ Found ${reviews.length} reviews:');
+        print('✅ Found ${reviews.length} reviews:');
         for (final review in reviews.take(3)) {
           // Tampilkan 3 review pertama
-          debugPrint(
+          print(
             '   ⭐ ${review['rating']}/5 by ${review['user_name']}: ${review['comment']}',
           );
         }
 
         // Ambil review stats
         final stats = await getRecipeReviewStats(recipeId);
-        debugPrint('📊 Review Stats:');
-        debugPrint(
+        print('📊 Review Stats:');
+        print(
           '   Average: ${stats['average_rating']}/5 (${stats['total_reviews']} reviews)',
         );
-        debugPrint('   Distribution: ${stats['rating_distribution']}');
+        print('   Distribution: ${stats['rating_distribution']}');
       } else {
-        debugPrint('❌ Recipe not found');
+        print('❌ Recipe not found');
       }
     } catch (e) {
-      debugPrint('❌ Error testing specific recipe: $e');
+      print('❌ Error testing specific recipe: $e');
     }
   } // Test function untuk submit review (hanya untuk testing)
 
@@ -1600,28 +1645,28 @@ class RecipeService extends ChangeNotifier {
       // Test dengan recipe ID yang ada di screenshot recipe_reviews
       const String recipeId = 'b4dc9eb8-9ac2-1bac-a45f-8dce4cb5f19e';
 
-      debugPrint('🧪 Testing submit review for recipe: $recipeId');
+      print('🧪 Testing submit review for recipe: $recipeId');
 
       // Ambil reviews yang sudah ada dulu
       final existingReviews = await getRecipeReviews(recipeId);
-      debugPrint('✅ Existing reviews count: ${existingReviews.length}');
+      print('✅ Existing reviews count: ${existingReviews.length}');
 
       if (existingReviews.isNotEmpty) {
-        debugPrint('📝 Sample existing reviews:');
+        print('📝 Sample existing reviews:');
         for (final review in existingReviews.take(3)) {
-          debugPrint('   ⭐ ${review['rating']}/5: ${review['comment']}');
+          print('   ⭐ ${review['rating']}/5: ${review['comment']}');
         }
       }
 
       // Test get review stats
       final stats = await getRecipeReviewStats(recipeId);
-      debugPrint('📊 Review Stats:');
-      debugPrint(
+      print('📊 Review Stats:');
+      print(
         '   Average: ${stats['average_rating']}/5 (${stats['total_reviews']} reviews)',
       );
-      debugPrint('   Distribution: ${stats['rating_distribution']}');
+      print('   Distribution: ${stats['rating_distribution']}');
     } catch (e) {
-      debugPrint('❌ Error testing reviews: $e');
+      print('❌ Error testing reviews: $e');
     }
   }
 
@@ -1638,22 +1683,18 @@ class RecipeService extends ChangeNotifier {
         return;
       }
 
-      debugPrint('🔍 Fetching user recipes for user: $userId');
-
-      // Fetch recipes created by the user
+      print('🔍 Fetching user recipes for user: $userId');      // Fetch recipes created by the user
       final response = await _supabaseService.client
           .from('recipes')
           .select('''
             *,
-            recipe_ingredients(name, order_index),
-            recipe_instructions(step_number, instruction),
-            recipe_nutrition(calories, protein, carbs, fat),
-            recipe_timers(*)
+            recipe_ingredients(ingredient_name, order_index),
+            recipe_instructions(step_number, instruction_text)
           ''')
-          .eq('user_id', userId)
+          .eq('created_by', userId)
           .order('created_at', ascending: false);
 
-      debugPrint(
+      print(
         '📥 Raw user recipes response: ${response.length} recipes',
       ); // Convert to Recipe objects
       final List<Recipe> userRecipesList = [];
@@ -1662,17 +1703,17 @@ class RecipeService extends ChangeNotifier {
           final recipe = Recipe.fromJson(json);
           userRecipesList.add(recipe);
         } catch (e) {
-          debugPrint('❌ Error parsing user recipe: $e');
-          debugPrint('   Recipe data: $json');
+          print('❌ Error parsing user recipe: $e');
+          print('   Recipe data: $json');
         }
       }
 
       _userRecipes = userRecipesList;
 
-      debugPrint('✅ Loaded ${_userRecipes.length} user recipes');
+      print('✅ Loaded ${_userRecipes.length} user recipes');
     } catch (e) {
       _setError('Failed to fetch user recipes: $e');
-      debugPrint('❌ Error fetching user recipes: $e');
+      print('❌ Error fetching user recipes: $e');
     } finally {
       _setLoading(false);
       notifyListeners();

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../models/recipe.dart';
 import '../../services/recipe_service.dart';
 import 'recipe_state.dart';
@@ -208,6 +209,18 @@ class RecipeCubit extends Cubit<RecipeState> {
     }
   }
 
+  /// Refreshes all recipes including home page recipes after creating a new recipe
+  Future<void> refreshAllRecipes() async {
+    try {
+      // Re-initialize to fetch all fresh data
+      await initialize();
+    } catch (e) {
+      emit(
+        state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
+      );
+    }
+  }
+
   Recipe? getRecipeById(String id) {
     try {
       return state.recipes.firstWhere((recipe) => recipe.id == id);
@@ -226,5 +239,68 @@ class RecipeCubit extends Cubit<RecipeState> {
     final uniqueList = uniqueRecipes.values.toList();
     uniqueList.sort((a, b) => b.rating.compareTo(a.rating));
     return uniqueList;
+  }
+
+  void filterRecipes({
+    RangeValues? priceRange,
+    RangeValues? timeRange,
+    String? category,
+  }) {
+    try {
+      emit(state.copyWith(status: RecipeStatus.loading));
+
+      List<Recipe> filteredRecipes = List.from(state.recipes);
+
+      // Filter by category
+      if (category != null && category.isNotEmpty && category != 'All') {
+        filteredRecipes =
+            filteredRecipes
+                .where(
+                  (recipe) =>
+                      recipe.categories != null &&
+                      recipe.categories!.any(
+                        (cat) => cat.toLowerCase() == category.toLowerCase(),
+                      ),
+                )
+                .toList();
+      }
+
+      // Filter by price range (using estimatedCost)
+      if (priceRange != null) {
+        filteredRecipes =
+            filteredRecipes
+                .where(
+                  (recipe) =>
+                      recipe.estimatedCost != null &&
+                      recipe.estimatedCost! >= priceRange.start &&
+                      recipe.estimatedCost! <= priceRange.end,
+                )
+                .toList();
+      }
+
+      // Filter by time range (using cookTime)
+      if (timeRange != null) {
+        filteredRecipes =
+            filteredRecipes
+                .where(
+                  (recipe) =>
+                      recipe.cookTime != null &&
+                      recipe.cookTime! >= timeRange.start.toInt() &&
+                      recipe.cookTime! <= timeRange.end.toInt(),
+                )
+                .toList();
+      }
+
+      emit(
+        state.copyWith(recipes: filteredRecipes, status: RecipeStatus.loaded),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: RecipeStatus.error,
+          errorMessage: 'Failed to filter recipes: ${e.toString()}',
+        ),
+      );
+    }
   }
 }

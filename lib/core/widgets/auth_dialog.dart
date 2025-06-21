@@ -152,11 +152,9 @@ class AuthDialog {
                                             .signIn(
                                               emailController.text.trim(),
                                               passwordController.text,
-                                            );
-
-                                        // Wait for the auth state to fully update
+                                            );                                        // Wait for the auth state to fully update
                                         await Future.delayed(
-                                          const Duration(milliseconds: 100),
+                                          const Duration(milliseconds: 200),
                                         );
 
                                         if (success && context.mounted) {
@@ -168,6 +166,12 @@ class AuthDialog {
                                               content: Text('Berhasil masuk!'),
                                               backgroundColor: Colors.green,
                                             ),
+                                          );
+                                          
+                                          // Trigger a state update for any listening widgets
+                                          // This will help the upload screen to refresh
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 100),
                                           );
                                         }
                                       }
