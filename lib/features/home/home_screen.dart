@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:rasain_app/core/widgets/shimmer_widget.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../core/constants/sizes.dart';
@@ -12,6 +11,7 @@ import '../../models/recipe.dart';
 import 'widgets/category_slider.dart';
 import 'widgets/recipe_carousel.dart';
 import 'widgets/whats_cooking_stream.dart';
+import 'package:rasain_app/features/home/widgets/filter_recipe_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   bool _isSearching = false;
   bool _isImageSearching = false;
+  bool _isFiltering = false;
+
+  // Filter state
+  RangeValues _priceRange = const RangeValues(0, 100000);
+  RangeValues _timeRange = const RangeValues(0, 180);
+  bool _hasActiveFilters = false;
 
   @override
   void initState() {
@@ -57,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debugPrint('❌ Failed to load categories: $e');
       // Set default if failed to load from database
       setState(() {
-        _categories = ['All'];
+        _categories = [];
       });
     }
   }
@@ -144,19 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
               ),
               child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
+                controller: _searchController,                decoration: InputDecoration(
                   hintText: 'Cari resep...',
                   prefixIcon: const Icon(
                     Icons.search,
                     color: AppColors.textSecondary,
-                  ),
-                  suffixIcon: IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    onPressed: _handleImageSearch,
                   ),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -168,6 +166,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 onSubmitted:
                     (query) => context.read<RecipeCubit>().searchRecipes(query),
               ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.marginM),
+          // Filter Button
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _hasActiveFilters ? AppColors.primary : AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.tune,
+                color: _hasActiveFilters ? Colors.white : AppColors.textPrimary,
+              ),
+              onPressed: _showFilterDialog,
             ),
           ),
           const SizedBox(width: AppSizes.marginM),
@@ -458,10 +473,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
   }
+
   Widget _buildSearchResultItem(Recipe recipe) {
     return GestureDetector(
       onTap: () {
-        final identifier = recipe.slug?.isNotEmpty == true ? recipe.slug! : recipe.id;
+        final identifier =
+            recipe.slug?.isNotEmpty == true ? recipe.slug! : recipe.id;
         GoRouter.of(context).push('/recipe/$identifier');
       },
       child: Card(
@@ -568,43 +585,69 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'All') {
       debugPrint('📋 Loading all recipes');
       context.read<RecipeCubit>().initialize();
-    } else {
-      debugPrint('🔍 Filtering by category: $category');
+    } else {      debugPrint('🔍 Filtering by category: $category');
       context.read<RecipeCubit>().filterByCategory(category);
     }
   }
 
-  Future<void> _handleImageSearch() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      imageQuality: 85,
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return FilterRecipeWidget(
+          priceRange: _priceRange,
+          timeRange: _timeRange,
+          onPriceRangeChanged: (RangeValues range) {
+            setState(() {
+              _priceRange = range;
+            });
+          },
+          onTimeRangeChanged: (RangeValues range) {
+            setState(() {
+              _timeRange = range;
+            });
+          },
+          onApplyFilters: _applyFilters,
+          onResetFilters: _resetFilters,
+        );
+      },
     );
+  }
 
-    if (image == null) return;
+  void _applyFilters() {
+    // Check if filters are different from default values
+    final bool hasPriceFilter =
+        _priceRange.start > 0 || _priceRange.end < 100000;
+    final bool hasTimeFilter = _timeRange.start > 0 || _timeRange.end < 180;
 
     setState(() {
-      _isSearching = true;
-      _isImageSearching = true;
+      _hasActiveFilters = hasPriceFilter || hasTimeFilter;
+      _isSearching = false;
+      _searchController.clear();
     });
 
-    try {
-      final bytes = await image.readAsBytes();
-      await context.read<RecipeCubit>().searchRecipesByImage(bytes, image.name);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal memproses gambar. Silakan coba lagi.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isImageSearching = false;
-      });
-    }
+    // Apply filters with current category
+    context.read<RecipeCubit>().filterRecipes(
+      priceRange: hasPriceFilter ? _priceRange : null,
+      timeRange: hasTimeFilter ? _timeRange : null,
+      category: _selectedCategory != 'All' ? _selectedCategory : null,
+    );
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _priceRange = const RangeValues(0, 100000);
+      _timeRange = const RangeValues(0, 180);
+      _hasActiveFilters = false;
+      _isSearching = false;
+      _searchController.clear();
+      _selectedCategory = 'All';
+    });
+
+    // Reload initial data
+    context.read<RecipeCubit>().initialize();
   }
 
   Widget _buildErrorWidget(String errorMessage) {

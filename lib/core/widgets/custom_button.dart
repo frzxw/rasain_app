@@ -2,22 +2,13 @@ import 'package:flutter/material.dart';
 import '../constants/sizes.dart';
 import '../theme/colors.dart';
 
-enum ButtonVariant {
-  primary,
-  secondary,
-  outline,
-  text,
-}
+enum ButtonVariant { primary, secondary, outline, text }
 
-enum ButtonSize {
-  small,
-  medium,
-  large,
-}
+enum ButtonSize { small, medium, large }
 
 class CustomButton extends StatelessWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final ButtonVariant variant;
   final ButtonSize size;
   final IconData? icon;
@@ -26,11 +17,10 @@ class CustomButton extends StatelessWidget {
   final bool isFullWidth;
   final bool disabled;
   final TextStyle? textStyle;
-
   const CustomButton({
     super.key,
     required this.label,
-    required this.onPressed,
+    this.onPressed,
     this.variant = ButtonVariant.primary,
     this.size = ButtonSize.medium,
     this.icon,
@@ -131,27 +121,24 @@ class CustomButton extends StatelessWidget {
     final TextStyle mergedTextStyle = _getTextStyleForSize(context);
 
     if (icon == null) {
-      return Text(
-        label,
-        style: mergedTextStyle,
-        textAlign: TextAlign.center,
-      );
+      return Text(label, style: mergedTextStyle, textAlign: TextAlign.center);
     }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: iconAtEnd
-          ? [
-              Text(label, style: mergedTextStyle),
-              SizedBox(width: size == ButtonSize.small ? 4 : 8),
-              Icon(icon, size: _getIconSize()),
-            ]
-          : [
-              Icon(icon, size: _getIconSize()),
-              SizedBox(width: size == ButtonSize.small ? 4 : 8),
-              Text(label, style: mergedTextStyle),
-            ],
+      children:
+          iconAtEnd
+              ? [
+                Text(label, style: mergedTextStyle),
+                SizedBox(width: size == ButtonSize.small ? 4 : 8),
+                Icon(icon, size: _getIconSize()),
+              ]
+              : [
+                Icon(icon, size: _getIconSize()),
+                SizedBox(width: size == ButtonSize.small ? 4 : 8),
+                Text(label, style: mergedTextStyle),
+              ],
     );
   }
 
@@ -193,20 +180,19 @@ class CustomButton extends StatelessWidget {
     );
 
     // Gabungkan textStyle yang diterima dengan baseStyle
-    final mergedStyle = textStyle != null 
-      ? textStyle!.merge(baseStyle)
-      : baseStyle;
+    final mergedStyle =
+        textStyle != null ? textStyle!.merge(baseStyle) : baseStyle;
 
     switch (size) {
       case ButtonSize.small:
-        return Theme.of(context).textTheme.labelMedium?.merge(mergedStyle) ?? 
-               mergedStyle.copyWith(fontSize: 12);
+        return Theme.of(context).textTheme.labelMedium?.merge(mergedStyle) ??
+            mergedStyle.copyWith(fontSize: 12);
       case ButtonSize.medium:
-        return Theme.of(context).textTheme.labelLarge?.merge(mergedStyle) ?? 
-               mergedStyle.copyWith(fontSize: 14);
+        return Theme.of(context).textTheme.labelLarge?.merge(mergedStyle) ??
+            mergedStyle.copyWith(fontSize: 14);
       case ButtonSize.large:
-        return Theme.of(context).textTheme.bodyLarge?.merge(mergedStyle) ?? 
-               mergedStyle.copyWith(fontSize: 16);
+        return Theme.of(context).textTheme.bodyLarge?.merge(mergedStyle) ??
+            mergedStyle.copyWith(fontSize: 16);
     }
   }
 

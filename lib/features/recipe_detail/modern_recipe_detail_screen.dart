@@ -10,19 +10,18 @@ import 'widgets/review_section.dart';
 class ModernRecipeDetailScreen extends StatefulWidget {
   final String? recipeId;
   final String? recipeSlug;
-  const ModernRecipeDetailScreen({
-    super.key,
-    this.recipeId,
-    this.recipeSlug,
-  });
+  const ModernRecipeDetailScreen({super.key, this.recipeId, this.recipeSlug});
 
   @override
-  State<ModernRecipeDetailScreen> createState() => _ModernRecipeDetailScreenState();
+  State<ModernRecipeDetailScreen> createState() =>
+      _ModernRecipeDetailScreenState();
 }
 
-class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> with TickerProviderStateMixin {
+class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen>
+    with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  int _currentServings = 1; // Track current serving size
 
   @override
   void initState() {
@@ -38,7 +37,14 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final recipeService = Provider.of<RecipeService>(context, listen: false);
       final identifier = widget.recipeSlug ?? widget.recipeId!;
-      recipeService.fetchRecipeBySlug(identifier);
+      recipeService.fetchRecipeBySlug(identifier).then((_) {
+        // Initialize current servings with recipe's original servings
+        if (recipeService.currentRecipe?.servings != null && mounted) {
+          setState(() {
+            _currentServings = recipeService.currentRecipe!.servings!;
+          });
+        }
+      });
       _fadeController.forward();
     });
   }
@@ -59,7 +65,9 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
           final isLoading = recipeService.isLoading;
 
           if (isLoading && recipe == null) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
           if (recipe == null) {
             return _buildErrorState(context);
@@ -81,7 +89,11 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
                         color: Colors.black38,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.white),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                     ),
                     onPressed: () {
                       try {
@@ -91,50 +103,36 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
                       }
                     },
                   ),
-                  actions: [
-                    IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.black38,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
-                      ),
-                      onPressed: () {},
-                    ),
-                    const SizedBox(width: 12),
-                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
                         Hero(
                           tag: 'recipe-${recipe.id}',
-                          child: recipe.imageUrl != null
-                              ? Image.network(
-                                  recipe.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => _buildFallbackImage(),
-                                )
-                              : _buildFallbackImage(),
+                          child:
+                              recipe.imageUrl != null
+                                  ? Image.network(
+                                    recipe.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (_, __, ___) => _buildFallbackImage(),
+                                  )
+                                  : _buildFallbackImage(),
                         ),
                         Container(
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black54,
-                              ],
+                              colors: [Colors.transparent, Colors.black54],
                             ),
                           ),
                         ),
                         Positioned(
                           left: 24,
                           bottom: 32,
-                          right: 24,                          child: Text(
+                          right: 24,
+                          child: Text(
                             recipe.name,
                             style: const TextStyle(
                               color: Colors.white,
@@ -156,59 +154,103 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Quick stats
                         Row(
-                          children: [                            _buildStatCard(Icons.timer, 'Waktu', recipe.cookTime != null ? '${recipe.cookTime} menit' : '-'),
+                          children: [
+                            _buildStatCard(
+                              Icons.timer,
+                              'Waktu',
+                              recipe.cookTime != null
+                                  ? '${recipe.cookTime} menit'
+                                  : '-',
+                            ),
                             const SizedBox(width: 12),
-                            _buildStatCard(Icons.people, 'Porsi', recipe.servings?.toString() ?? '-'),
+                            _buildStatCard(
+                              Icons.people,
+                              'Porsi',
+                              _currentServings.toString(),
+                            ),
                             const SizedBox(width: 12),
-                            _buildStatCard(Icons.local_offer, 'Biaya', recipe.estimatedCost != null ? 'Rp ${recipe.estimatedCost}' : '-'),
+                            _buildStatCard(
+                              Icons.local_offer,
+                              'Biaya',
+                              recipe.estimatedCost != null
+                                  ? 'Rp ${recipe.estimatedCost}'
+                                  : '-',
+                            ),
                           ],
                         ),
                         const SizedBox(height: 24),
                         // Description
-                        if (recipe.description != null && recipe.description!.isNotEmpty)
+                        if (recipe.description != null &&
+                            recipe.description!.isNotEmpty)
                           Text(
                             recipe.description!,
-                            style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-                          ),                        // Ingredients
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[800],
+                            ),
+                          ), // Ingredients
                         if (recipe.ingredients?.isNotEmpty ?? false) ...[
                           const SizedBox(height: 32),
                           ModernIngredientList(
-                            ingredients: recipe.ingredients!
-                                .map((ingredient) => {
-                                      'name': ingredient['name'],
-                                      'quantity': ingredient['quantity'],
-                                      'unit': ingredient['unit'],
-                                      'image_url': ingredient['image_url'],
-                                      'price': ingredient['price'],
-                                    })
-                                .toList(),
+                            originalServings: recipe.servings ?? 1,
+                            currentServings: _currentServings,
+                            onServingChanged: (newServings) {
+                              setState(() {
+                                _currentServings = newServings;
+                              });
+                            },
+                            ingredients:
+                                recipe.ingredients!
+                                    .map(
+                                      (ingredient) => {
+                                        'name': ingredient['name'],
+                                        'quantity': ingredient['quantity'],
+                                        'unit': ingredient['unit'],
+                                        'image_url': ingredient['image_url'],
+                                        'price': ingredient['price'],
+                                      },
+                                    )
+                                    .toList(),
                           ),
                         ],
                         // Instructions
-                        if (recipe.instructions?.isNotEmpty ?? false) ...[                          const SizedBox(height: 32),                          fixed.ModernInstructionSteps(
+                        if (recipe.instructions?.isNotEmpty ?? false) ...[
+                          const SizedBox(height: 32),
+                          fixed.ModernInstructionSteps(
                             recipe: recipe,
-                            instructions: recipe.instructions!
-                                .map((instruction) => {
-                                      'description': instruction['description'] ?? instruction['text'],
-                                      'duration': instruction['duration'],
-                                      'timer_minutes': instruction['timer_minutes'],
-                                      'image_url': instruction['image_url'],
-                                      'text': instruction['text'],
-                                    })
-                                .toList(),
+                            instructions:
+                                recipe.instructions!
+                                    .map(
+                                      (instruction) => {
+                                        'description':
+                                            instruction['description'] ??
+                                            instruction['text'],
+                                        'duration': instruction['duration'],
+                                        'timer_minutes':
+                                            instruction['timer_minutes'],
+                                        'image_url': instruction['image_url'],
+                                        'text': instruction['text'],
+                                      },
+                                    )
+                                    .toList(),
                           ),
                         ],
                         // Review section
                         const SizedBox(height: 32),
                         ReviewSection(
                           recipe: recipe,
-                          onRateRecipe: (rating, comment) => recipeService.rateRecipe(recipe.id, rating),
+                          onRateRecipe:
+                              (rating, comment) =>
+                                  recipeService.rateRecipe(recipe.id, rating),
                         ),
                         const SizedBox(height: 40),
                       ],
@@ -253,10 +295,7 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
             ),
             Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ],
         ),
@@ -282,11 +321,19 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen> wit
           children: [
             const Icon(Icons.error_outline, size: 60, color: AppColors.error),
             const SizedBox(height: 16),
-            Text('Resep tidak ditemukan', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+            Text(
+              'Resep tidak ditemukan',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text('Resep yang Anda cari mungkin telah dihapus atau tidak tersedia.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center),
+            Text(
+              'Resep yang Anda cari mungkin telah dihapus atau tidak tersedia.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {

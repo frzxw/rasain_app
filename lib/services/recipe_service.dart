@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import 'supabase_service.dart';
 
@@ -47,10 +48,10 @@ class RecipeService extends ChangeNotifier {
   Future<void> initializeService() async {
     try {
       debugPrint('🚀 Initializing Recipe Service...');
-      
+
       // Update any recipes that don't have slugs
       await updateRecipeSlugs();
-      
+
       debugPrint('✅ Recipe Service initialized successfully');
     } catch (e) {
       debugPrint('❌ Error initializing Recipe Service: $e');
@@ -470,7 +471,8 @@ class RecipeService extends ChangeNotifier {
   // Fetch single recipe by ID (menggunakan function baru dengan ingredients)
   Future<Recipe?> fetchRecipeById(String recipeId) async {
     return await fetchRecipeByIdWithIngredients(recipeId);
-  }  // Fetch single recipe by slug or ID (tries slug first, fallback to ID)
+  } // Fetch single recipe by slug or ID (tries slug first, fallback to ID)
+
   Future<Recipe?> fetchRecipeBySlug(String identifier) async {
     _setLoading(true);
     _clearError();
@@ -479,29 +481,31 @@ class RecipeService extends ChangeNotifier {
       debugPrint('🔍 Fetching recipe by identifier: $identifier');
 
       Map<String, dynamic> response;
-      
+
       // First try to fetch by slug
       try {
-        response = await _supabaseService.client
-            .from('recipes')
-            .select()
-            .eq('slug', identifier)
-            .single();
+        response =
+            await _supabaseService.client
+                .from('recipes')
+                .select()
+                .eq('slug', identifier)
+                .single();
         debugPrint('✅ Found recipe by slug: $identifier');
       } catch (e) {
         debugPrint('❌ No recipe found by slug: $identifier, trying ID...');
-        
+
         // If slug fails, try by ID
-        response = await _supabaseService.client
-            .from('recipes')
-            .select()
-            .eq('id', identifier)
-            .single();
+        response =
+            await _supabaseService.client
+                .from('recipes')
+                .select()
+                .eq('id', identifier)
+                .single();
         debugPrint('✅ Found recipe by ID: $identifier');
       }
 
       final recipeId = response['id'];
-      
+
       // Get complete details (ingredients, instructions, reviews)
       final details = await getRecipeDetails(recipeId);
 
@@ -692,6 +696,7 @@ class RecipeService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   // Submit a rating for a recipe
   Future<void> rateRecipe(String recipeId, double rating) async {
     try {
@@ -707,25 +712,28 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_reviews')
           .select('id, comment')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+          .eq('recipe_id', recipeId);
+      if (existingReviews.isNotEmpty) {
         // Update existing review rating only, preserve comment
         final existingComment = existingReviews.first['comment'];
         final updateData = <String, dynamic>{
           'rating': rating,
           'updated_at': DateTime.now().toIso8601String(),
         };
-        
+
         // Preserve existing comment if it exists
         if (existingComment != null) {
           updateData['comment'] = existingComment;
         }
-          await _supabaseService.client
+        await _supabaseService.client
             .from('recipe_reviews')
             .update(updateData)
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
-            
-        debugPrint('✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}');
+
+        debugPrint(
+          '✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}',
+        );
       } else {
         // Insert new review with rating only (no review text)
         await _supabaseService.client.from('recipe_reviews').insert({
@@ -768,18 +776,22 @@ class RecipeService extends ChangeNotifier {
           categories: _currentRecipe!.categories,
           isSaved: _currentRecipe!.isSaved,
         );
-        notifyListeners();      }
+        notifyListeners();
+      }
 
       // Verify the review was updated correctly (debug)
-      final verifyReview = await _supabaseService.client
-          .from('recipe_reviews')
-          .select('rating, comment')
-          .eq('user_id', userId)
-          .eq('recipe_id', recipeId)
-          .single();
-      
+      final verifyReview =
+          await _supabaseService.client
+              .from('recipe_reviews')
+              .select('rating, comment')
+              .eq('user_id', userId)
+              .eq('recipe_id', recipeId)
+              .single();
+
       debugPrint('✅ Successfully rated recipe: $recipeId with rating: $rating');
-      debugPrint('📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}');
+      debugPrint(
+        '📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}',
+      );
     } catch (e) {
       _setError('Failed to submit rating: $e');
       debugPrint('❌ Error rating recipe: $e');
@@ -876,7 +888,8 @@ class RecipeService extends ChangeNotifier {
     try {
       debugPrint('🔍 Fetching recipes for category: $category');
 
-      if (category == 'All') {        // Return all recipes sorted by rating
+      if (category == 'All') {
+        // Return all recipes sorted by rating
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -916,7 +929,8 @@ class RecipeService extends ChangeNotifier {
 
         if (recipeIds.isEmpty) {
           debugPrint('⚠️ No recipes found for category: $category');
-          return [];        } // Finally, get the actual recipes
+          return [];
+        } // Finally, get the actual recipes
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -969,13 +983,15 @@ class RecipeService extends ChangeNotifier {
       debugPrint('📋 Response type: ${response.runtimeType}');
       debugPrint(
         '✅ Fetched ${response.length} instructions for recipe: $recipeId',
-      );      final instructions =
+      );
+      final instructions =
           response
               .map<Map<String, dynamic>>(
                 (instruction) => {
                   'id': instruction['id']?.toString() ?? '',
                   'text': instruction['instruction_text']?.toString() ?? '',
-                  'description': instruction['instruction_text']?.toString() ?? '',
+                  'description':
+                      instruction['instruction_text']?.toString() ?? '',
                   'image_url': instruction['image_url']?.toString(),
                   'imageUrl': instruction['image_url']?.toString(),
                   'step_number': instruction['step_number'] ?? 0,
@@ -1104,7 +1120,8 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_reviews')
           .select('id')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+          .eq('recipe_id', recipeId);
+      if (existingReviews.isNotEmpty) {
         // Update existing review, preserve created_at
         await _supabaseService.client
             .from('recipe_reviews')
@@ -1112,8 +1129,11 @@ class RecipeService extends ChangeNotifier {
               'rating': rating,
               'comment': comment,
               'updated_at': DateTime.now().toIso8601String(),
-            })            .eq('id', existingReviews.first['id']);
-        debugPrint('✅ Review updated successfully for recipe: $recipeId (preserved created_at)');
+            })
+            .eq('id', existingReviews.first['id']);
+        debugPrint(
+          '✅ Review updated successfully for recipe: $recipeId (preserved created_at)',
+        );
       } else {
         // Insert new review
         await _supabaseService.client.from('recipe_reviews').insert({
@@ -1227,7 +1247,7 @@ class RecipeService extends ChangeNotifier {
   Future<void> updateRecipeSlugs() async {
     try {
       debugPrint('🔧 Updating recipe slugs...');
-      
+
       // Get all recipes without slugs or with empty slugs
       final recipes = await _supabaseService.client
           .from('recipes')
@@ -1490,6 +1510,93 @@ class RecipeService extends ChangeNotifier {
       debugPrint('   Distribution: ${stats['rating_distribution']}');
     } catch (e) {
       debugPrint('❌ Error testing reviews: $e');
+    }
+  }
+
+  // Filter recipes by price and time
+  Future<List<Recipe>> filterRecipes({
+    RangeValues? priceRange,
+    RangeValues? timeRange,
+    String? category,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      debugPrint(
+        '🔍 Filtering recipes with price: $priceRange, time: $timeRange, category: $category',
+      );
+
+      var query = _supabaseService.client.from('recipes').select();
+
+      // Apply price filter
+      if (priceRange != null) {
+        query = query
+            .gte('estimated_cost', priceRange.start.round())
+            .lte('estimated_cost', priceRange.end.round());
+      }
+
+      // Apply time filter
+      if (timeRange != null) {
+        query = query
+            .gte('cook_time', timeRange.start.round())
+            .lte('cook_time', timeRange.end.round());
+      }
+
+      // Apply category filter if specified and not 'All'
+      if (category != null && category != 'All') {
+        // Get category ID first
+        final categoryResponse =
+            await _supabaseService.client
+                .from('recipe_categories')
+                .select('id')
+                .eq('name', category)
+                .single();
+
+        final categoryId = categoryResponse['id'];
+
+        // Get recipe IDs that belong to this category
+        final mappingResponse = await _supabaseService.client
+            .from('recipe_categories_recipes')
+            .select('recipe_id')
+            .eq('category_id', categoryId);
+
+        final recipeIds =
+            mappingResponse
+                .map<String>((mapping) => mapping['recipe_id'] as String)
+                .toList();
+
+        if (recipeIds.isNotEmpty) {
+          query = query.inFilter('id', recipeIds);
+        } else {
+          // No recipes found for this category with the filters
+          return [];
+        }
+      }
+
+      final response = await query.order('rating', ascending: false).limit(50);
+
+      // Get recipes with ingredients
+      List<Recipe> filteredRecipesWithIngredients = [];
+      for (final recipeData in response) {
+        final ingredients = await getRecipeIngredients(recipeData['id']);
+        final recipeWithIngredients = Recipe.fromJson({
+          ...recipeData,
+          'ingredients': ingredients,
+        });
+        filteredRecipesWithIngredients.add(recipeWithIngredients);
+      }
+
+      debugPrint(
+        '✅ Found ${filteredRecipesWithIngredients.length} recipes matching filters',
+      );
+      return filteredRecipesWithIngredients;
+    } catch (e) {
+      _setError('Failed to filter recipes: $e');
+      debugPrint('❌ Error filtering recipes: $e');
+      return [];
+    } finally {
+      _setLoading(false);
     }
   }
 }
