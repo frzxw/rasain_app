@@ -18,10 +18,12 @@ class RecipeCubit extends Cubit<RecipeState> {
       final popularRecipes = _recipeService.popularRecipes;
 
       // Get recommended recipes
-      final recommendedRecipes = _recipeService.recommendedRecipes;
-
-      // Get saved recipes
+      final recommendedRecipes =
+          _recipeService.recommendedRecipes; // Get saved recipes
       final savedRecipes = _recipeService.savedRecipes;
+
+      // Get user recipes
+      final userRecipes = _recipeService.userRecipes;
 
       // Get all recipes: combine different sources and remove duplicates by ID
       final Map<String, Recipe> uniqueRecipes = {};
@@ -64,6 +66,7 @@ class RecipeCubit extends Cubit<RecipeState> {
           featuredRecipes: popularRecipes,
           recommendedRecipes: recommendedRecipes,
           savedRecipes: savedRecipes,
+          userRecipes: userRecipes, // Add user recipes to state
           categoryRecipes: categoryRecipes,
           status: RecipeStatus.loaded,
         ),
@@ -181,6 +184,26 @@ class RecipeCubit extends Cubit<RecipeState> {
           status: RecipeStatus.error,
           errorMessage: 'Failed to filter recipes: $e',
         ),
+      );
+    }
+  }
+
+  /// Refreshes user recipes after creating a new recipe
+  Future<void> refreshUserRecipes() async {
+    try {
+      emit(state.copyWith(status: RecipeStatus.loading));
+
+      await _recipeService.fetchUserRecipes();
+
+      emit(
+        state.copyWith(
+          userRecipes: _recipeService.userRecipes,
+          status: RecipeStatus.loaded,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
       );
     }
   }

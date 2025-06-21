@@ -10,6 +10,7 @@ import 'cubits/auth/auth_cubit.dart';
 import 'cubits/recipe/recipe_cubit.dart';
 import 'cubits/pantry/pantry_cubit.dart';
 import 'cubits/chat/chat_cubit.dart';
+import 'cubits/upload_recipe/upload_recipe_cubit.dart';
 import 'cubits/notification/notification_cubit.dart';
 import 'cubits/community/community_cubit.dart';
 
@@ -40,13 +41,14 @@ class RasainApp extends StatelessWidget {
     await context.read<AuthCubit>().initialize();
 
     // Initialize recipe cubit
-    await context.read<RecipeCubit>().initialize();
-
-    // Initialize pantry cubit
+    await context.read<RecipeCubit>().initialize(); // Initialize pantry cubit
     await context.read<PantryCubit>().initialize();
 
     // Initialize chat cubit
     await context.read<ChatCubit>().initialize();
+
+    // Initialize upload recipe cubit (no initialization needed)
+    // context.read<UploadRecipeCubit>();
 
     // Initialize notification cubit
     await context.read<NotificationCubit>().initialize();

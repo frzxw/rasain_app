@@ -8,6 +8,7 @@ class RecipeState extends Equatable {
   final List<Recipe> featuredRecipes;
   final List<Recipe> recommendedRecipes;
   final List<Recipe> savedRecipes;
+  final List<Recipe> userRecipes; // Add user recipes
   final RecipeStatus status;
   final String? errorMessage;
   final Map<String, List<Recipe>> categoryRecipes;
@@ -17,6 +18,7 @@ class RecipeState extends Equatable {
     this.featuredRecipes = const [],
     this.recommendedRecipes = const [],
     this.savedRecipes = const [],
+    this.userRecipes = const [], // Initialize user recipes
     this.status = RecipeStatus.initial,
     this.errorMessage,
     this.categoryRecipes = const {},
@@ -27,6 +29,7 @@ class RecipeState extends Equatable {
     List<Recipe>? featuredRecipes,
     List<Recipe>? recommendedRecipes,
     List<Recipe>? savedRecipes,
+    List<Recipe>? userRecipes, // Add to copyWith
     RecipeStatus? status,
     String? errorMessage,
     Map<String, List<Recipe>>? categoryRecipes,
@@ -36,6 +39,7 @@ class RecipeState extends Equatable {
       featuredRecipes: featuredRecipes ?? this.featuredRecipes,
       recommendedRecipes: recommendedRecipes ?? this.recommendedRecipes,
       savedRecipes: savedRecipes ?? this.savedRecipes,
+      userRecipes: userRecipes ?? this.userRecipes, // Add to copyWith
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       categoryRecipes: categoryRecipes ?? this.categoryRecipes,
@@ -48,6 +52,7 @@ class RecipeState extends Equatable {
     featuredRecipes,
     recommendedRecipes,
     savedRecipes,
+    userRecipes, // Add to props
     status,
     errorMessage,
     categoryRecipes,

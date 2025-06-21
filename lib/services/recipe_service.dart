@@ -13,6 +13,7 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> _whatsNewRecipes = [];
   List<Recipe> _savedRecipes = [];
   List<Recipe> _recommendedRecipes = [];
+  List<Recipe> _userRecipes = []; // Add user recipes
 
   Recipe? _currentRecipe;
 
@@ -25,10 +26,10 @@ class RecipeService extends ChangeNotifier {
   List<Recipe> get whatsNewRecipes => _whatsNewRecipes;
   List<Recipe> get savedRecipes => _savedRecipes;
   List<Recipe> get recommendedRecipes => _recommendedRecipes;
+  List<Recipe> get userRecipes => _userRecipes; // Add getter
   Recipe? get currentRecipe => _currentRecipe;
   bool get isLoading => _isLoading;
   String? get error => _error;
-
   // Initialize and load initial data
   Future<void> initialize() async {
     // Test koneksi dengan recipe yang ada di database
@@ -40,6 +41,7 @@ class RecipeService extends ChangeNotifier {
       fetchSavedRecipes(),
       fetchRecommendedRecipes(),
       fetchPantryRecipes(), // Added this call to initialize pantry recipes
+      fetchUserRecipes(), // Add user recipes fetch
     ]);
   }
 
@@ -47,10 +49,10 @@ class RecipeService extends ChangeNotifier {
   Future<void> initializeService() async {
     try {
       debugPrint('🚀 Initializing Recipe Service...');
-      
+
       // Update any recipes that don't have slugs
       await updateRecipeSlugs();
-      
+
       debugPrint('✅ Recipe Service initialized successfully');
     } catch (e) {
       debugPrint('❌ Error initializing Recipe Service: $e');
@@ -470,7 +472,8 @@ class RecipeService extends ChangeNotifier {
   // Fetch single recipe by ID (menggunakan function baru dengan ingredients)
   Future<Recipe?> fetchRecipeById(String recipeId) async {
     return await fetchRecipeByIdWithIngredients(recipeId);
-  }  // Fetch single recipe by slug or ID (tries slug first, fallback to ID)
+  } // Fetch single recipe by slug or ID (tries slug first, fallback to ID)
+
   Future<Recipe?> fetchRecipeBySlug(String identifier) async {
     _setLoading(true);
     _clearError();
@@ -479,29 +482,31 @@ class RecipeService extends ChangeNotifier {
       debugPrint('🔍 Fetching recipe by identifier: $identifier');
 
       Map<String, dynamic> response;
-      
+
       // First try to fetch by slug
       try {
-        response = await _supabaseService.client
-            .from('recipes')
-            .select()
-            .eq('slug', identifier)
-            .single();
+        response =
+            await _supabaseService.client
+                .from('recipes')
+                .select()
+                .eq('slug', identifier)
+                .single();
         debugPrint('✅ Found recipe by slug: $identifier');
       } catch (e) {
         debugPrint('❌ No recipe found by slug: $identifier, trying ID...');
-        
+
         // If slug fails, try by ID
-        response = await _supabaseService.client
-            .from('recipes')
-            .select()
-            .eq('id', identifier)
-            .single();
+        response =
+            await _supabaseService.client
+                .from('recipes')
+                .select()
+                .eq('id', identifier)
+                .single();
         debugPrint('✅ Found recipe by ID: $identifier');
       }
 
       final recipeId = response['id'];
-      
+
       // Get complete details (ingredients, instructions, reviews)
       final details = await getRecipeDetails(recipeId);
 
@@ -692,6 +697,7 @@ class RecipeService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   // Submit a rating for a recipe
   Future<void> rateRecipe(String recipeId, double rating) async {
     try {
@@ -707,25 +713,28 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_reviews')
           .select('id, comment')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+          .eq('recipe_id', recipeId);
+      if (existingReviews.isNotEmpty) {
         // Update existing review rating only, preserve comment
         final existingComment = existingReviews.first['comment'];
         final updateData = <String, dynamic>{
           'rating': rating,
           'updated_at': DateTime.now().toIso8601String(),
         };
-        
+
         // Preserve existing comment if it exists
         if (existingComment != null) {
           updateData['comment'] = existingComment;
         }
-          await _supabaseService.client
+        await _supabaseService.client
             .from('recipe_reviews')
             .update(updateData)
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
-            
-        debugPrint('✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}');
+
+        debugPrint(
+          '✅ Updated rating for existing review. Comment preserved: ${existingComment != null ? "Yes" : "No"}',
+        );
       } else {
         // Insert new review with rating only (no review text)
         await _supabaseService.client.from('recipe_reviews').insert({
@@ -768,18 +777,22 @@ class RecipeService extends ChangeNotifier {
           categories: _currentRecipe!.categories,
           isSaved: _currentRecipe!.isSaved,
         );
-        notifyListeners();      }
+        notifyListeners();
+      }
 
       // Verify the review was updated correctly (debug)
-      final verifyReview = await _supabaseService.client
-          .from('recipe_reviews')
-          .select('rating, comment')
-          .eq('user_id', userId)
-          .eq('recipe_id', recipeId)
-          .single();
-      
+      final verifyReview =
+          await _supabaseService.client
+              .from('recipe_reviews')
+              .select('rating, comment')
+              .eq('user_id', userId)
+              .eq('recipe_id', recipeId)
+              .single();
+
       debugPrint('✅ Successfully rated recipe: $recipeId with rating: $rating');
-      debugPrint('📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}');
+      debugPrint(
+        '📋 Verification - Rating: ${verifyReview['rating']}, Comment: ${verifyReview['comment'] ?? 'No comment'}',
+      );
     } catch (e) {
       _setError('Failed to submit rating: $e');
       debugPrint('❌ Error rating recipe: $e');
@@ -876,7 +889,8 @@ class RecipeService extends ChangeNotifier {
     try {
       debugPrint('🔍 Fetching recipes for category: $category');
 
-      if (category == 'All') {        // Return all recipes sorted by rating
+      if (category == 'All') {
+        // Return all recipes sorted by rating
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -916,7 +930,8 @@ class RecipeService extends ChangeNotifier {
 
         if (recipeIds.isEmpty) {
           debugPrint('⚠️ No recipes found for category: $category');
-          return [];        } // Finally, get the actual recipes
+          return [];
+        } // Finally, get the actual recipes
         final response = await _supabaseService.client
             .from('recipes')
             .select()
@@ -969,13 +984,15 @@ class RecipeService extends ChangeNotifier {
       debugPrint('📋 Response type: ${response.runtimeType}');
       debugPrint(
         '✅ Fetched ${response.length} instructions for recipe: $recipeId',
-      );      final instructions =
+      );
+      final instructions =
           response
               .map<Map<String, dynamic>>(
                 (instruction) => {
                   'id': instruction['id']?.toString() ?? '',
                   'text': instruction['instruction_text']?.toString() ?? '',
-                  'description': instruction['instruction_text']?.toString() ?? '',
+                  'description':
+                      instruction['instruction_text']?.toString() ?? '',
                   'image_url': instruction['image_url']?.toString(),
                   'imageUrl': instruction['image_url']?.toString(),
                   'step_number': instruction['step_number'] ?? 0,
@@ -1104,7 +1121,8 @@ class RecipeService extends ChangeNotifier {
           .from('recipe_reviews')
           .select('id')
           .eq('user_id', userId)
-          .eq('recipe_id', recipeId);      if (existingReviews.isNotEmpty) {
+          .eq('recipe_id', recipeId);
+      if (existingReviews.isNotEmpty) {
         // Update existing review, preserve created_at
         await _supabaseService.client
             .from('recipe_reviews')
@@ -1112,8 +1130,11 @@ class RecipeService extends ChangeNotifier {
               'rating': rating,
               'comment': comment,
               'updated_at': DateTime.now().toIso8601String(),
-            })            .eq('id', existingReviews.first['id']);
-        debugPrint('✅ Review updated successfully for recipe: $recipeId (preserved created_at)');
+            })
+            .eq('id', existingReviews.first['id']);
+        debugPrint(
+          '✅ Review updated successfully for recipe: $recipeId (preserved created_at)',
+        );
       } else {
         // Insert new review
         await _supabaseService.client.from('recipe_reviews').insert({
@@ -1227,7 +1248,7 @@ class RecipeService extends ChangeNotifier {
   Future<void> updateRecipeSlugs() async {
     try {
       debugPrint('🔧 Updating recipe slugs...');
-      
+
       // Get all recipes without slugs or with empty slugs
       final recipes = await _supabaseService.client
           .from('recipes')
@@ -1253,6 +1274,117 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error updating recipe slugs: $e');
     }
+  }
+
+  /// Creates a new user recipe and uploads it to the database
+  Future<String?> createUserRecipe({
+    required String name,
+    required String description,
+    required int servings,
+    required int cookingTime,
+    required String category,
+    required List<String> ingredients,
+    required List<String> instructions,
+    List<dynamic>? images,
+  }) async {
+    try {
+      _setLoading(true);
+      _error = null;
+
+      // Get current user ID from Supabase auth
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Create recipe data
+      final recipeData = {
+        'name': name,
+        'description': description,
+        'servings': servings,
+        'cooking_time': cookingTime,
+        'category': category,
+        'user_id': userId,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+        'rating': 0.0,
+        'rating_count': 0,
+        'is_premium': false,
+        'slug': _generateSlug(name),
+      };
+
+      // Insert recipe into database
+      final response =
+          await _supabaseService.client
+              .from('recipes')
+              .insert(recipeData)
+              .select()
+              .single();
+
+      final recipeId = response['id'] as String;
+      debugPrint('✅ Recipe created with ID: $recipeId');
+
+      // Add ingredients
+      if (ingredients.isNotEmpty) {
+        final ingredientData =
+            ingredients.asMap().entries.map((entry) {
+              return {
+                'recipe_id': recipeId,
+                'name': entry.value,
+                'order_index': entry.key,
+              };
+            }).toList();
+
+        await _supabaseService.client
+            .from('recipe_ingredients')
+            .insert(ingredientData);
+
+        debugPrint('✅ ${ingredients.length} ingredients added');
+      }
+
+      // Add instructions
+      if (instructions.isNotEmpty) {
+        final instructionData =
+            instructions.asMap().entries.map((entry) {
+              return {
+                'recipe_id': recipeId,
+                'step_number': entry.key + 1,
+                'instruction': entry.value,
+              };
+            }).toList();
+
+        await _supabaseService.client
+            .from('recipe_instructions')
+            .insert(instructionData);
+
+        debugPrint('✅ ${instructions.length} instructions added');
+      } // TODO: Handle image uploads to Supabase Storage
+      // For now, we'll skip image handling as it requires additional setup
+
+      debugPrint('🎉 Recipe "$name" created successfully!');
+
+      // Refresh user recipes to include the new recipe
+      await fetchUserRecipes();
+
+      return recipeId;
+    } catch (e) {
+      _error = 'Failed to create recipe: ${e.toString()}';
+      debugPrint('❌ Error creating recipe: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  /// Generates a URL-friendly slug from recipe name
+  String _generateSlug(String name) {
+    return name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), '')
+        .replaceAll(RegExp(r'\s+'), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
   }
 
   // Helpers
@@ -1491,5 +1623,64 @@ class RecipeService extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ Error testing reviews: $e');
     }
+  }
+
+  /// Fetches recipes created by the current user
+  Future<void> fetchUserRecipes() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      // Get current user ID from Supabase auth
+      final userId = _supabaseService.client.auth.currentUser?.id;
+      if (userId == null) {
+        _userRecipes = [];
+        return;
+      }
+
+      debugPrint('🔍 Fetching user recipes for user: $userId');
+
+      // Fetch recipes created by the user
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select('''
+            *,
+            recipe_ingredients(name, order_index),
+            recipe_instructions(step_number, instruction),
+            recipe_nutrition(calories, protein, carbs, fat),
+            recipe_timers(*)
+          ''')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      debugPrint(
+        '📥 Raw user recipes response: ${response.length} recipes',
+      ); // Convert to Recipe objects
+      final List<Recipe> userRecipesList = [];
+      for (final json in response) {
+        try {
+          final recipe = Recipe.fromJson(json);
+          userRecipesList.add(recipe);
+        } catch (e) {
+          debugPrint('❌ Error parsing user recipe: $e');
+          debugPrint('   Recipe data: $json');
+        }
+      }
+
+      _userRecipes = userRecipesList;
+
+      debugPrint('✅ Loaded ${_userRecipes.length} user recipes');
+    } catch (e) {
+      _setError('Failed to fetch user recipes: $e');
+      debugPrint('❌ Error fetching user recipes: $e');
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  /// Refreshes user recipes after creating a new one
+  Future<void> refreshUserRecipes() async {
+    await fetchUserRecipes();
   }
 }

@@ -32,11 +32,11 @@ class WelcomeScreen extends StatelessWidget {
         'note': 'Panduan lengkap memasak dengan mode step-by-step',
       },
       {
-        'name': 'Chat',
-        'route': '/chat',
-        'icon': Icons.chat_outlined,
+        'name': 'Upload Resep',
+        'route': '/upload-recipe',
+        'icon': Icons.add_circle_outline,
         'gradient': [Colors.purple.shade400, Colors.purple.shade600],
-        'note': 'Chatbot asisten untuk tips memasak',
+        'note': 'Bagikan resep istimewa Anda ke komunitas',
       },
       {
         'name': 'Community',
