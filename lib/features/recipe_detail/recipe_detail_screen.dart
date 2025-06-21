@@ -13,11 +13,11 @@ class RecipeDetailScreen extends StatefulWidget {
   final String? recipeId;
   final String? recipeSlug;
 
-  const RecipeDetailScreen({
-    super.key,
-    this.recipeId,
-    this.recipeSlug,
-  }) : assert(recipeId != null || recipeSlug != null, 'Either recipeId or recipeSlug must be provided');
+  const RecipeDetailScreen({super.key, this.recipeId, this.recipeSlug})
+    : assert(
+        recipeId != null || recipeSlug != null,
+        'Either recipeId or recipeSlug must be provided',
+      );
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -28,10 +28,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   bool _cookingMode = false; // Flag for step-by-step cooking mode
   @override
   void initState() {
-    super.initState();    // Load recipe details
+    super.initState(); // Load recipe details
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final recipeService = Provider.of<RecipeService>(context, listen: false);
-      
+
       // Use the combined fetch method that handles both slug and ID
       final identifier = widget.recipeSlug ?? widget.recipeId!;
       recipeService.fetchRecipeBySlug(identifier);
@@ -116,37 +116,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             },
           ),
           actions: [
-            // Enhanced Share Button
-            IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.share_outlined,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(Icons.share, color: Colors.white),
-                        const SizedBox(width: 8),
-                        Text('Membagikan: ${recipe.name}'),
-                      ],
-                    ),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-            ),
-
             // Enhanced Bookmark Button with Animation
             IconButton(
               icon: Container(
@@ -773,7 +742,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             children: [
               // Cook Time Card
               if (recipe.cookTime != null)
-                Expanded(                  child: _buildEnhancedInfoCard(
+                Expanded(
+                  child: _buildEnhancedInfoCard(
                     context,
                     icon: Icons.timer_outlined,
                     label: 'Waktu',

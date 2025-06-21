@@ -3,10 +3,16 @@ import '../../../core/theme/colors.dart';
 
 class ModernIngredientList extends StatefulWidget {
   final List<Map<String, dynamic>> ingredients;
-  
+  final int originalServings;
+  final int currentServings;
+  final Function(int)? onServingChanged;
+
   const ModernIngredientList({
     super.key,
     required this.ingredients,
+    required this.originalServings,
+    required this.currentServings,
+    this.onServingChanged,
   });
 
   @override
@@ -19,6 +25,12 @@ class _ModernIngredientListState extends State<ModernIngredientList>
   late Animation<double> _fadeAnimation;
   Set<int> _checkedIngredients = {};
 
+  // Helper method to calculate serving multiplier
+  double get _servingMultiplier {
+    if (widget.originalServings <= 0) return 1.0;
+    return widget.currentServings / widget.originalServings;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -26,14 +38,10 @@ class _ModernIngredientListState extends State<ModernIngredientList>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     _animationController.forward();
   }
 
@@ -119,25 +127,83 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                       ),
                     ],
                   ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Total: ${_calculateTotalCost()}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
+
+            // Serving control section
+            if (widget.onServingChanged != null)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Porsi:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        _buildServingButton(
+                          icon: Icons.remove,
+                          onPressed:
+                              widget.currentServings > 1
+                                  ? () => widget.onServingChanged!(
+                                    widget.currentServings - 1,
+                                  )
+                                  : null,
+                        ),
+                        const SizedBox(width: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            '${widget.currentServings}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        _buildServingButton(
+                          icon: Icons.add,
+                          onPressed:
+                              widget.currentServings < 20
+                                  ? () => widget.onServingChanged!(
+                                    widget.currentServings + 1,
+                                  )
+                                  : null,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
             // Progress indicator
             Container(
@@ -146,9 +212,13 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                 children: [
                   Expanded(
                     child: LinearProgressIndicator(
-                      value: _checkedIngredients.length / widget.ingredients.length,
+                      value:
+                          _checkedIngredients.length /
+                          widget.ingredients.length,
                       backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.success,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
@@ -184,7 +254,7 @@ class _ModernIngredientListState extends State<ModernIngredientList>
   Widget _buildModernIngredientItem(int index) {
     final ingredient = widget.ingredients[index];
     final isChecked = _checkedIngredients.contains(index);
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.only(bottom: 12),
@@ -226,15 +296,16 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                     ),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: isChecked
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 16,
-                        )
-                      : null,
+                  child:
+                      isChecked
+                          ? const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 16,
+                          )
+                          : null,
                 ),
-                
+
                 const SizedBox(width: 16),
 
                 // Ingredient image
@@ -247,23 +318,24 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: ingredient['image_url'] != null
-                        ? Image.network(
-                            ingredient['image_url'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.image_not_supported,
-                                color: Colors.grey[400],
-                                size: 24,
-                              );
-                            },
-                          )
-                        : Icon(
-                            Icons.fastfood,
-                            color: Colors.grey[400],
-                            size: 24,
-                          ),
+                    child:
+                        ingredient['image_url'] != null
+                            ? Image.network(
+                              ingredient['image_url'],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey[400],
+                                  size: 24,
+                                );
+                              },
+                            )
+                            : Icon(
+                              Icons.fastfood,
+                              color: Colors.grey[400],
+                              size: 24,
+                            ),
                   ),
                 ),
 
@@ -280,14 +352,20 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: isChecked ? Colors.grey[600] : Colors.black87,
-                          decoration: isChecked ? TextDecoration.lineThrough : null,
+                          decoration:
+                              isChecked ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                      const SizedBox(height: 4),                      Row(
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          if (ingredient['quantity'] != null || ingredient['unit'] != null) ...[
+                          if (ingredient['quantity'] != null ||
+                              ingredient['unit'] != null) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
@@ -303,15 +381,6 @@ class _ModernIngredientListState extends State<ModernIngredientList>
                             ),
                             const SizedBox(width: 8),
                           ],
-                          if (ingredient['price'] != null)
-                            Text(
-                              ingredient['price'].toString(),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                         ],
                       ),
                     ],
@@ -337,23 +406,6 @@ class _ModernIngredientListState extends State<ModernIngredientList>
         ),
       ),
     );
-  }
-
-  String _calculateTotalCost() {
-    double totalCost = 0.0;
-    
-    for (final ingredient in widget.ingredients) {
-      if (ingredient['price'] != null) {
-        final priceString = ingredient['price'].toString();
-        final numericPrice = double.tryParse(
-          priceString.replaceAll(RegExp(r'[^\d.]'), '')
-        ) ?? 0.0;
-        
-        totalCost += numericPrice;
-      }
-    }
-    
-    return 'Rp ${totalCost.toStringAsFixed(0)}';
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -396,10 +448,7 @@ class _ModernIngredientListState extends State<ModernIngredientList>
           const SizedBox(height: 8),
           Text(
             'Resep ini belum memiliki daftar bahan',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -410,27 +459,32 @@ class _ModernIngredientListState extends State<ModernIngredientList>
   String _formatQuantityWithUnit(Map<String, dynamic> ingredient) {
     final quantity = ingredient['quantity'];
     final unit = ingredient['unit'];
-    
+
     if (quantity == null && unit == null) {
       return '';
     }
-    
+
     String result = '';
-    
+
     if (quantity != null) {
-      // Format quantity - bisa berupa angka atau string
+      // Apply serving multiplier to quantity
+      double actualQuantity;
       if (quantity is num) {
-        // Jika angka, format dengan proper decimal places
-        if (quantity % 1 == 0) {
-          result = quantity.toInt().toString();
-        } else {
-          result = quantity.toString();
-        }
+        actualQuantity = quantity.toDouble() * _servingMultiplier;
       } else {
-        result = quantity.toString();
+        // Try to parse string quantity
+        actualQuantity =
+            (double.tryParse(quantity.toString()) ?? 0.0) * _servingMultiplier;
+      }
+
+      // Format quantity with proper decimal places
+      if (actualQuantity % 1 == 0) {
+        result = actualQuantity.toInt().toString();
+      } else {
+        result = actualQuantity.toStringAsFixed(1);
       }
     }
-    
+
     if (unit != null && unit.toString().isNotEmpty) {
       if (result.isNotEmpty) {
         result += ' ${unit.toString()}';
@@ -438,7 +492,32 @@ class _ModernIngredientListState extends State<ModernIngredientList>
         result = unit.toString();
       }
     }
-    
     return result;
+  }
+
+  Widget _buildServingButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: onPressed != null ? AppColors.primary : Colors.grey[300],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onPressed,
+          child: Icon(
+            icon,
+            color: onPressed != null ? Colors.white : Colors.grey[500],
+            size: 20,
+          ),
+        ),
+      ),
+    );
   }
 }

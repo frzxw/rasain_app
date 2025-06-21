@@ -6,7 +6,7 @@ import 'cooking_mode_view.dart';
 class ModernInstructionSteps extends StatefulWidget {
   final List<Map<String, dynamic>> instructions;
   final Recipe? recipe;
-  
+
   const ModernInstructionSteps({
     super.key,
     required this.instructions,
@@ -32,14 +32,10 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
     _animationController.forward();
   }
 
@@ -60,10 +56,7 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
         ),
         child: Text(
           'Belum ada instruksi untuk resep ini',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 16,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
           textAlign: TextAlign.center,
         ),
       );
@@ -143,9 +136,9 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Action buttons row - more compact
                   Row(
                     children: [
@@ -157,12 +150,13 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CookingModeView(
-                                    recipe: widget.recipe!,
-                                    onExit: () {
-                                      Navigator.pop(context);
-                                    },
-                                  ),
+                                  builder:
+                                      (context) => CookingModeView(
+                                        recipe: widget.recipe!,
+                                        onExit: () {
+                                          Navigator.pop(context);
+                                        },
+                                      ),
                                 ),
                               );
                             },
@@ -198,9 +192,9 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                             ),
                           ),
                         ),
-                      
+
                       if (widget.recipe != null) const SizedBox(width: 12),
-                      
+
                       // Cooking mode toggle
                       Expanded(
                         child: GestureDetector(
@@ -212,16 +206,19 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: _isCookingMode
-                                  ? Colors.white.withOpacity(0.3)
-                                  : Colors.white.withOpacity(0.2),
+                              color:
+                                  _isCookingMode
+                                      ? Colors.white.withOpacity(0.3)
+                                      : Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _isCookingMode ? Icons.pause : Icons.play_arrow,
+                                  _isCookingMode
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
                                   color: Colors.white,
                                   size: 16,
                                 ),
@@ -248,14 +245,20 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
             // Progress indicator
             if (_isCookingMode)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: LinearProgressIndicator(
-                        value: _completedSteps.length / widget.instructions.length,
+                        value:
+                            _completedSteps.length / widget.instructions.length,
                         backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.success,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
@@ -274,10 +277,16 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
 
             // Instructions content
             Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-              child: _isCookingMode
-                  ? _buildCookingModeView()
-                  : _buildNormalModeView(),
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: 20,
+              ),
+              child:
+                  _isCookingMode
+                      ? _buildCookingModeView()
+                      : _buildNormalModeView(),
             ),
           ],
         ),
@@ -287,149 +296,169 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
 
   Widget _buildNormalModeView() {
     return Column(
-      children: widget.instructions.asMap().entries.map((entry) {
-        final index = entry.key;
-        final instruction = entry.value;
-        final stepNumber = index + 1;
-        final isCompleted = _completedSteps.contains(index);
-        final description = instruction['description'] ?? instruction['text'] ?? instruction['instruction_text'] ?? '';
-        final timerMinutes = instruction['timer_minutes'] as int?;
+      children:
+          widget.instructions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final instruction = entry.value;
+            final stepNumber = index + 1;
+            final isCompleted = _completedSteps.contains(index);
+            final description =
+                instruction['description'] ??
+                instruction['text'] ??
+                instruction['instruction_text'] ??
+                '';
+            final timerMinutes = instruction['timer_minutes'] as int?;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Step number circle
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isCompleted ? AppColors.success : AppColors.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isCompleted ? AppColors.success : AppColors.primary)
-                          .withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: isCompleted
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 18,
-                        )
-                      : Text(
-                          stepNumber.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Step number circle
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color:
+                          isCompleted ? AppColors.success : AppColors.primary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isCompleted
+                                  ? AppColors.success
+                                  : AppColors.primary)
+                              .withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              
-              // Step content
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isCompleted
-                        ? AppColors.success.withOpacity(0.1)
-                        : Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isCompleted
-                          ? AppColors.success.withOpacity(0.3)
-                          : Colors.grey.withOpacity(0.2),
+                      ],
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Timer info if available
-                      if (timerMinutes != null && timerMinutes > 0)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.timer,
-                                size: 14,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _formatDuration(timerMinutes),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
+                    child: Center(
+                      child:
+                          isCompleted
+                              ? const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 18,
+                              )
+                              : Text(
+                                stepNumber.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      
-                      Text(
-                        description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: isCompleted ? AppColors.success : Colors.grey[800],
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Step content
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color:
+                            isCompleted
+                                ? AppColors.success.withOpacity(0.1)
+                                : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color:
+                              isCompleted
+                                  ? AppColors.success.withOpacity(0.3)
+                                  : Colors.grey.withOpacity(0.2),
                         ),
                       ),
-                      
-                      if (!isCompleted)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _completedSteps.add(index);
-                              });
-                            },
-                            child: Container(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Timer info if available
+                          if (timerMinutes != null && timerMinutes > 0)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
+                                horizontal: 8,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary,
+                                color: AppColors.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text(
-                                'Selesai',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.timer,
+                                    size: 14,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _formatDuration(timerMinutes),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                          Text(
+                            description,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.5,
+                              color:
+                                  isCompleted
+                                      ? AppColors.success
+                                      : Colors.grey[800],
+                              decoration:
+                                  isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                            ),
+                          ),
+
+                          if (!isCompleted)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _completedSteps.add(index);
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'Selesai',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -439,11 +468,7 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            Icon(
-              Icons.celebration,
-              size: 60,
-              color: AppColors.success,
-            ),
+            Icon(Icons.celebration, size: 60, color: AppColors.success),
             const SizedBox(height: 16),
             Text(
               'Selamat! Resep telah selesai!',
@@ -460,7 +485,11 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
     }
 
     final instruction = widget.instructions[_currentStep];
-    final description = instruction['description'] ?? instruction['text'] ?? instruction['instruction_text'] ?? '';
+    final description =
+        instruction['description'] ??
+        instruction['text'] ??
+        instruction['instruction_text'] ??
+        '';
     final timerMinutes = instruction['timer_minutes'] as int?;
 
     return Column(
@@ -476,9 +505,7 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
               ],
             ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
-            ),
+            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,9 +568,9 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
             ],
           ),
         ),
-        
+
         const SizedBox(height: 20),
-        
+
         // Navigation buttons
         Row(
           children: [
@@ -567,9 +594,9 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                   ),
                 ),
               ),
-            
+
             if (_currentStep > 0) const SizedBox(width: 12),
-            
+
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
@@ -598,9 +625,10 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
                       : 'Lanjut',
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _currentStep == widget.instructions.length - 1
-                      ? AppColors.success
-                      : AppColors.primary,
+                  backgroundColor:
+                      _currentStep == widget.instructions.length - 1
+                          ? AppColors.success
+                          : AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
@@ -617,7 +645,7 @@ class _ModernInstructionStepsState extends State<ModernInstructionSteps>
 
   String _formatDuration(int? minutes) {
     if (minutes == null || minutes <= 0) return '';
-    
+
     if (minutes < 60) {
       return '${minutes} menit';
     } else {
