@@ -94,6 +94,9 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,48 +149,52 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
             ),
           ),
 
-          // Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Price Filter Section
-                _buildPriceFilterSection(),
-                const SizedBox(height: 32), // Time Filter Section
-                _buildTimeFilterSection(),
-                const SizedBox(height: 32),
-
-                // Difficulty Level Section
-                if (widget.onDifficultyLevelChanged != null)
-                  _buildDifficultyFilterSection(),
-                if (widget.onDifficultyLevelChanged != null)
+          // Scrollable Content
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Price Filter Section
+                  _buildPriceFilterSection(),
                   const SizedBox(height: 32),
 
-                // Apply Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: widget.onApplyFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Time Filter Section
+                  _buildTimeFilterSection(),
+                  const SizedBox(height: 32),
+
+                  // Difficulty Level Section
+                  if (widget.onDifficultyLevelChanged != null)
+                    _buildDifficultyFilterSection(),
+                  if (widget.onDifficultyLevelChanged != null)
+                    const SizedBox(height: 32),
+
+                  // Apply Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: widget.onApplyFilters,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Terapkan Filter',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'Terapkan Filter',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-              ],
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                ],
+              ),
             ),
           ),
         ],
