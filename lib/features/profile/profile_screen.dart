@@ -10,7 +10,6 @@ import '../../cubits/auth/auth_state.dart';
 import '../../cubits/recipe/recipe_cubit.dart';
 import '../../cubits/recipe/recipe_state.dart';
 import '../../models/user_profile.dart';
-import '../../services/favorite_service.dart';
 import 'edit_profile_screen.dart';
 import 'widgets/saved_recipe_list.dart';
 import 'widgets/user_recipe_list.dart';
@@ -122,29 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   isLoading: recipeState.status == RecipeStatus.loading,
                 ),
 
-                const SizedBox(height: AppSizes.marginL),
-
-                // Settings and Profile Menu
+                const SizedBox(height: AppSizes.marginL),                // Settings and Profile Menu
                 ProfileMenu(
                   user: user,
                   onLogout: () async {
                     await context.read<AuthCubit>().signOut();
-                  },
-                  onUpdateSettings: (notifications, language, _) async {
-                    final success =
-                        await context.read<AuthCubit>().updateSettings(
-                      notifications,
-                      language ?? 'id',
-                    );
-
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Pengaturan berhasil diperbarui'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
                   },
                 ),
 

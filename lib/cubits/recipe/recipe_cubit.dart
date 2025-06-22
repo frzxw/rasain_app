@@ -304,20 +304,12 @@ class RecipeCubit extends Cubit<RecipeState> {
         emit(
           state.copyWith(filteredRecipes: recipes, status: RecipeStatus.loaded),
         );
-      }
-    } catch (e) {
+      }    } catch (e) {
       debugPrint('❌ RecipeCubit: Error loading category recipes: $e');
-      // Refresh saved recipes to update the profile page
-      await _recipeService.fetchSavedRecipes();
-      final updatedSavedRecipes = _recipeService.savedRecipes;
-
-      emit(
-        state.copyWith(
-          recipes: updatedRecipes,
-          filteredRecipes: updatedFilteredRecipes,
-          pantryBasedRecipes: updatedPantryBasedRecipes,
-        ),
-      );
+      emit(state.copyWith(
+        status: RecipeStatus.error,
+        errorMessage: 'Failed to load category recipes: $e',
+      ));
     }
   }
 
@@ -326,5 +318,16 @@ class RecipeCubit extends Cubit<RecipeState> {
     debugPrint('🔄 RecipeCubit: Resetting filters');
     emit(state.copyWith(filteredRecipes: [], status: RecipeStatus.loaded));
     await initialize();
+  }
+
+  // Get liked/saved recipes
+  Future<void> getLikedRecipes() async {
+    try {
+      await _recipeService.fetchSavedRecipes();
+      final savedRecipes = _recipeService.savedRecipes;
+      emit(state.copyWith(savedRecipes: savedRecipes));
+    } catch (e) {
+      debugPrint('❌ Error fetching liked recipes: $e');
+    }
   }
 }
