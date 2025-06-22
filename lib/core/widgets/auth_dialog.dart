@@ -7,7 +7,11 @@ import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/auth/auth_state.dart';
 
 class AuthDialog {
-  static void showLoginDialog(BuildContext context) {
+  static void showLoginDialog(
+    BuildContext context, {
+    VoidCallback? onLoginSuccess,
+    String? redirectMessage,
+  }) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -20,8 +24,7 @@ class AuthDialog {
             builder:
                 (context, setState) => BlocBuilder<AuthCubit, AuthState>(
                   builder:
-                      (context, state) => AlertDialog(
-                        title: const Text('Masuk'),
+                      (context, state) => AlertDialog(                        title: const Text('Masuk'),
                         content: SizedBox(
                           width: double.maxFinite,
                           child: Form(
@@ -29,6 +32,39 @@ class AuthDialog {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                // Show redirect message if provided
+                                if (redirectMessage != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(AppSizes.paddingS),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.primary.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline,
+                                          color: AppColors.primary,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            redirectMessage,
+                                            style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSizes.marginM),
+                                ],
                                 TextFormField(
                                   controller: emailController,
                                   decoration: const InputDecoration(
@@ -152,14 +188,10 @@ class AuthDialog {
                                             .signIn(
                                               emailController.text.trim(),
                                               passwordController.text,
-                                            );
-
-                                        // Wait for the auth state to fully update
+                                            ); // Wait for the auth state to fully update
                                         await Future.delayed(
-                                          const Duration(milliseconds: 100),
-                                        );
-
-                                        if (success && context.mounted) {
+                                          const Duration(milliseconds: 200),
+                                        );                                        if (success && context.mounted) {
                                           Navigator.pop(context);
                                           ScaffoldMessenger.of(
                                             context,
@@ -169,6 +201,17 @@ class AuthDialog {
                                               backgroundColor: Colors.green,
                                             ),
                                           );
+
+                                          // Trigger a state update for any listening widgets
+                                          // This will help the upload screen to refresh
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 100),
+                                          );
+
+                                          // Call the success callback if provided
+                                          if (onLoginSuccess != null) {
+                                            onLoginSuccess();
+                                          }
                                         }
                                       }
                                     },

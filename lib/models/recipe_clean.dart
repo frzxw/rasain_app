@@ -12,7 +12,8 @@ class Recipe {
   final Map<String, dynamic>? nutritionInfo; // JSON format nutrition data
   final String? tips; // Cooking tips
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -51,7 +52,8 @@ class Recipe {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      slug: json['slug'] != null && json['slug'].toString().isNotEmpty
+      slug:
+          json['slug'] != null && json['slug'].toString().isNotEmpty
               ? json['slug']
               : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],

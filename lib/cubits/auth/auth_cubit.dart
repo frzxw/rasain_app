@@ -71,26 +71,13 @@ class AuthCubit extends Cubit<AuthState> {
         );
         return true;
       } else {
-        // Wait a bit more for the auth state to propagate
-        await Future.delayed(const Duration(milliseconds: 200));
-
-        if (_authService.isAuthenticated) {
-          emit(
-            state.copyWith(
-              user: _authService.currentUser,
-              status: AuthStatus.authenticated,
-            ),
-          );
-          return true;
-        } else {
-          emit(
-            state.copyWith(
-              status: AuthStatus.error,
-              errorMessage: _authService.error ?? "Login failed",
-            ),
-          );
-          return false;
-        }
+        emit(
+          state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: _authService.error ?? "Login failed",
+          ),
+        );
+        return false;
       }
     } catch (e) {
       emit(

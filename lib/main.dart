@@ -18,6 +18,7 @@ import 'debug_check.dart';
 import 'cubits/auth/auth_cubit.dart';
 import 'cubits/recipe/recipe_cubit.dart';
 import 'cubits/pantry/pantry_cubit.dart';
+import 'cubits/upload_recipe/upload_recipe_cubit.dart';
 import 'cubits/chat/chat_cubit.dart';
 import 'cubits/notification/notification_cubit.dart';
 import 'cubits/community/community_cubit.dart';
@@ -34,8 +35,7 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);
-  // Create service instances
+  ]); // Create service instances
   final themeService = ThemeService();
   final authService = AuthService();
   final recipeService = RecipeService();
@@ -65,7 +65,6 @@ void main() async {
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider.value(value: recipeService),
         ChangeNotifierProvider.value(value: pantryService),
-        ChangeNotifierProvider.value(value: chatService),
         ChangeNotifierProvider.value(value: notificationService),
         Provider.value(value: dataService),
 
@@ -80,8 +79,14 @@ void main() async {
             AuthListener(authService, authCubit);
             return authCubit;
           },
-        ),        BlocProvider(create: (context) => RecipeCubit(recipeService)),
-        BlocProvider(create: (context) => PantryCubit(pantryService, recipeService)),
+        ),
+        BlocProvider(create: (context) => RecipeCubit(recipeService)),
+        BlocProvider(
+          create: (context) => PantryCubit(pantryService, recipeService),
+        ),
+        BlocProvider(
+          create: (context) => UploadRecipeCubit(recipeService: recipeService),
+        ),
         BlocProvider(create: (context) => ChatCubit(chatService)),
         BlocProvider(
           create: (context) => NotificationCubit(notificationService),
