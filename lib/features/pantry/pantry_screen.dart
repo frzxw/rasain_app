@@ -152,10 +152,13 @@ class _PantryScreenState extends State<PantryScreen>
                     _buildBenefitItem(
                       icon: Icons.restaurant_menu_outlined,
                       text: 'Mendapatkan rekomendasi resep berdasarkan pantry Anda',
-                    ),
-                    _buildBenefitItem(
+                    ),                    _buildBenefitItem(
                       icon: Icons.analytics_outlined,
                       text: 'Melihat statistik penggunaan dan wawasan',
+                    ),
+                    _buildBenefitItem(
+                      icon: Icons.camera_alt_outlined,
+                      text: 'Memindai bahan makanan dengan kamera',
                     ),
                   ],
                 ),
