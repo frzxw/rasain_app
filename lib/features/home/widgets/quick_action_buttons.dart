@@ -143,10 +143,10 @@ class _QuickActionButtonsState extends State<QuickActionButtons>
                             scale: _scaleAnimations[1].value,
                             child: _buildCompactActionCard(
                               context: context,
-                              title: 'My Kitchen',
-                              icon: Icons.kitchen,
-                              color: AppColors.primary,
-                              onTap: () {
+                                title: 'Dapur Saya',
+                                icon: Icons.kitchen,
+                                color: AppColors.primary,
+                                onTap: () {
                                 _onButtonPressed(1);
                                 context.push('/pantry');
                               },
