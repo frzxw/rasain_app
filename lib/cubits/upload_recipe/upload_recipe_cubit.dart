@@ -25,7 +25,8 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
   }) async {
     emit(state.copyWith(status: UploadRecipeStatus.loading));
 
-    try {      // Upload to service using named parameters
+    try {
+      // Upload to service using named parameters
       final result = await _recipeService.createUserRecipe(
         name: name,
         description: description,

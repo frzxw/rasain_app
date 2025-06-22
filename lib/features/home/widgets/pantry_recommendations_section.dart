@@ -20,11 +20,7 @@ class PantryRecommendationsSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
           child: Row(
             children: [
-              Icon(
-                Icons.kitchen,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              Icon(Icons.kitchen, color: AppColors.primary, size: 24),
               const SizedBox(width: AppSizes.marginS),
               Expanded(
                 child: Column(
@@ -63,22 +59,25 @@ class PantryRecommendationsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSizes.marginM),
-        
+
         // Pantry-based recipes
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
-            if (state.status == RecipeStatus.loading && state.pantryBasedRecipes.isEmpty) {
+            if (state.status == RecipeStatus.loading &&
+                state.pantryBasedRecipes.isEmpty) {
               return _buildLoadingWidget();
             } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(state.errorMessage ?? 'Error loading pantry recipes');
+              return _buildErrorWidget(
+                state.errorMessage ?? 'Error loading pantry recipes',
+              );
             }
-            
+
             final pantryRecipes = state.pantryBasedRecipes;
-            
+
             if (pantryRecipes.isEmpty) {
               return _buildEmptyWidget();
             }
-            
+
             return _buildRecipesList(pantryRecipes);
           },
         ),
@@ -121,18 +120,11 @@ class PantryRecommendationsSection extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              color: Colors.red[400],
-              size: 32,
-            ),
+            Icon(Icons.error_outline, color: Colors.red[400], size: 32),
             const SizedBox(height: AppSizes.marginS),
             Text(
               message,
-              style: TextStyle(
-                color: Colors.red[700],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.red[700], fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],
@@ -163,10 +155,7 @@ class PantryRecommendationsSection extends StatelessWidget {
             const SizedBox(height: AppSizes.marginS),
             Text(
               'Tambahkan bahan ke pantry untuk mendapatkan rekomendasi resep',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],

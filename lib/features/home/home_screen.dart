@@ -39,10 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   bool _isSearching = false;
   bool _isImageSearching = false;
-
   // Filter state
   RangeValues _priceRange = const RangeValues(0, 100000);
   RangeValues _timeRange = const RangeValues(0, 180);
+  String? _selectedDifficultyLevel;
+  List<String> _availableDifficultyLevels = [];
   bool _hasActiveFilters = false;
 
   @override
@@ -541,10 +542,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return FilterRecipeWidget(
+      builder: (BuildContext context) {        return FilterRecipeWidget(
           priceRange: _priceRange,
           timeRange: _timeRange,
+          selectedDifficultyLevel: _selectedDifficultyLevel,
+          availableDifficultyLevels: _availableDifficultyLevels,
           onPriceRangeChanged: (RangeValues range) {
             setState(() {
               _priceRange = range;
@@ -555,21 +557,26 @@ class _HomeScreenState extends State<HomeScreen> {
               _timeRange = range;
             });
           },
+          onDifficultyLevelChanged: (String? level) {
+            setState(() {
+              _selectedDifficultyLevel = level;
+            });
+          },
           onApplyFilters: _applyFilters,
           onResetFilters: _resetFilters,
         );
       },
     );
   }
-
   void _applyFilters() {
     // Check if filters are different from default values
     final bool hasPriceFilter =
         _priceRange.start > 0 || _priceRange.end < 100000;
     final bool hasTimeFilter = _timeRange.start > 0 || _timeRange.end < 180;
+    final bool hasDifficultyFilter = _selectedDifficultyLevel != null;
 
     setState(() {
-      _hasActiveFilters = hasPriceFilter || hasTimeFilter;
+      _hasActiveFilters = hasPriceFilter || hasTimeFilter || hasDifficultyFilter;
       _isSearching = false;
       _searchController.clear();
     });
@@ -578,19 +585,22 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<RecipeCubit>().filterRecipes(
       priceRange: hasPriceFilter ? _priceRange : null,
       timeRange: hasTimeFilter ? _timeRange : null,
+      difficultyLevel: _selectedDifficultyLevel,
       category: _selectedCategory != 'All' ? _selectedCategory : null,
     );
   }
-
   void _resetFilters() {
     setState(() {
       _priceRange = const RangeValues(0, 100000);
       _timeRange = const RangeValues(0, 180);
+      _selectedDifficultyLevel = null;
       _hasActiveFilters = false;
       _isSearching = false;
       _searchController.clear();
       _selectedCategory = 'All';
-    });    // Reload initial data
+    });
+
+    // Reload initial data
     context.read<RecipeCubit>().initialize();
     // Also refresh pantry-based recipes
     context.read<RecipeCubit>().fetchPantryBasedRecipes();
