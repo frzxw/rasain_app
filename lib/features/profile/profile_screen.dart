@@ -42,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: const CustomAppBar(
-        title: 'Profile',
+        title: 'Profil',
         showNotification: true,
       ),
       body: BlocBuilder<AuthCubit, AuthState>(
