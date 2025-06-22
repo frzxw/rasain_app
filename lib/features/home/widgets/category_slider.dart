@@ -30,7 +30,8 @@ class CategorySlider extends StatelessWidget {
           return Container(
             margin: EdgeInsets.only(
               right: index < allCategories.length - 1 ? AppSizes.marginS : 0,
-            ),            child: ChoiceChip(
+            ),
+            child: ChoiceChip(
               label: Text(category == 'All' ? 'Semua' : category),
               selected: isSelected,
               onSelected: (selected) {
