@@ -21,12 +21,23 @@ class FavoriteService extends ChangeNotifier {
     return _favoriteRecipeIds.contains(recipeId);
   }
 
-  // Initialize and load user's favorites
+  // Initialize favorite service
   Future<void> initialize() async {
-    final user = _supabase.auth.currentUser;
-    if (user != null) {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      debugPrint('🚀 Initializing FavoriteService...');
       await loadUserFavorites();
+      debugPrint('✅ FavoriteService initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Error initializing FavoriteService: $e');
+      _error = 'Failed to initialize favorites: $e';
     }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   // Load user's favorite recipe IDs
@@ -46,12 +57,11 @@ class FavoriteService extends ChangeNotifier {
 
       debugPrint('📋 Loading favorite recipes for user: ${user.id}');
 
-      // Get favorite recipe IDs
+      // Get favorite recipe IDs from saved_recipes table
       final response = await _supabase
-          .from('user_favorites')
+          .from('saved_recipes')
           .select('recipe_id')
-          .eq('user_id', user.id)
-          .order('created_at', ascending: false);
+          .eq('user_id', user.id);
 
       _favoriteRecipeIds =
           (response as List)
@@ -108,17 +118,18 @@ class FavoriteService extends ChangeNotifier {
       return false;
     }
 
+    // Check if already in favorites list
     if (_favoriteRecipeIds.contains(recipeId)) {
+      debugPrint('✅ Recipe already in favorites: $recipeId');
       return true; // Already favorite
     }
 
     try {
       debugPrint('❤️ Adding recipe to favorites: $recipeId');
 
-      await _supabase.from('user_favorites').insert({
+      await _supabase.from('saved_recipes').insert({
         'user_id': user.id,
         'recipe_id': recipeId,
-        'created_at': DateTime.now().toIso8601String(),
       });
 
       _favoriteRecipeIds.add(recipeId);
@@ -131,8 +142,8 @@ class FavoriteService extends ChangeNotifier {
       debugPrint('✅ Recipe added to favorites successfully');
       return true;
     } catch (e) {
-      _error = 'Failed to add to favorites: $e';
       debugPrint('❌ Error adding to favorites: $e');
+      _error = 'Failed to add to favorites: $e';
       notifyListeners();
       return false;
     }
@@ -155,7 +166,7 @@ class FavoriteService extends ChangeNotifier {
       debugPrint('💔 Removing recipe from favorites: $recipeId');
 
       await _supabase
-          .from('user_favorites')
+          .from('saved_recipes')
           .delete()
           .eq('user_id', user.id)
           .eq('recipe_id', recipeId);
@@ -177,10 +188,32 @@ class FavoriteService extends ChangeNotifier {
 
   // Toggle favorite status
   Future<bool> toggleFavorite(String recipeId) async {
-    if (isFavorite(recipeId)) {
-      return await removeFromFavorites(recipeId);
-    } else {
-      return await addToFavorites(recipeId);
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      _error = 'Please login to manage favorites';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final isCurrentlyFavorite = _favoriteRecipeIds.contains(recipeId);
+      
+      if (isCurrentlyFavorite) {
+        // Remove from favorites
+        debugPrint('💔 Removing recipe from favorites: $recipeId');
+        final success = await removeFromFavorites(recipeId);
+        return success;
+      } else {
+        // Add to favorites
+        debugPrint('❤️ Adding recipe to favorites: $recipeId');
+        final success = await addToFavorites(recipeId);
+        return success;
+      }
+    } catch (e) {
+      debugPrint('❌ Error toggling favorite: $e');
+      _error = 'Failed to toggle favorite: $e';
+      notifyListeners();
+      return false;
     }
   }
 

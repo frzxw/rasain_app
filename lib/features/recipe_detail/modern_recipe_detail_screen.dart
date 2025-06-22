@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/colors.dart';
 import '../../services/recipe_service.dart';
+import '../../cubits/notification/notification_cubit.dart';
+import '../../cubits/recipe/recipe_cubit.dart';
 import 'widgets/modern_ingredient_list.dart';
 import 'widgets/modern_instruction_steps_fixed.dart' as fixed;
 import 'widgets/review_section.dart';
@@ -103,6 +106,48 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen>
                       }
                     },
                   ),
+                  actions: [
+                    // Enhanced Bookmark Button with Animation
+                    Consumer<RecipeService>(
+                      builder: (context, recipeService, child) {
+                        final currentRecipe = recipeService.currentRecipe;
+                        final isSaved = currentRecipe?.isSaved ?? false;
+                        
+                        return IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isSaved
+                                  ? AppColors.highlight.withOpacity(0.2)
+                                  : Colors.black38,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              isSaved ? Icons.bookmark : Icons.bookmark_border,
+                              color: isSaved ? AppColors.highlight : Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          onPressed: () async {
+                            final wasSaved = isSaved;
+                            await recipeService.toggleSaveRecipe(recipe.id);
+                            
+                            // Trigger notification
+                            final notificationCubit = context.read<NotificationCubit>();
+                            if (!wasSaved) {
+                              await notificationCubit.notifyRecipeSaved(recipe.name, context: context, recipeId: recipe.id);
+                            } else {
+                              await notificationCubit.notifyRecipeRemoved(recipe.name, context: context, recipeId: recipe.id);
+                            }
+                            
+                            // Refresh saved recipes in RecipeCubit to update profile page
+                            context.read<RecipeCubit>().getLikedRecipes();
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,

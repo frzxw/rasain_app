@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
+import '../../../services/recipe_service.dart';
+import '../../../cubits/notification/notification_cubit.dart';
 import '../../../services/favorite_service.dart';
+import '../../../services/notification_service.dart';
+import '../../../cubits/notification/notification_state.dart';
+import '../../../core/constants/assets.dart';
+import '../../../cubits/recipe/recipe_cubit.dart';
 
 class TrendingRecipeCard extends StatefulWidget {
   final Recipe recipe;
@@ -23,9 +31,10 @@ class _TrendingRecipeCardState extends State<TrendingRecipeCard>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _hoverScale;
 
-  final FavoriteService _favoriteService = FavoriteService();
-  bool _isFavorited = false;
-  bool _isLoadingFavorite = false;
+  final RecipeService _recipeService = RecipeService();
+  late FavoriteService _favoriteService;
+  late NotificationService _notificationService;
+  late NotificationCubit _notificationCubit;
 
   bool _isHovered = false;
   @override
@@ -62,55 +71,9 @@ class _TrendingRecipeCardState extends State<TrendingRecipeCard>
     );
 
     _controller.forward();
-    _checkIfFavorited();
-  }
-
-  Future<void> _checkIfFavorited() async {
-    try {
-      setState(() {
-        _isFavorited = _favoriteService.isFavorite(widget.recipe.id);
-      });
-    } catch (e) {
-      print('❌ Error checking favorite status: $e');
-    }
-  }
-
-  Future<void> _toggleFavorite() async {
-    if (_isLoadingFavorite) return;
-
-    setState(() {
-      _isLoadingFavorite = true;
-    });
-
-    try {
-      await _favoriteService.toggleFavorite(widget.recipe.id);
-      setState(() {
-        _isFavorited = !_isFavorited;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isFavorited
-                ? '❤️ Ditambahkan ke favorit'
-                : '💔 Dihapus dari favorit',
-          ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: _isFavorited ? AppColors.success : AppColors.error,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoadingFavorite = false;
-      });
-    }
+    _favoriteService = Provider.of<FavoriteService>(context, listen: false);
+    _notificationService = Provider.of<NotificationService>(context, listen: false);
+    _notificationCubit = NotificationCubit(_notificationService);
   }
 
   @override
@@ -357,45 +320,66 @@ class _TrendingRecipeCardState extends State<TrendingRecipeCard>
   }
 
   Widget _buildFavoriteButton() {
-    return GestureDetector(
-      onTap: _toggleFavorite,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(AppSizes.paddingS),
-        decoration: BoxDecoration(
-          color: _isFavorited ? AppColors.primary : Colors.grey.shade100,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: _isFavorited ? AppColors.primary : Colors.grey.shade300,
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (_isFavorited ? AppColors.primary : Colors.grey)
-                  .withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child:
-            _isLoadingFavorite
-                ? SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      _isFavorited ? Colors.white : AppColors.primary,
+    return Consumer<FavoriteService>(
+      builder: (context, favoriteService, _) {
+        final isSaved = favoriteService.isFavorite(widget.recipe.id);
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isHeartHovered = false;
+            
+            return MouseRegion(
+              onEnter: (_) => setState(() => isHeartHovered = true),
+              onExit: (_) => setState(() => isHeartHovered = false),
+              child: GestureDetector(
+                onTap: () async {
+                  final wasSaved = isSaved;
+                  final success = await favoriteService.toggleFavorite(widget.recipe.id);
+                  if (success) {
+                    // Get the notification cubit from the context
+                    final notificationCubit = context.read<NotificationCubit>();
+                    if (!wasSaved) {
+                      await notificationCubit.notifyRecipeSaved(widget.recipe.name, context: context, recipeId: widget.recipe.id);
+                    } else {
+                      await notificationCubit.notifyRecipeRemoved(widget.recipe.name, context: context, recipeId: widget.recipe.id);
+                    }
+                    
+                    // Refresh saved recipes in RecipeCubit to update profile page
+                    context.read<RecipeCubit>().getLikedRecipes();
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(AppSizes.paddingS),
+                  decoration: BoxDecoration(
+                    color: isSaved ? AppColors.primary : (isHeartHovered ? Colors.grey.shade200 : Colors.grey.shade100),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSaved ? AppColors.primary : (isHeartHovered ? Colors.grey.shade400 : Colors.grey.shade300),
+                      width: isHeartHovered ? 2 : 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isSaved ? AppColors.primary : Colors.grey)
+                            .withOpacity(isHeartHovered ? 0.3 : 0.2),
+                        blurRadius: isHeartHovered ? 12 : 8,
+                        offset: Offset(0, isHeartHovered ? 4 : 2),
+                      ),
+                    ],
+                  ),
+                  child: Transform.scale(
+                    scale: isHeartHovered ? 1.1 : 1.0,
+                    child: Icon(
+                      isSaved ? Icons.favorite : Icons.favorite_border,
+                      color: isSaved ? Colors.white : (isHeartHovered ? Colors.grey.shade700 : Colors.grey.shade600),
+                      size: 16,
                     ),
                   ),
-                )
-                : Icon(
-                  _isFavorited ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavorited ? Colors.white : Colors.grey.shade600,
-                  size: 16,
                 ),
-      ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

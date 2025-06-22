@@ -161,7 +161,7 @@ class RecipeCubit extends Cubit<RecipeState> {
     try {
       await _recipeService.fetchSavedRecipes();
       final recipes = _recipeService.savedRecipes;
-      emit(state.copyWith(likedRecipes: recipes, status: RecipeStatus.loaded));
+      emit(state.copyWith(savedRecipes: recipes, status: RecipeStatus.loaded));
     } catch (e) {
       emit(
         state.copyWith(status: RecipeStatus.error, errorMessage: e.toString()),
@@ -221,11 +221,16 @@ class RecipeCubit extends Cubit<RecipeState> {
             return recipe;
           }).toList();
 
+      // Refresh saved recipes to update the profile page
+      await _recipeService.fetchSavedRecipes();
+      final updatedSavedRecipes = _recipeService.savedRecipes;
+
       emit(
         state.copyWith(
           recipes: updatedRecipes,
           filteredRecipes: updatedFilteredRecipes,
           pantryBasedRecipes: updatedPantryBasedRecipes,
+          savedRecipes: updatedSavedRecipes,
         ),
       );
     } catch (e) {

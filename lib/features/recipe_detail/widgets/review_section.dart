@@ -7,6 +7,7 @@ import '../../../models/recipe.dart';
 import '../../../services/recipe_service.dart';
 import '../../../cubits/auth/auth_cubit.dart';
 import '../../../cubits/auth/auth_state.dart';
+import '../../../cubits/notification/notification_cubit.dart';
 
 class ReviewSection extends StatefulWidget {
   final Recipe recipe;
@@ -689,8 +690,18 @@ class _ReviewSectionState extends State<ReviewSection> {
 
       if (!success) {
         throw Exception('Gagal mengirim ulasan');
-      } // Call the callback to rate the recipe (for updating local state)
+      }
+
+      // Call the callback to rate the recipe (for updating local state)
       widget.onRateRecipe(_userRating, _reviewController.text.trim());
+
+      // Trigger notification
+      final notificationCubit = context.read<NotificationCubit>();
+      if (_reviewController.text.trim().isNotEmpty) {
+        await notificationCubit.notifyReviewSubmitted(widget.recipe.name, context: context, recipeId: widget.recipe.id);
+      } else {
+        await notificationCubit.notifyRatingSubmitted(widget.recipe.name, _userRating, context: context, recipeId: widget.recipe.id);
+      }
 
       // Reload reviews to show the new/updated one
       await _loadReviews();

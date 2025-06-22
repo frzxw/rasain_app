@@ -8,6 +8,7 @@ import 'services/recipe_service.dart';
 import 'services/pantry_service.dart';
 import 'services/chat_service.dart';
 import 'services/notification_service.dart';
+import 'services/favorite_service.dart';
 import 'core/theme/theme_service.dart';
 import 'core/config/supabase_config.dart';
 import 'core/config/auth_listener.dart';
@@ -43,9 +44,16 @@ void main() async {
   final chatService = ChatService();
   final notificationService = NotificationService();
   final dataService = DataService();
+  final favoriteService = FavoriteService();
+
+  // Connect services
+  authService.setNotificationService(notificationService);
 
   // Initialize recipe service to ensure slugs are properly set
   await recipeService.initializeService();
+
+  // Initialize favorite service
+  await favoriteService.initialize();
 
   // Set system UI overlay style for light mode
   SystemChrome.setSystemUIOverlayStyle(
@@ -66,6 +74,7 @@ void main() async {
         ChangeNotifierProvider.value(value: recipeService),
         ChangeNotifierProvider.value(value: pantryService),
         ChangeNotifierProvider.value(value: notificationService),
+        ChangeNotifierProvider.value(value: favoriteService),
         Provider.value(value: dataService),
 
         // BloC/Cubit providers

@@ -62,6 +62,7 @@ class _PantryScreenState extends State<PantryScreen>
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
         title: 'Smart Pantry',
+        showNotification: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.analytics_outlined),

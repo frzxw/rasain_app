@@ -23,6 +23,7 @@ import 'widgets/modern_search_bar.dart';
 import 'widgets/section_header.dart';
 import 'widgets/loading_state.dart';
 import 'widgets/empty_state.dart';
+import '../../core/widgets/notification_icon.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -227,6 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
       pinned: false,
       snap: true,
       expandedHeight: 200,
+      actions: [
+        // Removed notification icon from here
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Column(
           children: [
@@ -245,6 +249,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
+              actions: [
+                // Notification Icon styled to match filter icon
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: NotificationIcon(
+                    iconColor: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
 
             // Category Slider

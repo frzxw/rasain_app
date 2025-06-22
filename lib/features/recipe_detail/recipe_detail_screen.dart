@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../services/recipe_service.dart';
+import '../../cubits/notification/notification_cubit.dart';
 import '../../models/recipe.dart';
 import 'widgets/ingredient_list.dart';
 import 'widgets/instruction_steps.dart';
@@ -133,7 +135,18 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   size: 20,
                 ),
               ),
-              onPressed: () => recipeService.toggleSaveRecipe(recipe.id),
+              onPressed: () async {
+                final wasSaved = recipe.isSaved;
+                await recipeService.toggleSaveRecipe(recipe.id);
+                
+                // Trigger notification
+                final notificationCubit = context.read<NotificationCubit>();
+                if (!wasSaved) {
+                  await notificationCubit.notifyRecipeSaved(recipe.name, context: context, recipeId: recipe.id);
+                } else {
+                  await notificationCubit.notifyRecipeRemoved(recipe.name, context: context, recipeId: recipe.id);
+                }
+              },
             ),
             const SizedBox(width: 12),
           ],

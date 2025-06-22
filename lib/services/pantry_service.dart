@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/pantry_item.dart';
 import '../models/recipe.dart';
 import 'data_service.dart';
+import 'notification_service.dart';
 
 class PantryService extends ChangeNotifier {
   final DataService _dataService = DataService();
+  final NotificationService _notificationService = NotificationService();
 
   List<PantryItem> _pantryItems = [];
   List<String> _kitchenTools = [];
@@ -92,6 +94,9 @@ class PantryService extends ChangeNotifier {
 
         // Refresh suggested recipes
         await fetchSuggestedRecipes();
+
+        // Trigger notification
+        await _notificationService.notifyPantryItemAdded(newItem.name, itemId: newItem.id);
       } else {
         debugPrint('❌ PantryService: Failed to add item - newItem is null');
         _setError('Failed to add pantry item - response was null');
@@ -139,11 +144,17 @@ class PantryService extends ChangeNotifier {
       final success = await _dataService.deletePantryItem(itemId);
 
       if (success) {
+        // Get the item name before removing it
+        final itemName = _pantryItems.firstWhere((item) => item.id == itemId).name;
+        
         _pantryItems.removeWhere((item) => item.id == itemId);
         notifyListeners();
 
         // Refresh suggested recipes
         await fetchSuggestedRecipes();
+        
+        // Trigger notification
+        await _notificationService.notifyPantryItemRemoved(itemName, itemId: itemId);
       } else {
         _setError('Failed to delete pantry item');
       }

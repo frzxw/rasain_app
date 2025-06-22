@@ -6,12 +6,14 @@ import 'dart:convert';
 import '../models/notification.dart';
 import '../models/pantry_item.dart';
 import '../models/recipe.dart';
+import 'auth_service.dart';
 
 class NotificationService extends ChangeNotifier {
   final List<AppNotification> _notifications = [];
   bool _isLoading = false;
   bool _hasNewNotifications = false;
   Timer? _checkExpirationTimer;
+  String? _currentUserId;
   
   // Getters
   List<AppNotification> get notifications => _notifications;
@@ -28,8 +30,8 @@ class NotificationService extends ChangeNotifier {
       await _loadNotifications();
       _startExpirationCheck();
       
-      // Add some sample notifications for demo purposes
-      if (_notifications.isEmpty) {
+      // Add some sample notifications for demo purposes only if user is logged in
+      if (_notifications.isEmpty && _currentUserId != null) {
         _addSampleNotifications();
       }
     } catch (e) {
@@ -39,12 +41,28 @@ class NotificationService extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  // Set current user ID and load their notifications
+  Future<void> setCurrentUser(String? userId) async {
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      
+      if (userId == null) {
+        // User logged out, clear notifications
+        await clearAll();
+      } else {
+        // User logged in, load their notifications
+        await _loadNotifications();
+      }
+    }
+  }
   
   // Load notifications from storage
   Future<void> _loadNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final notificationsJson = prefs.getStringList('notifications') ?? [];
+      final key = _currentUserId != null ? 'notifications_$_currentUserId' : 'notifications_guest';
+      final notificationsJson = prefs.getStringList(key) ?? [];
       
       _notifications.clear();
       for (final json in notificationsJson) {
@@ -66,11 +84,12 @@ class NotificationService extends ChangeNotifier {
   Future<void> _saveNotifications() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final key = _currentUserId != null ? 'notifications_$_currentUserId' : 'notifications_guest';
       final notificationsJson = _notifications
           .map((notification) => jsonEncode(notification.toJson()))
           .toList();
       
-      await prefs.setStringList('notifications', notificationsJson);
+      await prefs.setStringList(key, notificationsJson);
     } catch (e) {
       debugPrint('Error saving notifications: $e');
     }
@@ -288,6 +307,66 @@ class NotificationService extends ChangeNotifier {
     
     final now = DateTime.now();
     return item.expirationDate!.difference(now).inDays;
+  }
+  
+  // Create notification for recipe saved
+  Future<void> notifyRecipeSaved(String recipeName, {String? recipeId}) async {
+    await addNotification(
+      title: 'Resep Disimpan',
+      message: '$recipeName telah ditambahkan ke daftar favorit Anda!',
+      type: NotificationType.recipeSaved,
+      relatedItemId: recipeId,
+    );
+  }
+
+  // Create notification for recipe removed from favorites
+  Future<void> notifyRecipeRemoved(String recipeName, {String? recipeId}) async {
+    await addNotification(
+      title: 'Resep Dihapus',
+      message: '$recipeName telah dihapus dari daftar favorit Anda.',
+      type: NotificationType.recipeRemoved,
+      relatedItemId: recipeId,
+    );
+  }
+
+  // Create notification for pantry item added
+  Future<void> notifyPantryItemAdded(String itemName, {String? itemId}) async {
+    await addNotification(
+      title: 'Bahan Ditambahkan',
+      message: '$itemName telah ditambahkan ke dapur Anda.',
+      type: NotificationType.pantryItemAdded,
+      relatedItemId: itemId,
+    );
+  }
+
+  // Create notification for pantry item removed
+  Future<void> notifyPantryItemRemoved(String itemName, {String? itemId}) async {
+    await addNotification(
+      title: 'Bahan Dihapus',
+      message: '$itemName telah dihapus dari dapur Anda.',
+      type: NotificationType.pantryItemRemoved,
+      relatedItemId: itemId,
+    );
+  }
+
+  // Create notification for review submitted
+  Future<void> notifyReviewSubmitted(String recipeName, {String? recipeId}) async {
+    await addNotification(
+      title: 'Ulasan Dikirim',
+      message: 'Terima kasih! Ulasan Anda untuk $recipeName telah berhasil dikirim.',
+      type: NotificationType.reviewSubmitted,
+      relatedItemId: recipeId,
+    );
+  }
+
+  // Create notification for rating submitted
+  Future<void> notifyRatingSubmitted(String recipeName, double rating, {String? recipeId}) async {
+    await addNotification(
+      title: 'Rating Dikirim',
+      message: 'Anda memberikan $rating bintang untuk $recipeName. Terima kasih!',
+      type: NotificationType.ratingSubmitted,
+      relatedItemId: recipeId,
+    );
   }
   
   @override

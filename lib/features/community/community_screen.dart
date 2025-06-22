@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/custom_button.dart';
+import '../../core/widgets/app_bar.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../cubits/community/community_state.dart';
@@ -36,20 +37,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(        title: const Text(
-          'Community',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),        backgroundColor: AppColors.primary,
+      appBar: CustomAppBar(
+        title: 'Community',
+        showNotification: true,
+        backgroundColor: AppColors.primary,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
       ),
       body: BlocConsumer<CommunityCubit, CommunityState>(
         listener: (context, state) {

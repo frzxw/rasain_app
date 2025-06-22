@@ -81,7 +81,6 @@ class RecipeService extends ChangeNotifier {
       await _supabaseService.client.from('saved_recipes').insert({
         'user_id': userId,
         'recipe_id': recipeId,
-        'saved_at': DateTime.now().toIso8601String(),
       });
 
       // Refresh saved recipes list
@@ -718,7 +717,6 @@ class RecipeService extends ChangeNotifier {
         await _supabaseService.client.from('saved_recipes').insert({
           'user_id': userId,
           'recipe_id': recipeId,
-          'saved_at': DateTime.now().toIso8601String(),
         });
       }
 
