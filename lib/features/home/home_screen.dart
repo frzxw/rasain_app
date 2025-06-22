@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../cubits/recipe/recipe_cubit.dart';
@@ -17,7 +16,6 @@ import 'widgets/filter_recipe_widget.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/quick_action_buttons.dart';
 import 'widgets/modern_stats_cards.dart';
-import 'widgets/modern_floating_action_button.dart';
 import 'widgets/trending_recipes_section.dart';
 import 'widgets/modern_search_bar.dart';
 import 'widgets/section_header.dart';
@@ -194,43 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _handleImageSearch() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1000,
-      maxHeight: 1000,
-      imageQuality: 85,
-    );
-
-    if (image == null) return;
-
-    setState(() {
-      _isSearching = true;
-      _isImageSearching = true;
-    });
-
-    try {
-      final bytes = await image.readAsBytes();
-      await context.read<RecipeCubit>().searchRecipesByImage(bytes, image.name);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal memproses gambar. Silakan coba lagi.'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isImageSearching = false;
-        });
-      }
-    }
-  }
-
   void _applyFilters() async {
     // Check if filters are different from default values
     final bool hasPriceFilter =
@@ -319,8 +280,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        // Modern Floating Action Button
-        floatingActionButton: const ModernFloatingActionButton(),
       ),
     );
   }
@@ -344,23 +303,11 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _searchController,
               hasActiveFilters: _hasActiveFilters,
               onFilterTap: _showFilterDialog,
-              onCameraTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Fitur pencarian dengan kamera akan segera hadir!',
-                    ),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
               actions: [
                 // Notification Icon styled to match filter icon
                 Container(
                   margin: const EdgeInsets.only(right: 8),
-                  child: NotificationIcon(
-                    iconColor: AppColors.textSecondary,
-                  ),
+                  child: NotificationIcon(iconColor: AppColors.textSecondary),
                 ),
               ],
             ),

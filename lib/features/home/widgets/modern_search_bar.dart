@@ -6,7 +6,6 @@ class ModernSearchBar extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback? onFilterTap;
   final bool hasActiveFilters;
-  final VoidCallback? onCameraTap;
   final List<Widget>? actions;
 
   const ModernSearchBar({
@@ -14,7 +13,6 @@ class ModernSearchBar extends StatelessWidget {
     required this.controller,
     this.onFilterTap,
     this.hasActiveFilters = false,
-    this.onCameraTap,
     this.actions,
   });
   @override
@@ -69,14 +67,6 @@ class ModernSearchBar extends StatelessWidget {
               ),
             ),
           ),
-
-          // Camera Search Button
-          if (onCameraTap != null)
-            _buildActionButton(
-              icon: Icons.camera_alt,
-              onTap: onCameraTap!,
-              color: AppColors.success,
-            ),
 
           // Filter Button
           if (onFilterTap != null)
