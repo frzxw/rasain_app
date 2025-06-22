@@ -1694,9 +1694,10 @@ class RecipeService extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
-
   // Helper to toggle saved status across all recipe lists
   void _toggleRecipeSavedStatus(String recipeId, bool isSaved) {
+    debugPrint('🔄 _toggleRecipeSavedStatus: $recipeId, isSaved: $isSaved');
+    
     void updateList(List<Recipe> list) {
       for (int i = 0; i < list.length; i++) {
         if (list[i].id == recipeId) {
@@ -1708,7 +1709,7 @@ class RecipeService extends ChangeNotifier {
     updateList(_popularRecipes);
     updateList(_pantryRecipes);
     updateList(_whatsNewRecipes);
-    updateList(_recommendedRecipes); // Added this line
+    updateList(_recommendedRecipes);
 
     if (_currentRecipe != null && _currentRecipe!.id == recipeId) {
       _currentRecipe = _currentRecipe!.copyWith(isSaved: isSaved);
@@ -1718,23 +1719,35 @@ class RecipeService extends ChangeNotifier {
       // If we're saving a recipe, check if it exists in any list and add to saved
       Recipe? recipe;
 
-      for (final list in [_popularRecipes, _pantryRecipes, _whatsNewRecipes]) {
-        final found = list.firstWhere(
-          (r) => r.id == recipeId,
-          orElse: () => recipe!,
-        );
-
-        if (found.id == recipeId) {
+      // Search through all lists to find the recipe
+      for (final list in [_popularRecipes, _pantryRecipes, _whatsNewRecipes, _recommendedRecipes]) {
+        try {
+          final found = list.firstWhere((r) => r.id == recipeId);
           recipe = found;
+          debugPrint('   Found recipe in list: ${found.name}');
           break;
+        } catch (e) {
+          // Recipe not found in this list, continue searching
         }
       }
 
+      // If not found in any list, check current recipe
+      if (recipe == null && _currentRecipe != null && _currentRecipe!.id == recipeId) {
+        recipe = _currentRecipe;
+        debugPrint('   Found recipe as current recipe: ${recipe!.name}');
+      }
+
+      // Add to saved list if we found the recipe and it's not already saved
       if (recipe != null && !_savedRecipes.any((r) => r.id == recipeId)) {
         _savedRecipes.add(recipe.copyWith(isSaved: true));
+        debugPrint('   Added to saved recipes: ${recipe.name}');
+      } else if (recipe == null) {
+        debugPrint('❌ Recipe not found in any list for ID: $recipeId');
       }
     } else {
-      // If we're unsaving, remove from saved list      _savedRecipes.removeWhere((r) => r.id == recipeId);
+      // If we're unsaving, remove from saved list
+      _savedRecipes.removeWhere((r) => r.id == recipeId);
+      debugPrint('   Removed from saved recipes');
     }
   }
 
