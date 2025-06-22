@@ -89,9 +89,7 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
     } else {
       _selectedTimeIndex = -1; // Custom
     }
-  }
-
-  @override
+  }  @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
@@ -214,24 +212,19 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
           'Rentang Harga',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // Quick Price Selection Buttons - Single Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildQuickSelectChip('Semua', 0, true),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('<10k', 1, true),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('10k-25k', 2, true),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('25k-50k', 3, true),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('50k+', 4, true),
-            ],
-          ),
+        // Quick Price Selection Buttons
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildQuickSelectChip('Semua', 0, true),
+            _buildQuickSelectChip('<10k', 1, true),
+            _buildQuickSelectChip('10k-25k', 2, true),
+            _buildQuickSelectChip('25k-50k', 3, true),
+            _buildQuickSelectChip('50k+', 4, true),
+          ],
         ),
         const SizedBox(height: 16),
 
@@ -295,24 +288,19 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
           'Waktu Memasak',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // Quick Time Selection Buttons - Single Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildQuickSelectChip('Semua', 0, false),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('<30 min', 1, false),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('30-60 min', 2, false),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('1-2 jam', 3, false),
-              const SizedBox(width: 8),
-              _buildQuickSelectChip('2+ jam', 4, false),
-            ],
-          ),
+        // Quick Time Selection Buttons
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildQuickSelectChip('Semua', 0, false),
+            _buildQuickSelectChip('<30 min', 1, false),
+            _buildQuickSelectChip('30-60 min', 2, false),
+            _buildQuickSelectChip('1-2 jam', 3, false),
+            _buildQuickSelectChip('2+ jam', 4, false),
+          ],
         ),
         const SizedBox(height: 16),
 
@@ -379,14 +367,10 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
         const SizedBox(height: 12),
 
         if (widget.availableDifficultyLevels.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text(
-              'Memuat tingkat kesulitan...',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          )
-        else
+          const Text(
+            'Memuat tingkat kesulitan...',
+            style: TextStyle(color: Colors.grey, fontSize: 14),
+          )        else
           // Single row for all difficulty options
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -404,7 +388,7 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
                   },
                 ),
                 const SizedBox(width: 8),
-
+                
                 // Available difficulty levels in a row
                 ...widget.availableDifficultyLevels.map((level) {
                   return Padding(
@@ -461,7 +445,7 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
     final bool isSelected =
         isPrice ? _selectedPriceIndex == index : _selectedTimeIndex == index;
 
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         setState(() {
           if (isPrice) {
