@@ -78,11 +78,22 @@ class RecipeCubit extends Cubit<RecipeState> {
 
   Future<void> toggleSavedRecipe(String recipeId) async {
     try {
+      debugPrint('🔄 RecipeCubit: Toggling saved status for recipe: $recipeId');
+
       // Toggle save status in the service
       await _recipeService.toggleSaveRecipe(recipeId);
 
-      // Get fresh data from the service
+      // Force refresh saved recipes from database to ensure latest data
+      debugPrint('🔄 RecipeCubit: Refreshing saved recipes after toggle...');
+      await _recipeService.fetchSavedRecipes();
       final savedRecipes = _recipeService.savedRecipes;
+
+      debugPrint(
+        '✅ RecipeCubit: Updated saved recipes count: ${savedRecipes.length}',
+      );
+      for (final recipe in savedRecipes) {
+        debugPrint('   - Saved: ${recipe.name} (ID: ${recipe.id})');
+      }
 
       // Update recipes list with new saved status, avoiding duplicates
       final Map<String, Recipe> updatedRecipeMap = {};
@@ -111,10 +122,21 @@ class RecipeCubit extends Cubit<RecipeState> {
         }
       }
 
-      final updatedRecipes = updatedRecipeMap.values.toList();
+      final updatedRecipes =
+          updatedRecipeMap.values
+              .toList(); // Also update currentRecipe if it's the one being toggled
+      if (_recipeService.currentRecipe?.id == recipeId) {
+        await _recipeService.fetchRecipeById(
+          recipeId,
+        ); // Refresh current recipe
+      }
 
       emit(state.copyWith(recipes: updatedRecipes, savedRecipes: savedRecipes));
+      debugPrint(
+        '🔄 RecipeCubit: State updated with ${savedRecipes.length} saved recipes',
+      );
     } catch (e) {
+      debugPrint('❌ RecipeCubit: Error toggling saved recipe: $e');
       emit(state.copyWith(errorMessage: e.toString()));
     }
   }
@@ -326,8 +348,10 @@ class RecipeCubit extends Cubit<RecipeState> {
   // Get liked/saved recipes
   Future<void> getLikedRecipes() async {
     try {
+      debugPrint('🔄 RecipeCubit: Fetching liked/saved recipes...');
       await _recipeService.fetchSavedRecipes();
       final savedRecipes = _recipeService.savedRecipes;
+      debugPrint('✅ RecipeCubit: Found ${savedRecipes.length} saved recipes');
       emit(state.copyWith(savedRecipes: savedRecipes));
     } catch (e) {
       debugPrint('❌ Error fetching liked recipes: $e');

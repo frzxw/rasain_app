@@ -6,6 +6,7 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../services/recipe_service.dart';
 import '../../cubits/notification/notification_cubit.dart';
+import '../../cubits/recipe/recipe_cubit.dart';
 import '../../models/recipe.dart';
 import 'widgets/ingredient_list.dart';
 import 'widgets/instruction_steps.dart';
@@ -137,14 +138,27 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               ),
               onPressed: () async {
                 final wasSaved = recipe.isSaved;
-                await recipeService.toggleSaveRecipe(recipe.id);
-                
+
+                // Use RecipeCubit instead of calling service directly
+                await context.read<RecipeCubit>().toggleSavedRecipe(recipe.id);
+
+                // Refresh liked recipes to ensure profile page is updated
+                await context.read<RecipeCubit>().getLikedRecipes();
+
                 // Trigger notification
                 final notificationCubit = context.read<NotificationCubit>();
                 if (!wasSaved) {
-                  await notificationCubit.notifyRecipeSaved(recipe.name, context: context, recipeId: recipe.id);
+                  await notificationCubit.notifyRecipeSaved(
+                    recipe.name,
+                    context: context,
+                    recipeId: recipe.id,
+                  );
                 } else {
-                  await notificationCubit.notifyRecipeRemoved(recipe.name, context: context, recipeId: recipe.id);
+                  await notificationCubit.notifyRecipeRemoved(
+                    recipe.name,
+                    context: context,
+                    recipeId: recipe.id,
+                  );
                 }
               },
             ),

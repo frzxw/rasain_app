@@ -51,12 +51,15 @@ class _RecipeCardState extends State<RecipeCard>
     _favoriteController.dispose();
     super.dispose();
   }
-  void _onFavoritePressed() {
+
+  void _onFavoritePressed() async {
     _favoriteController.forward().then((_) {
       _favoriteController.reverse();
     });
 
-    context.read<RecipeCubit>().toggleSavedRecipe(widget.recipe.id);
+    await context.read<RecipeCubit>().toggleSavedRecipe(widget.recipe.id);
+    // Refresh liked recipes to ensure profile page is updated
+    await context.read<RecipeCubit>().getLikedRecipes();
     widget.onFavoriteToggle?.call();
   }
 

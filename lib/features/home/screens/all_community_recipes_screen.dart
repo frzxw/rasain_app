@@ -24,7 +24,7 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
     'Terbaru',
     'Rating Tertinggi',
     'Tercepat',
-    'Populer'
+    'Populer',
   ];
   @override
   void initState() {
@@ -70,7 +70,7 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
         children: [
           // Filter chips
           _buildFilterChips(),
-          
+
           // Recipes grid
           Expanded(
             child: BlocBuilder<RecipeCubit, RecipeState>(
@@ -78,16 +78,18 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
                 if (state.status == RecipeStatus.loading) {
                   return _buildLoadingState();
                 }
-                  if (state.status == RecipeStatus.error) {
-                  return _buildErrorState(state.errorMessage ?? 'Terjadi kesalahan');
+                if (state.status == RecipeStatus.error) {
+                  return _buildErrorState(
+                    state.errorMessage ?? 'Terjadi kesalahan',
+                  );
                 }
-                
+
                 if (state.recipes.isEmpty) {
                   return _buildEmptyState();
                 }
 
                 final filteredRecipes = _filterRecipes(state.recipes);
-                
+
                 return _buildRecipesGrid(filteredRecipes);
               },
             ),
@@ -108,7 +110,7 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final isSelected = _selectedFilter == filter;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: AppSizes.marginS),
             child: FilterChip(
@@ -136,7 +138,8 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
     );
   }
 
-  Widget _buildRecipesGrid(List<Recipe> recipes) {    return RefreshIndicator(
+  Widget _buildRecipesGrid(List<Recipe> recipes) {
+    return RefreshIndicator(
       onRefresh: () async {
         context.read<RecipeCubit>().refreshAllRecipes();
       },
@@ -189,24 +192,26 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
                 height: 140,
                 width: double.infinity,
                 color: AppColors.surface,
-                child: recipe.imageUrl != null
-                    ? Image.network(
-                        recipe.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
+                child:
+                    recipe.imageUrl != null
+                        ? Image.network(
+                          recipe.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (_, __, ___) => const Icon(
+                                Icons.restaurant,
+                                color: AppColors.textSecondary,
+                                size: AppSizes.iconXL,
+                              ),
+                        )
+                        : const Icon(
                           Icons.restaurant,
                           color: AppColors.textSecondary,
                           size: AppSizes.iconXL,
                         ),
-                      )
-                    : const Icon(
-                        Icons.restaurant,
-                        color: AppColors.textSecondary,
-                        size: AppSizes.iconXL,
-                      ),
               ),
             ),
-            
+
             // Recipe Content
             Padding(
               padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -222,17 +227,13 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  
+
                   const SizedBox(height: AppSizes.marginS),
-                  
+
                   // Rating
                   Row(
                     children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 16,
-                      ),
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         recipe.rating.toStringAsFixed(1),
@@ -249,9 +250,9 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: AppSizes.marginS),
-                  
+
                   // Cook time and difficulty
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -271,7 +272,7 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
                             ),
                           ],
                         ),
-                      
+
                       if (recipe.difficultyLevel != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -316,7 +317,8 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
   }
 
   List<Recipe> _filterRecipes(List<Recipe> recipes) {
-    switch (_selectedFilter) {      case 'Terbaru':
+    switch (_selectedFilter) {
+      case 'Terbaru':
         // Since we don't have createdAt, sort by ID (assuming newer recipes have higher IDs)
         return recipes..sort((a, b) => b.id.compareTo(a.id));
       case 'Rating Tertinggi':
@@ -344,27 +346,24 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.error,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: AppColors.error),
           const SizedBox(height: AppSizes.marginM),
           Text(
             'Oops! Terjadi kesalahan',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSizes.marginS),
           Text(
             error,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppSizes.marginL),          ElevatedButton(
+          const SizedBox(height: AppSizes.marginL),
+          ElevatedButton(
             onPressed: () {
               context.read<RecipeCubit>().refreshAllRecipes();
             },
@@ -388,16 +387,16 @@ class _AllCommunityRecipesScreenState extends State<AllCommunityRecipesScreen> {
           const SizedBox(height: AppSizes.marginM),
           Text(
             'Belum ada resep',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSizes.marginS),
           Text(
             'Mulai berbagi resep favoritmu!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),

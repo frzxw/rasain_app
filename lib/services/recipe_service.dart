@@ -389,25 +389,69 @@ class RecipeService extends ChangeNotifier {
         notifyListeners();
         return;
       }
+      print('🔍 Fetching saved recipes for user: $userId');
       final response = await _supabaseService.client
           .from('saved_recipes')
           .select('recipe_id, recipes(*)')
           .eq('user_id', userId);
 
-      // Get saved recipes with ingredients from recipe_ingredients table
+      print('📥 Raw saved recipes response: ${response.length} items');
+      if (response.isNotEmpty) {
+        print('📋 All saved recipe IDs:');
+        for (int i = 0; i < response.length; i++) {
+          final item = response[i];
+          final recipeData = item['recipes'];
+          print(
+            '   [$i] ID: ${item['recipe_id']} - Name: ${recipeData?['name'] ?? 'NO NAME'}',
+          );
+        }
+        print('📋 Sample saved recipe: ${response.first}');
+      }
+
+      // Check specifically for Es Cendol Durian Medan
+      final cendolId = '176d34c6-f458-4dba-9b78-bf510aa7357d';
+      final cendolExists = response.any(
+        (item) => item['recipe_id'] == cendolId,
+      );
+      print(
+        '🍧 Es Cendol Durian check: exists in saved_recipes = $cendolExists',
+      ); // Get saved recipes with ingredients from recipe_ingredients table
       List<Recipe> savedRecipesWithIngredients = [];
-      for (final item in response) {
+      for (int i = 0; i < response.length; i++) {
+        final item = response[i];
         final recipeData = item['recipes'];
-        final ingredients = await getRecipeIngredients(recipeData['id']);
-        final recipeWithIngredients = Recipe.fromJson({
-          ...recipeData,
-          'is_saved': true,
-          'ingredients': ingredients,
-        });
-        savedRecipesWithIngredients.add(recipeWithIngredients);
+
+        if (recipeData == null) {
+          print(
+            '⚠️ Warning: No recipe data found for saved recipe ID: ${item['recipe_id']}',
+          );
+          continue;
+        }
+
+        print(
+          '🍽️ Processing saved recipe [$i]: ${recipeData['name']} (ID: ${recipeData['id']})',
+        );
+        print('   Image URL: ${recipeData['image_url']}');
+
+        try {
+          final ingredients = await getRecipeIngredients(recipeData['id']);
+          final recipeWithIngredients = Recipe.fromJson({
+            ...recipeData,
+            'is_saved': true,
+            'ingredients': ingredients,
+          });
+          savedRecipesWithIngredients.add(recipeWithIngredients);
+          print('✅ Successfully processed: ${recipeData['name']}');
+        } catch (e) {
+          print('❌ Error processing saved recipe ${recipeData['name']}: $e');
+        }
       }
 
       _savedRecipes = savedRecipesWithIngredients;
+      print('✅ Saved recipes loaded: ${_savedRecipes.length} recipes');
+      for (final recipe in _savedRecipes) {
+        print('   - ${recipe.name} (Has image: ${recipe.imageUrl != null})');
+      }
       notifyListeners();
     } catch (e) {
       _setError('Failed to load saved recipes: $e');
@@ -691,12 +735,14 @@ class RecipeService extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-  }
+  } // Save recipe
 
-  // Save recipe
   Future<void> toggleSaveRecipe(String recipeId) async {
     // Find if recipe is already saved
     final isSaved = _savedRecipes.any((r) => r.id == recipeId);
+    print(
+      '🔄 RecipeService: Toggling save for recipe $recipeId (currently saved: $isSaved)',
+    );
 
     try {
       // Toggle saved status on all instances of this recipe
@@ -709,20 +755,43 @@ class RecipeService extends ChangeNotifier {
         throw Exception('User not authenticated');
       }
 
+      print('👤 RecipeService: User ID: $userId');
+
       // Update on backend
       if (isSaved) {
-        await _supabaseService.client
+        print('🗑️ RecipeService: Removing recipe from saved_recipes table');
+        final deleteResult = await _supabaseService.client
             .from('saved_recipes')
             .delete()
             .eq('user_id', userId)
             .eq('recipe_id', recipeId);
+        print('🗑️ Delete result: $deleteResult');
       } else {
-        await _supabaseService.client.from('saved_recipes').insert({
-          'user_id': userId,
-          'recipe_id': recipeId,
-        });
+        print('💾 RecipeService: Adding recipe to saved_recipes table');
+        final insertResult =
+            await _supabaseService.client.from('saved_recipes').insert({
+              'user_id': userId,
+              'recipe_id': recipeId,
+            }).select();
+        print('💾 Insert result: $insertResult');
+
+        // Verify the insert was successful
+        final verifyInsert = await _supabaseService.client
+            .from('saved_recipes')
+            .select()
+            .eq('user_id', userId)
+            .eq('recipe_id', recipeId);
+        print(
+          '✅ Verification: Recipe $recipeId exists in saved_recipes: ${verifyInsert.isNotEmpty}',
+        );
+        if (verifyInsert.isNotEmpty) {
+          print('   Saved recipe data: ${verifyInsert.first}');
+        }
       }
 
+      print(
+        '✅ RecipeService: Database operation completed, refreshing saved recipes...',
+      );
       // Refresh saved recipes list
       await fetchSavedRecipes();
     } catch (e) {
@@ -1093,7 +1162,9 @@ class RecipeService extends ChangeNotifier {
       }
     }
 
-    return recipesWithDetails;  }  // Get reviews for a specific recipe from recipe_reviews table
+    return recipesWithDetails;
+  } // Get reviews for a specific recipe from recipe_reviews table
+
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
     try {
       // Use JOIN with user_profiles like community service does
@@ -1113,28 +1184,26 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');      return response
-          .map<Map<String, dynamic>>(
-            (review) {
-              // Extract user profile data from the JOIN
-              final userProfile = review['user_profiles'];
-              final userName = userProfile != null && userProfile['name'] != null
-                  ? userProfile['name'].toString()
-                  : 'User ${(review['user_id']?.toString() ?? '').length > 8 ? (review['user_id']?.toString() ?? '').substring(0, 8) : review['user_id']?.toString() ?? ''}';
-              final userImage = userProfile != null ? userProfile['image_url'] : null;
+      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');
+      return response.map<Map<String, dynamic>>((review) {
+        // Extract user profile data from the JOIN
+        final userProfile = review['user_profiles'];
+        final userName =
+            userProfile != null && userProfile['name'] != null
+                ? userProfile['name'].toString()
+                : 'User ${(review['user_id']?.toString() ?? '').length > 8 ? (review['user_id']?.toString() ?? '').substring(0, 8) : review['user_id']?.toString() ?? ''}';
+        final userImage = userProfile != null ? userProfile['image_url'] : null;
 
-              return {
-                'id': review['id']?.toString() ?? '',
-                'user_id': review['user_id']?.toString() ?? '',
-                'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-                'comment': review['comment']?.toString() ?? '',
-                'date': review['created_at']?.toString() ?? '',
-                'user_name': userName,
-                'user_image': userImage,
-              };
-            },
-          )
-          .toList();
+        return {
+          'id': review['id']?.toString() ?? '',
+          'user_id': review['user_id']?.toString() ?? '',
+          'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
+          'comment': review['comment']?.toString() ?? '',
+          'date': review['created_at']?.toString() ?? '',
+          'user_name': userName,
+          'user_image': userImage,
+        };
+      }).toList();
     } catch (e) {
       print('❌ Error fetching reviews for recipe $recipeId: $e');
       return [];

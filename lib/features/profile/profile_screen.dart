@@ -22,11 +22,14 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {  @override
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
   void initState() {
     super.initState();
+    print('🏠 ProfileScreen: initState - Initializing...');
     // Initialize data
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🏠 ProfileScreen: Post frame callback - Loading data...');
       // Check if user is authenticated
       context.read<AuthCubit>().initialize();
 
@@ -38,13 +41,22 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh saved recipes whenever we return to this screen
+    print(
+      '🔄 ProfileScreen: didChangeDependencies - Refreshing liked recipes...',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RecipeCubit>().getLikedRecipes();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const CustomAppBar(
-        title: 'Profile',
-        showNotification: true,
-      ),
+      appBar: const CustomAppBar(title: 'Profile', showNotification: true),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           final isAuthenticated = state.status == AuthStatus.authenticated;
@@ -66,7 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
     );
   }
 
-  Widget _buildAuthenticatedProfile(BuildContext context, UserProfile user) {    return RefreshIndicator(
+  Widget _buildAuthenticatedProfile(BuildContext context, UserProfile user) {
+    return RefreshIndicator(
       onRefresh: () async {
         await context.read<AuthCubit>().initialize();
         await context.read<RecipeCubit>().getLikedRecipes();
@@ -80,7 +93,11 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
             return Column(
               children: [
                 // Profile Header
-                _buildProfileHeader(context, user, recipeState.savedRecipes.length),
+                _buildProfileHeader(
+                  context,
+                  user,
+                  recipeState.savedRecipes.length,
+                ),
 
                 const SizedBox(height: AppSizes.marginL),
 
@@ -99,18 +116,30 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
                       Text(
                         '${recipeState.savedRecipes.length} tersimpan',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSizes.marginM),
-
-                // Saved Recipe List
+                const SizedBox(height: AppSizes.marginM), // Saved Recipe List
                 SavedRecipeList(
                   recipes: recipeState.savedRecipes,
                   isLoading: recipeState.status == RecipeStatus.loading,
+                  onRemoveFromFavorite: (recipeId) async {
+                    print(
+                      '🗑️ ProfileScreen: Removing recipe from favorites: $recipeId',
+                    );
+                    // Handle remove from favorite
+                    await context.read<RecipeCubit>().toggleSavedRecipe(
+                      recipeId,
+                    );
+                    print(
+                      '🔄 ProfileScreen: Refreshing saved recipes after removal...',
+                    );
+                    await context.read<RecipeCubit>().getLikedRecipes();
+                    print('✅ ProfileScreen: Saved recipes refresh completed');
+                  },
                 ),
 
                 const SizedBox(height: AppSizes.marginL),
@@ -121,7 +150,9 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
                   isLoading: recipeState.status == RecipeStatus.loading,
                 ),
 
-                const SizedBox(height: AppSizes.marginL),                // Settings and Profile Menu
+                const SizedBox(
+                  height: AppSizes.marginL,
+                ), // Settings and Profile Menu
                 ProfileMenu(
                   user: user,
                   onLogout: () async {
@@ -139,7 +170,10 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
   }
 
   Widget _buildProfileHeader(
-      BuildContext context, UserProfile user, int savedRecipesCount) {
+    BuildContext context,
+    UserProfile user,
+    int savedRecipesCount,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       child: Column(
@@ -152,20 +186,22 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
               shape: BoxShape.circle,
               color: AppColors.surface,
               border: Border.all(color: AppColors.primary, width: 2),
-              image: user.imageUrl != null
-                  ? DecorationImage(
-                      image: NetworkImage(user.imageUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+              image:
+                  user.imageUrl != null
+                      ? DecorationImage(
+                        image: NetworkImage(user.imageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                      : null,
             ),
-            child: user.imageUrl == null
-                ? const Icon(
-                    Icons.person,
-                    size: AppSizes.iconXL,
-                    color: AppColors.textSecondary,
-                  )
-                : null,
+            child:
+                user.imageUrl == null
+                    ? const Icon(
+                      Icons.person,
+                      size: AppSizes.iconXL,
+                      color: AppColors.textSecondary,
+                    )
+                    : null,
           ),
 
           const SizedBox(height: AppSizes.marginM), // User Name
@@ -198,8 +234,8 @@ class _ProfileScreenState extends State<ProfileScreen> {  @override
               child: Text(
                 user.email!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
 

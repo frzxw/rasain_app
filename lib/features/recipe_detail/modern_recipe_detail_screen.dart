@@ -112,36 +112,51 @@ class _ModernRecipeDetailScreenState extends State<ModernRecipeDetailScreen>
                       builder: (context, recipeService, child) {
                         final currentRecipe = recipeService.currentRecipe;
                         final isSaved = currentRecipe?.isSaved ?? false;
-                        
+
                         return IconButton(
                           icon: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isSaved
-                                  ? AppColors.highlight.withOpacity(0.2)
-                                  : Colors.black38,
+                              color:
+                                  isSaved
+                                      ? AppColors.highlight.withOpacity(0.2)
+                                      : Colors.black38,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               isSaved ? Icons.bookmark : Icons.bookmark_border,
-                              color: isSaved ? AppColors.highlight : Colors.white,
+                              color:
+                                  isSaved ? AppColors.highlight : Colors.white,
                               size: 20,
                             ),
                           ),
                           onPressed: () async {
                             final wasSaved = isSaved;
-                            await recipeService.toggleSaveRecipe(recipe.id);
-                            
+
+                            // Use RecipeCubit instead of calling service directly
+                            await context.read<RecipeCubit>().toggleSavedRecipe(
+                              recipe.id,
+                            );
+
+                            // Refresh liked recipes to ensure profile page is updated
+                            await context.read<RecipeCubit>().getLikedRecipes();
+
                             // Trigger notification
-                            final notificationCubit = context.read<NotificationCubit>();
+                            final notificationCubit =
+                                context.read<NotificationCubit>();
                             if (!wasSaved) {
-                              await notificationCubit.notifyRecipeSaved(recipe.name, context: context, recipeId: recipe.id);
+                              await notificationCubit.notifyRecipeSaved(
+                                recipe.name,
+                                context: context,
+                                recipeId: recipe.id,
+                              );
                             } else {
-                              await notificationCubit.notifyRecipeRemoved(recipe.name, context: context, recipeId: recipe.id);
+                              await notificationCubit.notifyRecipeRemoved(
+                                recipe.name,
+                                context: context,
+                                recipeId: recipe.id,
+                              );
                             }
-                            
-                            // Refresh saved recipes in RecipeCubit to update profile page
-                            context.read<RecipeCubit>().getLikedRecipes();
                           },
                         );
                       },
