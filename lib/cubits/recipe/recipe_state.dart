@@ -11,6 +11,7 @@ class RecipeState extends Equatable {
   final RecipeStatus status;
   final String? errorMessage;
   final Map<String, List<Recipe>> categoryRecipes;
+  final List<String> availableDifficultyLevels; // Added difficulty levels list
 
   const RecipeState({
     this.recipes = const [],
@@ -20,6 +21,7 @@ class RecipeState extends Equatable {
     this.status = RecipeStatus.initial,
     this.errorMessage,
     this.categoryRecipes = const {},
+    this.availableDifficultyLevels = const [], // Default empty list
   });
 
   RecipeState copyWith({
@@ -30,6 +32,8 @@ class RecipeState extends Equatable {
     RecipeStatus? status,
     String? errorMessage,
     Map<String, List<Recipe>>? categoryRecipes,
+    List<String>?
+    availableDifficultyLevels, // Added difficulty levels to copyWith
   }) {
     return RecipeState(
       recipes: recipes ?? this.recipes,
@@ -39,6 +43,9 @@ class RecipeState extends Equatable {
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       categoryRecipes: categoryRecipes ?? this.categoryRecipes,
+      availableDifficultyLevels:
+          availableDifficultyLevels ??
+          this.availableDifficultyLevels, // Handle difficulty levels
     );
   }
 
@@ -51,5 +58,6 @@ class RecipeState extends Equatable {
     status,
     errorMessage,
     categoryRecipes,
+    availableDifficultyLevels, // Added to props
   ];
 }

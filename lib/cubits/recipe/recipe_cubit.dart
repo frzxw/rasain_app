@@ -19,9 +19,8 @@ class RecipeCubit extends Cubit<RecipeState> {
       final popularRecipes = _recipeService.popularRecipes;
 
       // Get recommended recipes
-      final recommendedRecipes = _recipeService.recommendedRecipes;
-
-      // Get saved recipes
+      final recommendedRecipes =
+          _recipeService.recommendedRecipes; // Get saved recipes
       final savedRecipes = _recipeService.savedRecipes;
 
       // Get all recipes: combine different sources and remove duplicates by ID
@@ -51,13 +50,15 @@ class RecipeCubit extends Cubit<RecipeState> {
             categoryRecipeMap[category]![recipe.id] = recipe;
           }
         }
-      }
-
-      // Convert to final format
+      } // Convert to final format
       final Map<String, List<Recipe>> categoryRecipes = {};
       categoryRecipeMap.forEach((category, recipeMap) {
         categoryRecipes[category] = recipeMap.values.toList();
       });
+
+      // Get difficulty levels
+      final availableDifficultyLevels =
+          await _recipeService.getAvailableDifficultyLevels();
 
       emit(
         state.copyWith(
@@ -66,6 +67,8 @@ class RecipeCubit extends Cubit<RecipeState> {
           recommendedRecipes: recommendedRecipes,
           savedRecipes: savedRecipes,
           categoryRecipes: categoryRecipes,
+          availableDifficultyLevels:
+              availableDifficultyLevels, // Add difficulty levels to state
           status: RecipeStatus.loaded,
         ),
       );
@@ -185,14 +188,15 @@ class RecipeCubit extends Cubit<RecipeState> {
     }
   }
 
-  // Filter recipes by price and time
+  // Filter recipes by price, time, and difficulty level
   Future<void> filterRecipes({
     RangeValues? priceRange,
     RangeValues? timeRange,
     String? category,
+    String? difficultyLevel,
   }) async {
     debugPrint(
-      '🔍 RecipeCubit: Filtering recipes with price: $priceRange, time: $timeRange, category: $category',
+      '🔍 RecipeCubit: Filtering recipes with price: $priceRange, time: $timeRange, category: $category, difficulty: $difficultyLevel',
     );
     emit(state.copyWith(status: RecipeStatus.loading));
     try {
@@ -200,6 +204,7 @@ class RecipeCubit extends Cubit<RecipeState> {
         priceRange: priceRange,
         timeRange: timeRange,
         category: category,
+        difficultyLevel: difficultyLevel,
       );
       emit(
         state.copyWith(recipes: filteredRecipes, status: RecipeStatus.loaded),
@@ -229,5 +234,14 @@ class RecipeCubit extends Cubit<RecipeState> {
     final uniqueList = uniqueRecipes.values.toList();
     uniqueList.sort((a, b) => b.rating.compareTo(a.rating));
     return uniqueList;
+  }
+
+  // Get available difficulty levels from database
+  Future<List<String>> getDifficultyLevels() async {
+    try {
+      return await _recipeService.getAvailableDifficultyLevels();
+    } catch (e) {
+      return ['Mudah', 'Sedang', 'Sulit']; // Default fallback
+    }
   }
 }

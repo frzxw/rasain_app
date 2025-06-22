@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 
 class FilterRecipeWidget extends StatefulWidget {
   final RangeValues priceRange;
   final RangeValues timeRange;
+  final String? selectedDifficultyLevel;
+  final List<String> availableDifficultyLevels;
   final Function(RangeValues) onPriceRangeChanged;
   final Function(RangeValues) onTimeRangeChanged;
+  final Function(String?) onDifficultyLevelChanged;
   final VoidCallback onApplyFilters;
   final VoidCallback onResetFilters;
 
@@ -14,8 +16,11 @@ class FilterRecipeWidget extends StatefulWidget {
     super.key,
     required this.priceRange,
     required this.timeRange,
+    this.selectedDifficultyLevel,
+    this.availableDifficultyLevels = const [],
     required this.onPriceRangeChanged,
     required this.onTimeRangeChanged,
+    required this.onDifficultyLevelChanged,
     required this.onApplyFilters,
     required this.onResetFilters,
   });
@@ -32,9 +37,9 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
   // Time range constants (in minutes)
   static const double minTime = 0;
   static const double maxTime = 180; // 3 hours
-
   late RangeValues _currentPriceRange;
   late RangeValues _currentTimeRange;
+  String? _selectedDifficultyLevel;
 
   // Selected price range index for quick buttons
   int _selectedPriceIndex = 0;
@@ -46,6 +51,7 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
     super.initState();
     _currentPriceRange = widget.priceRange;
     _currentTimeRange = widget.timeRange;
+    _selectedDifficultyLevel = widget.selectedDifficultyLevel;
     _updateSelectedIndices();
   }
 
@@ -88,13 +94,15 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Handle bar
           Center(
@@ -127,11 +135,13 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
                         maxPrice,
                       );
                       _currentTimeRange = const RangeValues(minTime, maxTime);
+                      _selectedDifficultyLevel = null;
                       _selectedPriceIndex = 0;
                       _selectedTimeIndex = 0;
                     });
                     widget.onPriceRangeChanged(_currentPriceRange);
                     widget.onTimeRangeChanged(_currentTimeRange);
+                    widget.onDifficultyLevelChanged(null);
                   },
                   child: const Text(
                     'Reset',
@@ -143,46 +153,52 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
           ),
 
           // Content
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Price Filter Section
-                _buildPriceFilterSection(),
-                const SizedBox(height: 32),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Price Filter Section
+                  _buildPriceFilterSection(),
+                  const SizedBox(height: 32),
 
-                // Time Filter Section
-                _buildTimeFilterSection(),
-                const SizedBox(height: 32),
+                  // Time Filter Section
+                  _buildTimeFilterSection(),
+                  const SizedBox(height: 32),
 
-                // Apply Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      widget.onApplyFilters();
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Difficulty Level Filter Section
+                  _buildDifficultyFilterSection(),
+                  const SizedBox(height: 32),
+
+                  // Apply Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        widget.onApplyFilters();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Terapkan Filter',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'Terapkan Filter',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-              ],
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                ],
+              ),
             ),
           ),
         ],
@@ -198,19 +214,24 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
           'Rentang Harga',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        // Quick Price Selection Buttons
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildQuickSelectChip('Semua', 0, true),
-            _buildQuickSelectChip('<10k', 1, true),
-            _buildQuickSelectChip('10k-25k', 2, true),
-            _buildQuickSelectChip('25k-50k', 3, true),
-            _buildQuickSelectChip('50k+', 4, true),
-          ],
+        // Quick Price Selection Buttons - Single Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildQuickSelectChip('Semua', 0, true),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('<10k', 1, true),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('10k-25k', 2, true),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('25k-50k', 3, true),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('50k+', 4, true),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -274,19 +295,24 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
           'Waktu Memasak',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        // Quick Time Selection Buttons
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildQuickSelectChip('Semua', 0, false),
-            _buildQuickSelectChip('<30 min', 1, false),
-            _buildQuickSelectChip('30-60 min', 2, false),
-            _buildQuickSelectChip('1-2 jam', 3, false),
-            _buildQuickSelectChip('2+ jam', 4, false),
-          ],
+        // Quick Time Selection Buttons - Single Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildQuickSelectChip('Semua', 0, false),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('<30 min', 1, false),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('30-60 min', 2, false),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('1-2 jam', 3, false),
+              const SizedBox(width: 8),
+              _buildQuickSelectChip('2+ jam', 4, false),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -342,11 +368,100 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
     );
   }
 
+  Widget _buildDifficultyFilterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tingkat Kesulitan',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+
+        if (widget.availableDifficultyLevels.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              'Memuat tingkat kesulitan...',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          )
+        else
+          // Single row for all difficulty options
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // All option
+                _buildDifficultyChip(
+                  'Semua',
+                  _selectedDifficultyLevel == null,
+                  () {
+                    setState(() {
+                      _selectedDifficultyLevel = null;
+                    });
+                    widget.onDifficultyLevelChanged(null);
+                  },
+                ),
+                const SizedBox(width: 8),
+
+                // Available difficulty levels in a row
+                ...widget.availableDifficultyLevels.map((level) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _buildDifficultyChip(
+                      level,
+                      _selectedDifficultyLevel == level,
+                      () {
+                        setState(() {
+                          _selectedDifficultyLevel = level;
+                        });
+                        widget.onDifficultyLevelChanged(level);
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDifficultyChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.grey[300]!,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[700],
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickSelectChip(String label, int index, bool isPrice) {
     final bool isSelected =
         isPrice ? _selectedPriceIndex == index : _selectedTimeIndex == index;
 
-    return InkWell(
+    return GestureDetector(
       onTap: () {
         setState(() {
           if (isPrice) {

@@ -785,6 +785,61 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             ],
           ),
 
+          // Difficulty Level Section
+          if (recipe.difficultyLevel != null) ...[
+            const SizedBox(height: AppSizes.marginL),
+            Row(
+              children: [
+                Icon(Icons.speed_outlined, color: AppColors.primary, size: 20),
+                const SizedBox(width: AppSizes.marginS),
+                Text(
+                  'Tingkat Kesulitan',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.marginM),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingM,
+                vertical: AppSizes.paddingS,
+              ),
+              decoration: BoxDecoration(
+                color: _getDifficultyColor(
+                  recipe.difficultyLevel!,
+                ).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _getDifficultyColor(
+                    recipe.difficultyLevel!,
+                  ).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getDifficultyIcon(recipe.difficultyLevel!),
+                    color: _getDifficultyColor(recipe.difficultyLevel!),
+                    size: 18,
+                  ),
+                  const SizedBox(width: AppSizes.marginS),
+                  Text(
+                    recipe.difficultyLevel!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _getDifficultyColor(recipe.difficultyLevel!),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Enhanced Categories Section
           if (recipe.categories != null && recipe.categories!.isNotEmpty) ...[
             const SizedBox(height: AppSizes.marginL),
@@ -931,5 +986,32 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ),
       ),
     );
+  }
+
+  // Helper methods for difficulty level styling
+  Color _getDifficultyColor(String difficultyLevel) {
+    switch (difficultyLevel.toLowerCase()) {
+      case 'mudah':
+        return Colors.green;
+      case 'sedang':
+        return Colors.orange;
+      case 'sulit':
+        return Colors.red;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _getDifficultyIcon(String difficultyLevel) {
+    switch (difficultyLevel.toLowerCase()) {
+      case 'mudah':
+        return Icons.sentiment_satisfied;
+      case 'sedang':
+        return Icons.sentiment_neutral;
+      case 'sulit':
+        return Icons.sentiment_dissatisfied;
+      default:
+        return Icons.speed;
+    }
   }
 }

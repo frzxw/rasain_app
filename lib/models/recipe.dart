@@ -4,13 +4,16 @@ class Recipe {
   final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
-  final int reviewCount;  final int? estimatedCost;
+  final int reviewCount;
+  final int? estimatedCost;
   final int? cookTime;
   final int? servings;
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
+  final String? difficultyLevel; // Added difficulty level field
   final bool isSaved;
 
   Recipe({
@@ -27,6 +30,7 @@ class Recipe {
     this.instructions,
     this.description,
     this.categories,
+    this.difficultyLevel, // Added difficulty level parameter
     this.isSaved = false,
   });
   // Helper function to generate URL-friendly slug
@@ -38,31 +42,43 @@ class Recipe {
         .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
         .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
   }
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      slug: json['slug']?.isNotEmpty == true 
-          ? json['slug'] 
-          : generateSlug(json['name'] ?? ''), // Auto-generate if missing
+      slug:
+          json['slug']?.isNotEmpty == true
+              ? json['slug']
+              : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],      estimatedCost: json['estimated_cost'] as int?,
+      reviewCount: json['review_count'],
+      estimatedCost: json['estimated_cost'] as int?,
       cookTime: json['cook_time'] as int?,
       servings: json['servings'],
-      ingredients: json['ingredients'] != null ? 
-        List<Map<String, dynamic>>.from(json['ingredients']) : null,
-      instructions: json['instructions'] != null ?
-        (json['instructions'] is List<String> ?
-          // Convert string instructions to map format with only 'text' field
-          List<Map<String, dynamic>>.from(
-            (json['instructions'] as List).map((step) => {'text': step, 'videoUrl': null})
-          )
-          : List<Map<String, dynamic>>.from(json['instructions'])
-        ) : null,
+      ingredients:
+          json['ingredients'] != null
+              ? List<Map<String, dynamic>>.from(json['ingredients'])
+              : null,
+      instructions:
+          json['instructions'] != null
+              ? (json['instructions'] is List<String>
+                  ?
+                  // Convert string instructions to map format with only 'text' field
+                  List<Map<String, dynamic>>.from(
+                    (json['instructions'] as List).map(
+                      (step) => {'text': step, 'videoUrl': null},
+                    ),
+                  )
+                  : List<Map<String, dynamic>>.from(json['instructions']))
+              : null,
       description: json['description'],
-      categories: json['categories'] != null ?
-        List<String>.from(json['categories']) : null,
+      categories:
+          json['categories'] != null
+              ? List<String>.from(json['categories'])
+              : null,
+      difficultyLevel: json['difficulty_level'], // Parse difficulty level
       isSaved: json['is_saved'] ?? false,
     );
   }
@@ -81,6 +97,7 @@ class Recipe {
       'instructions': instructions,
       'description': description,
       'categories': categories,
+      'difficulty_level': difficultyLevel, // Include difficulty level in JSON
       'is_saved': isSaved,
     };
   }
@@ -92,13 +109,15 @@ class Recipe {
     String? slug,
     String? imageUrl,
     double? rating,
-    int? reviewCount,    int? estimatedCost,
+    int? reviewCount,
+    int? estimatedCost,
     int? cookTime,
     int? servings,
     List<Map<String, dynamic>>? ingredients,
     List<Map<String, dynamic>>? instructions,
     String? description,
     List<String>? categories,
+    String? difficultyLevel, // Added difficulty level to copyWith
     bool? isSaved,
   }) {
     return Recipe(
@@ -115,6 +134,8 @@ class Recipe {
       instructions: instructions ?? this.instructions,
       description: description ?? this.description,
       categories: categories ?? this.categories,
+      difficultyLevel:
+          difficultyLevel ?? this.difficultyLevel, // Handle difficulty level
       isSaved: isSaved ?? this.isSaved,
     );
   }
