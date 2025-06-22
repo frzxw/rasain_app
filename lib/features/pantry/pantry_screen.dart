@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
@@ -255,30 +256,52 @@ class _PantryScreenState extends State<PantryScreen>
               Tab(icon: Icon(Icons.restaurant_menu), text: 'Resep'),
               Tab(icon: Icon(Icons.analytics), text: 'Statistik'),
             ],
-          ),
-          // Tab content
-          Expanded(
-            child: BlocBuilder<PantryCubit, PantryState>(
-              builder: (context, state) {
-                if (state.status == PantryStatus.loading && state.items.isEmpty) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  );
+          ),          // Tab content
+          Expanded(            child: BlocListener<PantryCubit, PantryState>(
+              listener: (context, state) {
+                if (state.status == PantryStatus.error) {
+                  debugPrint('❌ PantryScreen: Error detected: ${state.errorMessage}');
+                  
+                  // Check if it's a duplicate item error
+                  if (state.errorMessage?.contains('sudah ada') == true) {
+                    _showDuplicateItemDialog(context, state.errorMessage!);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          state.errorMessage ?? 'Terjadi kesalahan saat menyimpan item pantry',
+                        ),
+                        backgroundColor: AppColors.error,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                } else if (state.status == PantryStatus.loaded) {
+                  debugPrint('✅ PantryScreen: State loaded, total items: ${state.items.length}');
                 }
-
-                return _showInputForm
-                    ? _buildInputForm()
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildPantryTab(state),
-                          _buildRecipesTab(state),
-                          _buildStatisticsTab(state),
-                        ],
-                      );
               },
+              child: BlocBuilder<PantryCubit, PantryState>(
+                builder: (context, state) {
+                  if (state.status == PantryStatus.loading && state.items.isEmpty) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    );
+                  }
+
+                  return _showInputForm
+                      ? _buildInputForm()
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildPantryTab(state),
+                            _buildRecipesTab(state),
+                            _buildStatisticsTab(state),
+                          ],
+                        );
+                },
+              ),
             ),
           ),
         ],
@@ -713,14 +736,30 @@ class _PantryScreenState extends State<PantryScreen>
         setState(() {
           _showInputForm = false;
         });
-      },
-      onSave: (PantryItem item) {
+      },      onSave: (PantryItem item) {
+        debugPrint('📝 PantryScreen: onSave called with item: ${item.name}');
+        debugPrint('🔍 PantryScreen: User authenticated: ${Supabase.instance.client.auth.currentUser?.id != null}');
+        
         final pantryCubit = context.read<PantryCubit>();
 
         if (_editingItem != null) {
+          debugPrint('🔄 PantryScreen: Updating existing item');
           pantryCubit.updatePantryItem(item);
         } else {
-          pantryCubit.addPantryItem(item);
+          debugPrint('➕ PantryScreen: Adding new item');
+          pantryCubit.addPantryItem(item).then((_) {
+            // Show success message if item was added successfully
+            final currentState = pantryCubit.state;
+            if (currentState.status == PantryStatus.loaded) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ ${item.name} berhasil ditambahkan ke pantry'),
+                  backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          });
         }
 
         setState(() {
@@ -831,6 +870,43 @@ class _PantryScreenState extends State<PantryScreen>
       SnackBar(
         content: Text('${item.name} ditandai telah digunakan'),
         backgroundColor: AppColors.success,
+      ),
+    );
+  }
+
+  void _showDuplicateItemDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Bahan Sudah Ada'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(errorMessage),
+            const SizedBox(height: 16),
+            const Text(
+              'Anda bisa:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text('• Gunakan nama yang berbeda'),
+            const Text('• Edit item yang sudah ada'),
+            const Text('• Batalkan dan coba lagi'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

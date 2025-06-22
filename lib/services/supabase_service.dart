@@ -108,27 +108,27 @@ class SupabaseService {
       rethrow;
     }
   }
-
   Future<Map<String, dynamic>> insert(
     String table,
     Map<String, dynamic> data,
   ) async {
     try {
+      debugPrint('🔄 SupabaseService: Inserting into $table with data: $data');
       final response = await _client.from(table).insert(data).select().single();
+      debugPrint('✅ SupabaseService: Successfully inserted into $table');
       return response;
     } catch (e) {
-      debugPrint('❌ Error inserting into $table: $e');
-
-      // For development, return mock success response
-      if (kDebugMode && table == 'pantry_items') {
-        debugPrint('🔄 Returning mock success response for pantry item insert');
-        return {
-          'id': DateTime.now().millisecondsSinceEpoch.toString(),
-          ...data,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        };
+      debugPrint('❌ SupabaseService: Error inserting into $table: $e');
+      
+      // Log more details about the error
+      if (e.toString().contains('JWT')) {
+        debugPrint('� SupabaseService: Authentication error - user may not be logged in');
+      } else if (e.toString().contains('RLS')) {
+        debugPrint('🛡️ SupabaseService: Row Level Security error - check user permissions');
+      } else if (e.toString().contains('duplicate key')) {
+        debugPrint('🔑 SupabaseService: Duplicate key error - item may already exist');
       }
+      
       rethrow;
     }
   }

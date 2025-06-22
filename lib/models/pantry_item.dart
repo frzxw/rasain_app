@@ -16,6 +16,7 @@ class PantryItem {
   final bool? expirationAlert;
   final DateTime? purchaseDate;
   final DateTime? lastUsedDate;
+  final String? notes; // Add notes field to match database schema
 
   PantryItem({
     required this.id,
@@ -33,6 +34,7 @@ class PantryItem {
     this.expirationAlert,
     this.purchaseDate,
     this.lastUsedDate,
+    this.notes,
   });
   factory PantryItem.fromJson(Map<String, dynamic> json) {
     return PantryItem(
@@ -55,11 +57,11 @@ class PantryItem {
       purchaseDate:
           json['purchase_date'] != null
               ? DateTime.parse(json['purchase_date'])
-              : null,
-      lastUsedDate:
+              : null,      lastUsedDate:
           json['last_used_date'] != null
               ? DateTime.parse(json['last_used_date'])
               : null,
+      notes: json['notes'],
     );
   }
   Map<String, dynamic> toJson() {
@@ -74,11 +76,11 @@ class PantryItem {
       'unit': unit,
       'category': category,
       'storage_location': storageLocation,
-      'total_quantity': totalQuantity,
-      'low_stock_alert': lowStockAlert,
+      'total_quantity': totalQuantity,      'low_stock_alert': lowStockAlert,
       'expiration_alert': expirationAlert,
       'purchase_date': purchaseDate?.toIso8601String(),
       'last_used_date': lastUsedDate?.toIso8601String(),
+      'notes': notes,
     };
   }
 
@@ -96,9 +98,9 @@ class PantryItem {
     String? storageLocation,
     int? totalQuantity,
     bool? lowStockAlert,
-    bool? expirationAlert,
-    DateTime? purchaseDate,
+    bool? expirationAlert,    DateTime? purchaseDate,
     DateTime? lastUsedDate,
+    String? notes,
   }) {
     return PantryItem(
       id: id ?? this.id,
@@ -112,10 +114,10 @@ class PantryItem {
       category: category ?? this.category,
       storageLocation: storageLocation ?? this.storageLocation,
       totalQuantity: totalQuantity ?? this.totalQuantity,
-      lowStockAlert: lowStockAlert ?? this.lowStockAlert,
-      expirationAlert: expirationAlert ?? this.expirationAlert,
+      lowStockAlert: lowStockAlert ?? this.lowStockAlert,      expirationAlert: expirationAlert ?? this.expirationAlert,
       purchaseDate: purchaseDate ?? this.purchaseDate,
       lastUsedDate: lastUsedDate ?? this.lastUsedDate,
+      notes: notes ?? this.notes,
     );
   }
 

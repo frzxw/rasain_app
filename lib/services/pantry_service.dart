@@ -58,7 +58,6 @@ class PantryService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
   // Fetch suggested recipes based on pantry items and tools
   Future<void> fetchSuggestedRecipes() async {
     _setLoading(true);
@@ -74,7 +73,6 @@ class PantryService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
   // Add new pantry item
   Future<void> addPantryItem(PantryItem item) async {
     _setLoading(true);
@@ -85,12 +83,12 @@ class PantryService extends ChangeNotifier {
       final newItem = await _dataService.addPantryItem(item);
 
       if (newItem != null) {
-        _pantryItems.add(newItem);
-        debugPrint('✅ PantryService: Successfully added item: ${newItem.name}');
-        debugPrint(
-          '📊 PantryService: Total items in pantry: ${_pantryItems.length}',
-        );
-        notifyListeners();
+        debugPrint('✅ PantryService: Successfully added item to database: ${newItem.name}');
+        
+        // Instead of just adding to local list, refresh from database to ensure consistency
+        await fetchPantryItems();
+        debugPrint('🔄 PantryService: Refreshed pantry items from database');
+        debugPrint('📊 PantryService: Total items in pantry: ${_pantryItems.length}');
 
         // Refresh suggested recipes
         await fetchSuggestedRecipes();
@@ -98,23 +96,22 @@ class PantryService extends ChangeNotifier {
         // Trigger notification
         await _notificationService.notifyPantryItemAdded(newItem.name, itemId: newItem.id);
       } else {
-        debugPrint('❌ PantryService: Failed to add item - newItem is null');
-        _setError('Failed to add pantry item - response was null');
+        _setError('Failed to add pantry item: Unknown error');
       }
     } catch (e) {
       debugPrint('❌ PantryService: Error adding pantry item: $e');
-      _setError('Failed to add pantry item: $e');
+      _setError('Failed to add pantry item: ${e.toString().replaceAll('Exception: ', '')}');
     } finally {
       _setLoading(false);
     }
   }
-
   // Update existing pantry item
   Future<void> updatePantryItem(PantryItem item) async {
     _setLoading(true);
     _clearError();
 
     try {
+      debugPrint('🔄 PantryService: Updating pantry item: ${item.name}');
       final updatedItem = await _dataService.updatePantryItem(item);
 
       if (updatedItem != null) {
@@ -122,32 +119,39 @@ class PantryService extends ChangeNotifier {
 
         if (index != -1) {
           _pantryItems[index] = updatedItem;
+          debugPrint('✅ PantryService: Successfully updated item: ${updatedItem.name}');
           notifyListeners();
         }
 
         // Refresh suggested recipes
         await fetchSuggestedRecipes();
+      } else {
+        _setError('Failed to update pantry item: Unknown error');
       }
     } catch (e) {
-      _setError('Failed to update pantry item: $e');
+      debugPrint('❌ PantryService: Error updating pantry item: $e');
+      _setError('Failed to update pantry item: ${e.toString().replaceAll('Exception: ', '')}');
     } finally {
       _setLoading(false);
     }
   }
-
   // Delete pantry item
   Future<void> deletePantryItem(String itemId) async {
     _setLoading(true);
     _clearError();
 
     try {
+      debugPrint('🔄 PantryService: Deleting pantry item with ID: $itemId');
+      
+      // Get the item name before removing it
+      final item = _pantryItems.firstWhere((item) => item.id == itemId);
+      final itemName = item.name;
+      
       final success = await _dataService.deletePantryItem(itemId);
 
       if (success) {
-        // Get the item name before removing it
-        final itemName = _pantryItems.firstWhere((item) => item.id == itemId).name;
-        
         _pantryItems.removeWhere((item) => item.id == itemId);
+        debugPrint('✅ PantryService: Successfully deleted item: $itemName');
         notifyListeners();
 
         // Refresh suggested recipes
@@ -156,10 +160,11 @@ class PantryService extends ChangeNotifier {
         // Trigger notification
         await _notificationService.notifyPantryItemRemoved(itemName, itemId: itemId);
       } else {
-        _setError('Failed to delete pantry item');
+        _setError('Failed to delete pantry item: Unknown error');
       }
     } catch (e) {
-      _setError('Failed to delete pantry item: $e');
+      debugPrint('❌ PantryService: Error deleting pantry item: $e');
+      _setError('Failed to delete pantry item: ${e.toString().replaceAll('Exception: ', '')}');
     } finally {
       _setLoading(false);
     }
