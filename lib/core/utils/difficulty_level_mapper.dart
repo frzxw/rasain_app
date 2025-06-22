@@ -1,46 +1,31 @@
-/// Utility class for mapping between English and Indonesian difficulty levels
 class DifficultyLevelMapper {
-  // English to Indonesian mapping (for database storage)
-  static const Map<String, String> _englishToIndonesian = {
-    'easy': 'mudah',
-    'medium': 'sedang',
-    'hard': 'sulit',
+  static const Map<String, String> _uiToDatabase = {
+    'Mudah': 'mudah',
+    'Sedang': 'sedang', 
+    'Sulit': 'sulit',
   };
 
-  // Indonesian to English mapping (for UI display)
-  static const Map<String, String> _indonesianToEnglish = {
-    'mudah': 'easy',
-    'sedang': 'medium',
-    'sulit': 'hard',
+  static const Map<String, String> _databaseToUi = {
+    'mudah': 'Mudah',
+    'sedang': 'Sedang',
+    'sulit': 'Sulit',
   };
 
-  /// Convert English difficulty level to Indonesian for database storage
-  static String? toDatabase(String? englishLevel) {
-    if (englishLevel == null) return null;
-    return _englishToIndonesian[englishLevel.toLowerCase()];
+  /// Convert UI difficulty level to database format
+  static String? toDatabase(String? uiLevel) {
+    if (uiLevel == null) return null;
+    return _uiToDatabase[uiLevel] ?? 'sedang';
   }
 
-  /// Convert Indonesian difficulty level to English for UI display
-  static String? toUI(String? indonesianLevel) {
-    if (indonesianLevel == null) return null;
-    return _indonesianToEnglish[indonesianLevel.toLowerCase()];
+  /// Convert database difficulty level to UI format
+  static String toUI(String? databaseLevel) {
+    if (databaseLevel == null) return 'Sedang';
+    return _databaseToUi[databaseLevel] ?? 'Sedang';
   }
 
-  /// Get all available difficulty levels in English for UI
-  static List<String> get availableUILevels => _englishToIndonesian.keys.toList();
+  /// Get all UI difficulty levels
+  static List<String> get uiLevels => _uiToDatabase.keys.toList();
 
-  /// Get all available difficulty levels in Indonesian for database
-  static List<String> get availableDatabaseLevels => _englishToIndonesian.values.toList();
-
-  /// Get display name for difficulty level (capitalizes first letter)
-  static String getDisplayName(String level) {
-    return level[0].toUpperCase() + level.substring(1).toLowerCase();
-  }
-
-  /// Check if a difficulty level is valid (either English or Indonesian)
-  static bool isValid(String level) {
-    final lowerLevel = level.toLowerCase();
-    return _englishToIndonesian.containsKey(lowerLevel) ||
-           _indonesianToEnglish.containsKey(lowerLevel);
-  }
+  /// Get all database difficulty levels
+  static List<String> get databaseLevels => _databaseToUi.keys.toList();
 }

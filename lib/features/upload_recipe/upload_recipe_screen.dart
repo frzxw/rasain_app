@@ -60,11 +60,10 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     'Snack',
     'Tradisional',
   ];
-
   final List<String> _difficultyLevels = [
-    'easy',
-    'medium',
-    'hard',
+    'Mudah',
+    'Sedang',
+    'Sulit',
   ];
 
   @override
@@ -206,18 +205,19 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
            _cookingTimeController.text.trim().isNotEmpty ||
            _selectedCategory != null ||
            _ingredients.isNotEmpty ||
-           _instructions.isNotEmpty ||
-           _selectedImages.isNotEmpty;
-  }  void _navigateToLogin() async {
+           _instructions.isNotEmpty ||           _selectedImages.isNotEmpty;
+  }
+
+  void _navigateToLogin() async {
     final hasData = _hasFormData();
-    
     // Show login dialog with callback to return to upload form
-    AuthDialog.showLoginDialog(
+    AuthDialog.showAuthDialog(
       context,
+      startWithLogin: true,
       redirectMessage: hasData 
           ? 'Login untuk melanjutkan upload resep Anda. Data yang sudah diisi akan tetap tersimpan.'
           : 'Login untuk mulai membuat resep baru',
-      onLoginSuccess: () {
+      onSuccess: () {
         // After successful login, trigger form animation and state refresh
         _refreshAuthState();
         // Show success message
@@ -230,8 +230,8 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
                 Expanded(
                   child: Text(
                     hasData 
-                        ? 'Login berhasil! Data Anda masih tersimpan, silakan lanjutkan.'
-                        : 'Login berhasil! Sekarang Anda bisa membuat resep.',
+                        ? 'Selamat datang kembali! Anda dapat melanjutkan upload resep.'
+                        : 'Selamat datang! Silakan mulai membuat resep baru.',
                   ),
                 ),
               ],

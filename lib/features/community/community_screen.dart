@@ -2,10 +2,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/custom_button.dart';
+import '../../core/widgets/auth_dialog.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../cubits/community/community_state.dart';
@@ -645,11 +645,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          ElevatedButton(            onPressed: () {
+          ),          ElevatedButton(
+            onPressed: () {
               Navigator.of(dialogContext).pop(); // Close dialog first
-              // Navigate using GoRouter
-              context.go('/profile');
+              // Show the new unified auth dialog
+              AuthDialog.showAuthDialog(
+                context,
+                startWithLogin: true,
+                redirectMessage: 'Masuk untuk bergabung dengan komunitas dan berinteraksi dengan pengguna lain.',
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

@@ -401,7 +401,11 @@ class _ReviewSectionState extends State<ReviewSection> {
           ElevatedButton(
             onPressed: () {
               // Show login dialog instead of navigating to profile
-              AuthDialog.showLoginDialog(context);
+              AuthDialog.showAuthDialog(
+                context,
+                startWithLogin: true,
+                redirectMessage: 'Masuk atau daftar untuk memberikan ulasan dan berbagi pengalaman Anda.',
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

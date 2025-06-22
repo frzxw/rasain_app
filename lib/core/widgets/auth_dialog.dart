@@ -1,603 +1,1083 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../constants/sizes.dart';
 import '../theme/colors.dart';
 import '../../cubits/auth/auth_cubit.dart';
 import '../../cubits/auth/auth_state.dart';
 
 class AuthDialog {
+  /// Shows a modern animated authentication dialog with both login and registration
+  static void showAuthDialog(
+    BuildContext context, {
+    VoidCallback? onSuccess,
+    String? redirectMessage,
+    bool startWithLogin = true,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AuthDialogWidget(
+        onSuccess: onSuccess,
+        redirectMessage: redirectMessage,
+        startWithLogin: startWithLogin,
+      ),
+    );
+  }
+
+  // Legacy methods for backward compatibility
   static void showLoginDialog(
     BuildContext context, {
     VoidCallback? onLoginSuccess,
     String? redirectMessage,
   }) {
-    final TextEditingController emailController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (context, setState) => BlocBuilder<AuthCubit, AuthState>(
-                  builder:
-                      (context, state) => AlertDialog(                        title: const Text('Masuk'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: Form(
-                            key: formKey,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Show redirect message if provided
-                                if (redirectMessage != null) ...[
-                                  Container(
-                                    padding: const EdgeInsets.all(AppSizes.paddingS),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.primary.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.info_outline,
-                                          color: AppColors.primary,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            redirectMessage,
-                                            style: TextStyle(
-                                              color: AppColors.primary,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSizes.marginM),
-                                ],
-                                TextFormField(
-                                  controller: emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    prefixIcon: Icon(Icons.email_outlined),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan email Anda';
-                                    }
-                                    if (!RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                    ).hasMatch(value)) {
-                                      return 'Format email tidak valid';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: AppSizes.marginM),
-                                TextFormField(
-                                  controller: passwordController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Kata Sandi',
-                                    prefixIcon: Icon(Icons.lock_outlined),
-                                  ),
-                                  obscureText: true,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan password Anda';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                if (state.errorMessage != null) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.paddingS,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.error.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.error_outline,
-                                          color: AppColors.error,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            state.errorMessage!,
-                                            style: TextStyle(
-                                              color: AppColors.error,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                if (state.status == AuthStatus.loading) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Masuk...',
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () => Navigator.pop(context),
-                            child: const Text('Batal'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              AuthDialog.showPasswordResetDialog(
-                                context,
-                                emailController.text,
-                              );
-                            },
-                            child: const Text('Lupa Password?'),
-                          ),
-                          ElevatedButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        final success = await context
-                                            .read<AuthCubit>()
-                                            .signIn(
-                                              emailController.text.trim(),
-                                              passwordController.text,
-                                            ); // Wait for the auth state to fully update
-                                        await Future.delayed(
-                                          const Duration(milliseconds: 200),
-                                        );                                        if (success && context.mounted) {
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Berhasil masuk!'),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-
-                                          // Trigger a state update for any listening widgets
-                                          // This will help the upload screen to refresh
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 100),
-                                          );
-
-                                          // Call the success callback if provided
-                                          if (onLoginSuccess != null) {
-                                            onLoginSuccess();
-                                          }
-                                        }
-                                      }
-                                    },
-                            child: const Text('Masuk'),
-                          ),
-                        ],
-                      ),
-                ),
-          ),
+    showAuthDialog(
+      context,
+      onSuccess: onLoginSuccess,
+      redirectMessage: redirectMessage,
+      startWithLogin: true,
     );
   }
 
   static void showRegisterDialog(BuildContext context) {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController emailController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
-    final TextEditingController confirmPasswordController =
-        TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (context, setState) => BlocBuilder<AuthCubit, AuthState>(
-                  builder:
-                      (context, state) => AlertDialog(
-                        title: const Text('Buat Akun'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: Form(
-                            key: formKey,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                TextFormField(
-                                  controller: nameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Nama',
-                                    prefixIcon: Icon(Icons.person_outlined),
-                                  ),
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan nama Anda';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: AppSizes.marginM),
-                                TextFormField(
-                                  controller: emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    prefixIcon: Icon(Icons.email_outlined),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan email Anda';
-                                    }
-                                    if (!RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                    ).hasMatch(value)) {
-                                      return 'Format email tidak valid';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: AppSizes.marginM),
-                                TextFormField(
-                                  controller: passwordController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Kata Sandi',
-                                    prefixIcon: Icon(Icons.lock_outlined),
-                                  ),
-                                  obscureText: true,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan kata sandi Anda';
-                                    }
-                                    if (value.length < 6) {
-                                      return 'Kata sandi harus minimal 6 karakter';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: AppSizes.marginM),
-                                TextFormField(
-                                  controller: confirmPasswordController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Konfirmasi Kata Sandi',
-                                    prefixIcon: Icon(Icons.lock_outlined),
-                                  ),
-                                  obscureText: true,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Konfirmasi kata sandi Anda';
-                                    }
-                                    if (value != passwordController.text) {
-                                      return 'Kata sandi tidak cocok';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                if (state.errorMessage != null) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.paddingS,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.error.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.error_outline,
-                                          color: AppColors.error,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            state.errorMessage!,
-                                            style: TextStyle(
-                                              color: AppColors.error,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                if (state.status == AuthStatus.loading) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Mendaftar...',
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () => Navigator.pop(context),
-                            child: const Text('Batal'),
-                          ),
-                          ElevatedButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        await context.read<AuthCubit>().signUp(
-                                          nameController.text,
-                                          emailController.text.trim(),
-                                          passwordController.text,
-                                        ); // Check if registration was successful by examining the new state
-                                        final newState =
-                                            context.read<AuthCubit>().state;
-                                        if (newState.status ==
-                                                AuthStatus
-                                                    .emailVerificationPending &&
-                                            context.mounted) {
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Pendaftaran berhasil! Silakan verifikasi email Anda.',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                          // Navigate to email verification screen
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
-                                                if (context.mounted) {
-                                                  context.go(
-                                                    '/email-verification',
-                                                  );
-                                                }
-                                              });
-                                        } else if (newState.status ==
-                                                AuthStatus.authenticated &&
-                                            context.mounted) {
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Pendaftaran berhasil! Anda sekarang sudah masuk.',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                            child: const Text('Daftar'),
-                          ),
-                        ],
-                      ),
-                ),
-          ),
+    showAuthDialog(
+      context,
+      startWithLogin: false,
     );
   }
 
   static void showPasswordResetDialog(BuildContext context, String? email) {
-    final TextEditingController emailController = TextEditingController(
-      text: email,
-    );
-    final formKey = GlobalKey<FormState>();
-
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (context, setState) => BlocBuilder<AuthCubit, AuthState>(
-                  builder:
-                      (context, state) => AlertDialog(
-                        title: const Text('Reset Password'),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: Form(
-                            key: formKey,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Masukkan email Anda untuk menerima link reset password.',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                                const SizedBox(height: AppSizes.marginM),
-                                TextFormField(
-                                  controller: emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                    prefixIcon: Icon(Icons.email_outlined),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                  enabled: state.status != AuthStatus.loading,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan email Anda';
-                                    }
-                                    if (!RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                    ).hasMatch(value)) {
-                                      return 'Format email tidak valid';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                if (state.errorMessage != null) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  Container(
-                                    padding: const EdgeInsets.all(
-                                      AppSizes.paddingS,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.error.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.error_outline,
-                                          color: AppColors.error,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            state.errorMessage!,
-                                            style: TextStyle(
-                                              color: AppColors.error,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                if (state.status == AuthStatus.loading) ...[
-                                  const SizedBox(height: AppSizes.marginM),
-                                  const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Mengirim...',
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
+      builder: (context) => PasswordResetDialog(initialEmail: email),
+    );
+  }
+}
+
+/// Modern animated authentication dialog widget
+class AuthDialogWidget extends StatefulWidget {
+  final VoidCallback? onSuccess;
+  final String? redirectMessage;
+  final bool startWithLogin;
+
+  const AuthDialogWidget({
+    super.key,
+    this.onSuccess,
+    this.redirectMessage,
+    this.startWithLogin = true,
+  });
+
+  @override
+  State<AuthDialogWidget> createState() => _AuthDialogWidgetState();
+}
+
+class _AuthDialogWidgetState extends State<AuthDialogWidget>
+    with TickerProviderStateMixin {
+  late AnimationController _slideController;
+  late AnimationController _fadeController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  
+  bool _isLogin = true;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  
+  // Controllers
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _confirmPasswordController;
+  late GlobalKey<FormState> _formKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLogin = widget.startWithLogin;
+    
+    // Initialize controllers
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
+    _formKey = GlobalKey<FormState>();
+      // Initialize animations
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 400), // Slightly longer for smoother feel
+      vsync: this,
+    );
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300), // Longer fade for better visibility
+      vsync: this,
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.15), // Start slightly lower for more dramatic effect
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic, // More elegant curve
+    ));
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInQuart, // Smoother fade in
+    ));
+    
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    _fadeController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+  void _toggleMode() {
+    setState(() {
+      _isLogin = !_isLogin;
+      _formKey.currentState?.reset();
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+    });
+    
+    // Smooth transition animation with scale effect
+    _slideController.reverse().then((_) {
+      _slideController.forward();
+    });
+    
+    // Add a subtle fade effect during transition
+    _fadeController.reverse().then((_) {
+      _fadeController.forward();
+    });
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      if (_isLogin) {
+        final success = await context.read<AuthCubit>().signIn(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+        
+        if (success && mounted) {
+          await Future.delayed(const Duration(milliseconds: 200));
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Selamat datang kembali! 👋'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          widget.onSuccess?.call();
+        }
+      } else {
+        await context.read<AuthCubit>().signUp(
+          _nameController.text.trim(),
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+        
+        final newState = context.read<AuthCubit>().state;
+        if (newState.status == AuthStatus.emailVerificationPending && mounted) {
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.mail_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Akun berhasil dibuat! Silakan verifikasi email Anda.'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          
+          context.go('/email-verification');
+        } else if (newState.status == AuthStatus.authenticated && mounted) {
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.celebration, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Selamat datang di Rasain! 🎉'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          
+          widget.onSuccess?.call();
+        }
+      }
+    } catch (e) {
+      // Error handling is managed by BlocListener
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        // Additional error handling if needed
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildHeader(),
+                  _buildContent(),
+                  _buildActions(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(24),      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.8),
+            AppColors.primary.withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.0, 0.6, 1.0], // More controlled gradient
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(
+                      scale: animation,
+                      child: child,
+                    );
+                  },
+                  child: Icon(
+                    _isLogin ? Icons.login : Icons.person_add,
+                    color: Colors.white,
+                    size: 24,
+                    key: ValueKey(_isLogin),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _isLogin ? 'Selamat Datang!' : 'Bergabung dengan Kami!',
+                        key: ValueKey(_isLogin),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _isLogin 
+                          ? 'Masuk ke akun Anda'
+                          : 'Buat akun baru untuk memulai',
+                        key: ValueKey('${_isLogin}_subtitle'),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.1),
+                ),
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  splashRadius: 20,
+                  tooltip: 'Tutup',
+                ),
+              ),
+            ],
+          ),
+          if (widget.redirectMessage != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.redirectMessage!,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,            child: Column(
+              children: [
+                // Name field for registration
+                if (!_isLogin)
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 400),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    builder: (context, value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                          child: _buildAnimatedField(
+                            controller: _nameController,
+                            label: 'Nama Lengkap',
+                            icon: Icons.person_outline,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nama tidak boleh kosong';
+                              }
+                              return null;
+                            },
+                            enabled: state.status != AuthStatus.loading,
                           ),
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () => Navigator.pop(context),
-                            child: const Text('Batal'),
-                          ),
-                          ElevatedButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        final success = await context
-                                            .read<AuthCubit>()
-                                            .resetPassword(
-                                              emailController.text.trim(),
-                                            );
-
-                                        if (success && context.mounted) {
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Link reset password telah dikirim ke email Anda.',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                            child: const Text('Kirim'),
-                          ),
-                        ],
+                      );
+                    },
+                  ),
+                
+                // Email field
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 500),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: _buildAnimatedField(
+                          controller: _emailController,
+                          label: 'Email',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Email tidak boleh kosong';
+                            }
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                              return 'Format email tidak valid';
+                            }
+                            return null;
+                          },
+                          enabled: state.status != AuthStatus.loading,
+                        ),
                       ),
+                    );
+                  },
                 ),
+                
+                // Password field
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 600),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(
+                        opacity: value,
+                        child: _buildAnimatedField(
+                          controller: _passwordController,
+                          label: 'Kata Sandi',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          isPasswordVisible: _isPasswordVisible,
+                          togglePasswordVisibility: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Kata sandi tidak boleh kosong';
+                            }
+                            if (!_isLogin && value.length < 6) {
+                              return 'Kata sandi minimal 6 karakter';
+                            }
+                            return null;
+                          },
+                          enabled: state.status != AuthStatus.loading,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                // Confirm password field for registration
+                if (!_isLogin)
+                  TweenAnimationBuilder<double>(
+                    duration: const Duration(milliseconds: 700),
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    builder: (context, value, child) {
+                      return Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: Opacity(
+                          opacity: value,
+                          child: _buildAnimatedField(
+                            controller: _confirmPasswordController,
+                            label: 'Konfirmasi Kata Sandi',
+                            icon: Icons.lock_outline,
+                            isPassword: true,
+                            isPasswordVisible: _isConfirmPasswordVisible,
+                            togglePasswordVisibility: () {
+                              setState(() {
+                                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Konfirmasi kata sandi tidak boleh kosong';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Kata sandi tidak cocok';
+                              }
+                              return null;
+                            },
+                            enabled: state.status != AuthStatus.loading,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  // Error message
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: state.errorMessage != null 
+                    ? Container(
+                        key: const ValueKey('error_message'),
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                state.errorMessage!,
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                ),
+                  // Loading indicator
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: state.status == AuthStatus.loading 
+                    ? Container(
+                        key: const ValueKey('loading_indicator'),
+                        margin: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isLogin ? 'Masuk...' : 'Membuat akun...',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
+        );
+      },
+    );
+  }
+  Widget _buildAnimatedField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool isPassword = false,
+    bool isPasswordVisible = false,
+    VoidCallback? togglePasswordVisibility,
+    String? Function(String?)? validator,
+    bool enabled = true,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Focus(
+        onFocusChange: (hasFocus) {
+          // Add subtle focus animation if needed
+        },
+        child: TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: isPassword && !isPasswordVisible,
+          enabled: enabled,
+          validator: validator,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(icon, color: AppColors.primary),
+            ),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                        color: AppColors.textSecondary,
+                        key: ValueKey(isPasswordVisible),
+                      ),
+                    ),
+                    onPressed: togglePasswordVisibility,
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+            filled: true,
+            fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions() {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        final isLoading = state.status == AuthStatus.loading;
+        
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [              // Main action button
+              SizedBox(
+                width: double.infinity,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _handleSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: isLoading ? 0 : 2,
+                      shadowColor: AppColors.primary.withOpacity(0.3),
+                    ),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              _isLogin ? 'Masuk' : 'Buat Akun',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              key: ValueKey(_isLogin),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+              
+              // Forgot password for login
+              if (_isLogin) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: isLoading ? null : () {
+                    Navigator.pop(context);
+                    AuthDialog.showPasswordResetDialog(context, _emailController.text);
+                  },
+                  child: Text(
+                    'Lupa kata sandi?',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+                // Toggle between login/register
+              const SizedBox(height: 16),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Row(
+                  key: ValueKey(_isLogin),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _isLogin ? 'Belum punya akun?' : 'Sudah punya akun?',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: isLoading ? null : _toggleMode,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: Text(
+                        _isLogin ? 'Daftar di sini' : 'Masuk di sini',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Password reset dialog widget
+class PasswordResetDialog extends StatefulWidget {
+  final String? initialEmail;
+
+  const PasswordResetDialog({super.key, this.initialEmail});
+
+  @override
+  State<PasswordResetDialog> createState() => _PasswordResetDialogState();
+}
+
+class _PasswordResetDialogState extends State<PasswordResetDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late TextEditingController _emailController;
+  late GlobalKey<FormState> _formKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.initialEmail);
+    _formKey = GlobalKey<FormState>();
+    
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    ));
+    
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleReset() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final success = await context.read<AuthCubit>().resetPassword(
+      _emailController.text.trim(),
+    );
+
+    if (success && mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.mark_email_read, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Link reset kata sandi telah dikirim ke email Anda.'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        // Error handling
+      },
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.lock_reset,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Reset Kata Sandi',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Kami akan mengirimkan link reset ke email Anda',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content
+                BlocBuilder<AuthCubit, AuthState>(
+                  builder: (context, state) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              enabled: state.status != AuthStatus.loading,
+                              decoration: InputDecoration(
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Email tidak boleh kosong';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                  return 'Format email tidak valid';
+                                }
+                                return null;
+                              },
+                            ),
+                            
+                            if (state.errorMessage != null) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        state.errorMessage!,
+                                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 24),
+                            
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton(
+                                    onPressed: state.status == AuthStatus.loading 
+                                        ? null 
+                                        : () => Navigator.pop(context),
+                                    child: const Text('Batal'),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: ElevatedButton(
+                                    onPressed: state.status == AuthStatus.loading 
+                                        ? null 
+                                        : _handleReset,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: state.status == AuthStatus.loading
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          )
+                                        : const Text('Kirim Link'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
