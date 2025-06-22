@@ -276,6 +276,8 @@ class _PantryInputFormState extends State<PantryInputForm> {
                       controller: _nameController,
                       decoration: InputDecoration(
                         hintText: 'Type any ingredient name (e.g. Tomat)',
+                        helperText: 'Nama bahan harus unik. Jika sudah ada, coba variasi seperti "Telur Ayam Kampung"',
+                        helperMaxLines: 2,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _isSearching ? Icons.close : Icons.search,
@@ -291,7 +293,6 @@ class _PantryInputFormState extends State<PantryInputForm> {
                             });
                           },
                         ),
-                        helperText: 'You can type any ingredient name or search suggestions',
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSizes.paddingM,
                           vertical: AppSizes.paddingM,
@@ -883,9 +884,10 @@ class _PantryInputFormState extends State<PantryInputForm> {
     return text.trim()
         .replaceAll(RegExp(r'[^\u0000-\u007F\u0080-\uFFFF]'), '') // Remove invalid unicode
         .replaceAll(RegExp(r'[\uFFFD]'), ''); // Remove replacement characters
-  }
-
-  void _handleSave() {
+  }  void _handleSave() {
+    debugPrint('🔄 PantryInputForm: _handleSave called');
+    debugPrint('🔍 PantryInputForm: Form valid: ${_formKey.currentState!.validate()}');
+    
     if (_formKey.currentState!.validate()) {
       final price =
           _priceController.text.isNotEmpty
@@ -916,7 +918,13 @@ class _PantryInputFormState extends State<PantryInputForm> {
         expirationAlert: _expirationAlert,
       );
 
+      debugPrint('📦 PantryInputForm: Created item: ${item.name}');
+      debugPrint('📝 PantryInputForm: Item data: ${item.toJson()}');
+      debugPrint('📤 PantryInputForm: Calling widget.onSave...');
+      
       widget.onSave(item);
+    } else {
+      debugPrint('❌ PantryInputForm: Form validation failed');
     }
   }
 }

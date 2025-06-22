@@ -64,16 +64,19 @@ class PantryCubit extends Cubit<PantryState> {
           isAuthenticated: false,
         ),
       );
-    }
-  }
+    }  }
   // Add new pantry item
   Future<void> addPantryItem(PantryItem item) async {
+    debugPrint('🔄 PantryCubit: Starting addPantryItem for: ${item.name}');
     emit(state.copyWith(status: PantryStatus.loading));
     try {
       await _pantryService.addPantryItem(item);
+      debugPrint('✅ PantryCubit: PantryService.addPantryItem completed');
 
-      // Refresh state with updated data
+      // Get the refreshed data from service (service already refreshed from database)
       final items = _pantryService.pantryItems;
+      debugPrint('📊 PantryCubit: Retrieved ${items.length} items from service');
+      
       final categorizedItems = _organizePantryItems(items);
       final expiringItems = _getExpiringItems(items);
       final lowStockItems = _getLowStockItems(items);
@@ -88,9 +91,12 @@ class PantryCubit extends Cubit<PantryState> {
         ),
       );
 
+      debugPrint('✅ PantryCubit: State updated with ${items.length} items');
+
       // Refresh recipe recommendations
       await _fetchPantryBasedRecipes();
     } catch (e) {
+      debugPrint('❌ PantryCubit: Error in addPantryItem: $e');
       emit(
         state.copyWith(status: PantryStatus.error, errorMessage: e.toString()),
       );
