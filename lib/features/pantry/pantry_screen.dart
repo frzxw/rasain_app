@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
 import '../../core/widgets/custom_button.dart';
+import '../../core/widgets/auth_dialog.dart';
 import '../../models/pantry_item.dart';
 import '../../cubits/pantry/pantry_cubit.dart';
 import '../../cubits/pantry/pantry_state.dart';
@@ -36,17 +38,14 @@ class _PantryScreenState extends State<PantryScreen>
   String? _selectedCategory;
   String? _selectedLocation;
   bool _showExpiring = false;
-  bool _showLowStock = false;
-
-  @override
+  bool _showLowStock = false;  @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
-    // Initialize pantry data
+    // Initialize pantry data which will check authentication internally
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PantryCubit>().initialize();
-      context.read<RecipeCubit>().fetchPantryBasedRecipes();
     });
   }
 
@@ -54,19 +53,191 @@ class _PantryScreenState extends State<PantryScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<PantryCubit, PantryState>(
+      builder: (context, pantryState) {
+        // Check loading state
+        if (pantryState.status == PantryStatus.loading) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: CustomAppBar(title: 'Pantry Pintar'),
+            body: const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+          );
+        }
+
+        // Check if user is unauthenticated
+        if (pantryState.status == PantryStatus.unauthenticated || !pantryState.isAuthenticated) {
+          return _buildUnauthenticatedView(context);
+        }
+
+        // User is authenticated, show normal pantry content
+        return _buildAuthenticatedView(context);
+      },
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildUnauthenticatedView(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(title: 'Pantry Pintar'),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.paddingXL),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Login required illustration
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingXL),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 80,
+                  color: AppColors.primary,
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.marginXL),              // Title
+              Text(
+                'Login Diperlukan',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: AppSizes.marginM),
+
+              // Description
+              Text(
+                'Silakan masuk untuk mengakses pantry pintar Anda dan mendapatkan rekomendasi resep yang dipersonalisasi.',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: AppSizes.marginXL),
+
+              // Benefits list
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingL),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,                  children: [
+                    Text(
+                      'Dengan Smart Pantry, Anda dapat:',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.marginM),
+                    _buildBenefitItem(
+                      icon: Icons.inventory_2_outlined,
+                      text: 'Melacak bahan makanan dan tanggal kedaluwarsa',
+                    ),
+                    _buildBenefitItem(
+                      icon: Icons.restaurant_menu_outlined,
+                      text: 'Mendapatkan rekomendasi resep berdasarkan pantry Anda',
+                    ),                    _buildBenefitItem(
+                      icon: Icons.analytics_outlined,
+                      text: 'Melihat statistik penggunaan dan wawasan',
+                    ),
+                    _buildBenefitItem(
+                      icon: Icons.camera_alt_outlined,
+                      text: 'Memindai bahan makanan dengan kamera',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.marginXL),              // Login button
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  label: 'Masuk / Daftar',
+                  icon: Icons.login,
+                  onPressed: () => _showAuthDialog(context),
+                  variant: ButtonVariant.primary,
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AppSizes.marginM),              // Alternative action
+              TextButton(
+                onPressed: () => context.go('/'),
+                child: Text(
+                  'Kembali ke Beranda',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBenefitItem({
+    required IconData icon,
+    required String text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.marginS),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AppColors.primary,
+            size: 20,
+          ),
+          const SizedBox(width: AppSizes.marginM),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }  void _showAuthDialog(BuildContext context) {
+    AuthDialog.showLoginDialog(
+      context,
+      redirectMessage: 'Silakan masuk untuk mengakses fitur pantry pintar Anda.',
+      onLoginSuccess: () {
+        // Refresh pantry data after successful login
+        context.read<PantryCubit>().initialize();
+      },
+    );
+  }
+
+  Widget _buildAuthenticatedView(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(
-        title: 'Smart Pantry',
-        actions: [
+        title: 'Pantry Pintar',        actions: [
           IconButton(
             icon: const Icon(Icons.analytics_outlined),
             onPressed: () => _tabController.animateTo(2),
-            tooltip: 'Statistics',
+            tooltip: 'Statistik',
           ),
         ],
       ),
@@ -77,11 +248,10 @@ class _PantryScreenState extends State<PantryScreen>
             controller: _tabController,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            tabs: const [
-              Tab(icon: Icon(Icons.inventory_2), text: 'Items'),
-              Tab(icon: Icon(Icons.restaurant_menu), text: 'Recipes'),
-              Tab(icon: Icon(Icons.analytics), text: 'Stats'),
+            indicatorColor: AppColors.primary,            tabs: const [
+              Tab(icon: Icon(Icons.inventory_2), text: 'Bahan'),
+              Tab(icon: Icon(Icons.restaurant_menu), text: 'Resep'),
+              Tab(icon: Icon(Icons.analytics), text: 'Statistik'),
             ],
           ),
           // Tab content
@@ -296,22 +466,20 @@ class _PantryScreenState extends State<PantryScreen>
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange),
                 const SizedBox(width: AppSizes.marginS),
-                Expanded(
-                  child: Text(
-                    '${state.expiringItems.length} item${state.expiringItems.length > 1 ? 's' : ''} expiring soon',
+                Expanded(                  child: Text(
+                    '${state.expiringItems.length} bahan akan segera kedaluwarsa',
                     style: TextStyle(
                       color: Colors.orange,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                TextButton(
+                ),                TextButton(
                   onPressed: () {
                     setState(() {
                       _showExpiring = true;
                     });
                   },
-                  child: const Text('View'),
+                  child: const Text('Lihat'),
                 ),
               ],
             ),
@@ -332,22 +500,20 @@ class _PantryScreenState extends State<PantryScreen>
               children: [
                 Icon(Icons.inventory_outlined, color: AppColors.error),
                 const SizedBox(width: AppSizes.marginS),
-                Expanded(
-                  child: Text(
-                    '${state.lowStockItems.length} item${state.lowStockItems.length > 1 ? 's' : ''} running low',
+                Expanded(                  child: Text(
+                    '${state.lowStockItems.length} bahan stok menipis',
                     style: TextStyle(
                       color: AppColors.error,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                TextButton(
+                ),                TextButton(
                   onPressed: () {
                     setState(() {
                       _showLowStock = true;
                     });
                   },
-                  child: const Text('View'),
+                  child: const Text('Lihat'),
                 ),
               ],
             ),
@@ -359,9 +525,8 @@ class _PantryScreenState extends State<PantryScreen>
   Widget _buildItemsList(List<PantryItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Items (${items.length})',
+      children: [        Text(
+          'Bahan (${items.length})',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -408,16 +573,15 @@ class _PantryScreenState extends State<PantryScreen>
             size: AppSizes.iconXL,
             color: AppColors.textSecondary,
           ),
-          const SizedBox(height: AppSizes.marginM),
-          Text(
-            'Your pantry is empty',
+          const SizedBox(height: AppSizes.marginM),          Text(
+            'Pantry Anda kosong',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.marginS),
           Text(
-            'Add ingredients to get personalized recipe recommendations',
+            'Tambahkan bahan makanan untuk mendapatkan rekomendasi resep yang dipersonalisasi',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -428,7 +592,7 @@ class _PantryScreenState extends State<PantryScreen>
             children: [
               Expanded(
                 child: CustomButton(
-                  label: 'Add Manually',
+                  label: 'Tambah',
                   icon: Icons.edit_outlined,
                   onPressed: () {
                     setState(() {
@@ -442,7 +606,7 @@ class _PantryScreenState extends State<PantryScreen>
               const SizedBox(width: AppSizes.marginM),
               Expanded(
                 child: CustomButton(
-                  label: 'Scan Item',
+                  label: 'Pindai Bahan',
                   icon: Icons.camera_alt_outlined,
                   onPressed: _handleCameraInput,
                   variant: ButtonVariant.primary,
@@ -465,35 +629,31 @@ class _PantryScreenState extends State<PantryScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Smart Insights',
+        children: [          Text(
+            'Wawasan Pintar',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.marginM),
           
-          if (state.items.isNotEmpty) ...[
-            _buildInsightItem(
+          if (state.items.isNotEmpty) ...[            _buildInsightItem(
               icon: Icons.restaurant_menu,
-              title: 'Recipe Potential',
-              description: 'You can make ${state.pantryBasedRecipes.length} recipes with your current pantry',
+              title: 'Potensi Resep',
+              description: 'Anda dapat membuat ${state.pantryBasedRecipes.length} resep dengan pantry saat ini',
               color: AppColors.success,
             ),
             
-            if (state.expiringItems.isNotEmpty)
-              _buildInsightItem(
+            if (state.expiringItems.isNotEmpty)              _buildInsightItem(
                 icon: Icons.schedule,
-                title: 'Use Soon',
-                description: 'Consider using ${state.expiringItems.first.name} and ${state.expiringItems.length - 1} other items soon',
+                title: 'Gunakan Segera',
+                description: 'Pertimbangkan untuk menggunakan ${state.expiringItems.first.name} dan ${state.expiringItems.length - 1} bahan lainnya segera',
                 color: Colors.orange,
               ),
-          ] else
-            _buildInsightItem(
+          ] else            _buildInsightItem(
               icon: Icons.lightbulb_outline,
-              title: 'Get Started',
-              description: 'Add your first ingredient to start getting smart recommendations',
+              title: 'Mulai',
+              description: 'Tambahkan bahan pertama Anda untuk mulai mendapatkan rekomendasi pintar',
               color: AppColors.primary,
             ),
         ],
@@ -623,17 +783,15 @@ class _PantryScreenState extends State<PantryScreen>
       await context.read<PantryCubit>().addPantryItemFromImage(bytes, image.name);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Item detected and added to your pantry'),
+      ScaffoldMessenger.of(context).showSnackBar(        const SnackBar(
+          content: Text('Bahan berhasil terdeteksi dan ditambahkan ke pantry Anda'),
           backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error processing image. Please try again.'),
+      ScaffoldMessenger.of(context).showSnackBar(        const SnackBar(
+          content: Text('Terjadi kesalahan saat memproses gambar. Silakan coba lagi.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -643,15 +801,14 @@ class _PantryScreenState extends State<PantryScreen>
   Future<void> _confirmDeleteItem(PantryItem item) async {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Item'),
+      builder: (context) => AlertDialog(        title: const Text('Hapus Bahan'),
         content: Text(
-          'Are you sure you want to remove ${item.name} from your pantry?',
+          'Apakah Anda yakin ingin menghapus ${item.name} dari pantry Anda?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: const Text('Batal'),
           ),
           TextButton(
             onPressed: () {
@@ -659,7 +816,7 @@ class _PantryScreenState extends State<PantryScreen>
               context.read<PantryCubit>().deletePantryItem(item.id);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -670,7 +827,7 @@ class _PantryScreenState extends State<PantryScreen>
     context.read<PantryCubit>().markItemAsUsed(item.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${item.name} marked as used'),
+        content: Text('${item.name} ditandai telah digunakan'),
         backgroundColor: AppColors.success,
       ),
     );

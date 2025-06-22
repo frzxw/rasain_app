@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/pantry_service.dart';
 import '../../services/recipe_service.dart';
 import '../../models/pantry_item.dart';
@@ -10,10 +11,25 @@ class PantryCubit extends Cubit<PantryState> {
   final RecipeService _recipeService;
 
   PantryCubit(this._pantryService, this._recipeService) : super(const PantryState());
-  // Initialize and fetch pantry data
+  
+  // Check authentication and initialize
   Future<void> initialize() async {
     emit(state.copyWith(status: PantryStatus.loading));
+    
     try {
+      // Check if user is authenticated using Supabase
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        emit(state.copyWith(
+          status: PantryStatus.unauthenticated,
+          isAuthenticated: false,
+        ));
+        return;
+      }
+
+      // User is authenticated, proceed with initialization
+      emit(state.copyWith(isAuthenticated: true));
+      
       // Initialize the pantry service which loads items and tools
       await _pantryService.initialize();
 
@@ -34,6 +50,7 @@ class PantryCubit extends Cubit<PantryState> {
           expiringItems: expiringItems,
           lowStockItems: lowStockItems,
           status: PantryStatus.loaded,
+          isAuthenticated: true,
         ),
       );
 
@@ -41,7 +58,11 @@ class PantryCubit extends Cubit<PantryState> {
       await _fetchPantryBasedRecipes();
     } catch (e) {
       emit(
-        state.copyWith(status: PantryStatus.error, errorMessage: e.toString()),
+        state.copyWith(
+          status: PantryStatus.error, 
+          errorMessage: e.toString(),
+          isAuthenticated: false,
+        ),
       );
     }
   }
