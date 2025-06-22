@@ -48,13 +48,11 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   List<RecipeIngredient> _ingredients = [];
   List<RecipeInstruction> _instructions = [];
   String? _selectedCategory;
-  String? _selectedDifficulty; // New field for difficulty level
-  // Additional controllers for ingredient form
+  String? _selectedDifficulty; // New field for difficulty level  // Additional controllers for ingredient form
   final TextEditingController _ingredientNameController =
       TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _unitController = TextEditingController();
-  final TextEditingController _amountController = TextEditingController();
   final TextEditingController _ingredientNotesController =
       TextEditingController();
   // Additional controllers for instruction form
@@ -154,12 +152,10 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     _caloriesController.dispose();
     _proteinController.dispose();
     _carbsController.dispose();
-    _fatController.dispose();
-    // Dispose new ingredient/instruction controllers
+    _fatController.dispose();    // Dispose new ingredient/instruction controllers
     _ingredientNameController.dispose();
     _quantityController.dispose();
     _unitController.dispose();
-    _amountController.dispose();
     _ingredientNotesController.dispose();
     _instructionTextController.dispose();
     _timerController.dispose();
@@ -1750,43 +1746,10 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
                     fillColor: Colors.grey.shade50,
                   ),
                 ),
-              ),
-            ],
+              ),          ],
           ),
           const SizedBox(height: 12),
-
-          // Amount field (calculated or manual input)
-          TextFormField(
-            controller: _amountController,
-            decoration: InputDecoration(
-              labelText: 'Total Jumlah (Opsional)',
-              hintText: 'Contoh: 200g, 2 siung',
-              prefixIcon: Icon(Icons.calculate, color: AppColors.primary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                borderSide: BorderSide(color: AppColors.primary, width: 2),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              helperText: 'Kombinasi otomatis dari jumlah dan satuan di atas',
-            ),
-            onChanged: (value) {
-              // Optional: Auto-calculate amount from quantity + unit
-              if (value.isEmpty &&
-                  _quantityController.text.isNotEmpty &&
-                  _unitController.text.isNotEmpty) {
-                setState(() {
-                  _amountController.text =
-                      '${_quantityController.text} ${_unitController.text}';
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-
+          
           // Notes (optional)
           TextFormField(
             controller: _ingredientNotesController,
@@ -1857,17 +1820,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
         ),
       );
       return;
-    }
-    // Auto-calculate amount if not provided
-    String? finalAmount =
-        _amountController.text.trim().isEmpty
-            ? null
-            : _amountController.text.trim();
-    if (finalAmount == null &&
-        _quantityController.text.trim().isNotEmpty &&
-        _unitController.text.trim().isNotEmpty) {
-      finalAmount =
-          '${_quantityController.text.trim()} ${_unitController.text.trim()}';
+    }    // Auto-calculate amount from quantity and unit
+    String? finalAmount;
+    if (_quantityController.text.trim().isNotEmpty && _unitController.text.trim().isNotEmpty) {
+      finalAmount = '${_quantityController.text.trim()} ${_unitController.text.trim()}';
+    } else if (_quantityController.text.trim().isNotEmpty) {
+      finalAmount = _quantityController.text.trim();
     }
     // Generate a UUID for ingredient_id instead of string-based ID
     // Let the database auto-generate the UUID for ingredient_id
@@ -1888,15 +1846,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
               : _ingredientNotesController.text.trim(),
       amount: finalAmount,
       ingredientId: null, // Let database auto-generate UUID
-    );
-
-    setState(() {
+    );    setState(() {
       _ingredients.add(newIngredient);
       // Clear form
       _ingredientNameController.clear();
       _quantityController.clear();
       _unitController.clear();
-      _amountController.clear();
       _ingredientNotesController.clear();
     });
 

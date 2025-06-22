@@ -57,13 +57,12 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
     } catch (e) {
       debugPrint('❌ CommentsOverlay: Error loading comments: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
+        setState(() => _isLoading = false);        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load comments: $e'),
+            content: Text('Gagal memuat komentar: $e'),
             backgroundColor: AppColors.error,
             action: SnackBarAction(
-              label: 'Retry',
+              label: 'Coba Lagi',
               textColor: Colors.white,
               onPressed: _loadComments,
             ),
@@ -86,22 +85,20 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
       
       await _loadComments(); // Refresh comments
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Comment added successfully!'),
+            content: Text('Komentar berhasil ditambahkan!'),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to add comment: $e'),
+            content: Text('Gagal menambahkan komentar: $e'),
             backgroundColor: AppColors.error,
             action: SnackBarAction(
-              label: 'Retry',
+              label: 'Coba Lagi',
               textColor: Colors.white,
               onPressed: _submitComment,
             ),
@@ -142,14 +139,13 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
           Padding(
             padding: const EdgeInsets.all(AppSizes.paddingM),            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Comments (${_comments.length})',
+              children: [                Text(
+                  'Komentar (${_comments.length})',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
-                ),                Row(
+                ),Row(
                   children: [
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -198,9 +194,8 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                               size: 48,
                               color: Colors.grey,
                             ),
-                            SizedBox(height: 16),
-                            Text(
-                              'No comments yet',
+                            SizedBox(height: 16),                            Text(
+                              'Belum ada komentar',
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 18,
@@ -209,7 +204,7 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Be the first to comment!',
+                              'Jadilah yang pertama berkomentar!',
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14,
@@ -250,7 +245,7 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                       controller: _commentController,
                       focusNode: _commentFocusNode,
                       decoration: InputDecoration(
-                        hintText: 'Add a comment...',
+                        hintText: 'Tulis komentar...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(25),
                           borderSide: BorderSide(color: Colors.grey[300]!),
@@ -352,7 +347,7 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
                   Row(
                     children: [
                       Text(
-                        comment.authorName ?? 'Unknown User',
+                        comment.authorName ?? 'Pengguna Tidak Dikenal',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -387,19 +382,18 @@ class _CommentsOverlayState extends State<CommentsOverlay> {
       ),
     );
   }
-
   String _formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
     if (difference.inMinutes < 1) {
-      return 'just now';
+      return 'baru saja';
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inMinutes} menit lalu';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours} jam lalu';
     } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays} hari lalu';
     } else {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }

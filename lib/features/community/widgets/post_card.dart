@@ -414,21 +414,20 @@ class PostCard extends StatelessWidget {
       ),
     );
   }
-
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
 
     if (difference.inDays > 7) {
-      return DateFormat('MMM d, yyyy').format(dateTime);
+      return DateFormat('d MMM yyyy').format(dateTime);
     } else if (difference.inDays > 0) {
-      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+      return '${difference.inDays} ${difference.inDays == 1 ? 'hari' : 'hari'} lalu';
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+      return '${difference.inHours} ${difference.inHours == 1 ? 'jam' : 'jam'} lalu';
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'menit' : 'menit'} lalu';
     } else {
-      return 'Just now';
+      return 'Baru saja';
     }
   }
 }

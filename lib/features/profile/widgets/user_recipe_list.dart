@@ -215,28 +215,43 @@ class _UserRecipeListState extends State<UserRecipeList> with SingleTickerProvid
         ],
       ),
     );
-  }
-  Widget _buildCollapsedState(BuildContext context) {
+  }  Widget _buildCollapsedState(BuildContext context) {
     // Tampilkan hanya 2 resep pertama dalam mode collapsed
     final displayRecipes = widget.recipes.take(2).toList();
     
     return Column(
       children: [
         ...displayRecipes.map((recipe) => _buildCompactRecipeItem(context, recipe)),
-        if (widget.recipes.length > 2)
+        if (widget.recipes.length > 2) ...[
+          const SizedBox(height: AppSizes.marginM),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
-            child: Center(
-              child: Text(
-                'Ketuk untuk melihat ${widget.recipes.length - 2} resep lainnya',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontStyle: FontStyle.italic,
+            child: OutlinedButton.icon(
+              onPressed: _toggleExpanded,
+              icon: Icon(
+                Icons.expand_more,
+                color: AppColors.primary,
+              ),
+              label: Text(
+                'Lihat ${widget.recipes.length - 2} resep lainnya',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.paddingM,
+                  vertical: AppSizes.paddingS,
                 ),
               ),
             ),
           ),
+        ],
       ],
     );
   }
