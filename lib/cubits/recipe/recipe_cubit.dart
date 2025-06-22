@@ -304,12 +304,15 @@ class RecipeCubit extends Cubit<RecipeState> {
         emit(
           state.copyWith(filteredRecipes: recipes, status: RecipeStatus.loaded),
         );
-      }    } catch (e) {
+      }
+    } catch (e) {
       debugPrint('❌ RecipeCubit: Error loading category recipes: $e');
-      emit(state.copyWith(
-        status: RecipeStatus.error,
-        errorMessage: 'Failed to load category recipes: $e',
-      ));
+      emit(
+        state.copyWith(
+          status: RecipeStatus.error,
+          errorMessage: 'Failed to load category recipes: $e',
+        ),
+      );
     }
   }
 
