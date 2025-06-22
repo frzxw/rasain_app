@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/recipe.dart';
+import '../models/recipe_ingredient.dart';
+import '../models/recipe_instruction.dart';
 import '../core/utils/difficulty_level_mapper.dart';
 import 'supabase_service.dart';
 
@@ -1322,6 +1324,8 @@ class RecipeService extends ChangeNotifier {
     String? difficultyLevel,
     Map<String, dynamic>? nutritionInfo,
     String? tips,
+    List<RecipeIngredient>? detailedIngredients,
+    List<RecipeInstruction>? detailedInstructions,
   }) async {
     try {
       _setLoading(true);
@@ -1338,7 +1342,7 @@ class RecipeService extends ChangeNotifier {
       // Upload image to Supabase Storage if provided
       if (images != null && images.isNotEmpty) {
         imageUrl = await _uploadRecipeImage(images.first, name);
-      }      // Create recipe data matching database schema
+      } // Create recipe data matching database schema
       final recipeData = {
         'name': name,
         'slug': await _generateUniqueSlug(name),
@@ -1349,7 +1353,8 @@ class RecipeService extends ChangeNotifier {
         'cook_time': cookingTime.toString(), // Convert to string without "min"
         'servings': servings,
         'description': description,
-        'difficulty_level': DifficultyLevelMapper.toDatabase(difficultyLevel) ?? 'sedang',
+        'difficulty_level':
+            DifficultyLevelMapper.toDatabase(difficultyLevel) ?? 'sedang',
         'nutrition_info': nutritionInfo ?? {},
         'tips': tips,
         'created_by': userId,
@@ -1372,10 +1377,29 @@ class RecipeService extends ChangeNotifier {
       // Will be handled in a future update
       if (category.isNotEmpty) {
         print('📋 Category "$category" will be added in future update');
-      }
+      } // Add ingredients with detailed information if available
+      if (detailedIngredients != null && detailedIngredients.isNotEmpty) {
+        final ingredientData =
+            detailedIngredients.map((ingredient) {
+              return {
+                'recipe_id': recipeId,
+                'ingredient_name': ingredient.ingredientName,
+                'quantity': ingredient.quantity,
+                'unit': ingredient.unit,
+                'order_index': ingredient.orderIndex,
+                'notes': ingredient.notes,
+                'ingredient_id': ingredient.ingredientId,
+                'amount': ingredient.amount,
+              };
+            }).toList();
 
-      // Add ingredients
-      if (ingredients.isNotEmpty) {
+        await _supabaseService.client
+            .from('recipe_ingredients')
+            .insert(ingredientData);
+
+        print('✅ ${detailedIngredients.length} detailed ingredients added');
+      } else if (ingredients.isNotEmpty) {
+        // Fallback to simple ingredients
         final ingredientData =
             ingredients.asMap().entries.map((entry) {
               return {
@@ -1389,11 +1413,29 @@ class RecipeService extends ChangeNotifier {
             .from('recipe_ingredients')
             .insert(ingredientData);
 
-        print('✅ ${ingredients.length} ingredients added');
+        print('✅ ${ingredients.length} simple ingredients added');
       }
 
-      // Add instructions
-      if (instructions.isNotEmpty) {
+      // Add instructions with detailed information if available
+      if (detailedInstructions != null && detailedInstructions.isNotEmpty) {
+        final instructionData =
+            detailedInstructions.map((instruction) {
+              return {
+                'recipe_id': recipeId,
+                'step_number': instruction.stepNumber,
+                'instruction_text': instruction.instructionText,
+                'image_url': instruction.imageUrl,
+                'timer_minutes': instruction.timerMinutes,
+              };
+            }).toList();
+
+        await _supabaseService.client
+            .from('recipe_instructions')
+            .insert(instructionData);
+
+        print('✅ ${detailedInstructions.length} detailed instructions added');
+      } else if (instructions.isNotEmpty) {
+        // Fallback to simple instructions
         final instructionData =
             instructions.asMap().entries.map((entry) {
               return {
@@ -1407,7 +1449,7 @@ class RecipeService extends ChangeNotifier {
             .from('recipe_instructions')
             .insert(instructionData);
 
-        print('✅ ${instructions.length} instructions added');
+        print('✅ ${instructions.length} simple instructions added');
       }
 
       print('🎉 Recipe "$name" created successfully!');
@@ -1466,7 +1508,9 @@ class RecipeService extends ChangeNotifier {
       print('❌ Error uploading recipe image: $e');
       return null;
     }
-  }  /// Generates a unique URL-friendly slug from recipe name
+  }
+
+  /// Generates a unique URL-friendly slug from recipe name
   Future<String> _generateUniqueSlug(String name) async {
     final baseSlug = name
         .toLowerCase()
@@ -1474,28 +1518,29 @@ class RecipeService extends ChangeNotifier {
         .replaceAll(RegExp(r'\s+'), '-')
         .replaceAll(RegExp(r'-+'), '-')
         .replaceAll(RegExp(r'^-|-$'), '');
-    
+
     String slug = baseSlug;
     int counter = 1;
-    
+
     // Keep checking until we find a unique slug
     while (await _slugExists(slug)) {
       slug = '$baseSlug-$counter';
       counter++;
     }
-    
+
     return slug;
   }
-  
+
   /// Check if a slug already exists in the database
   Future<bool> _slugExists(String slug) async {
     try {
-      final response = await _supabaseService.client
-          .from('recipes')
-          .select('id')
-          .eq('slug', slug)
-          .maybeSingle();
-      
+      final response =
+          await _supabaseService.client
+              .from('recipes')
+              .select('id')
+              .eq('slug', slug)
+              .maybeSingle();
+
       return response != null;
     } catch (e) {
       print('❌ Error checking slug existence: $e');
@@ -1512,7 +1557,7 @@ class RecipeService extends ChangeNotifier {
         .replaceAll(RegExp(r'\s+'), '-')
         .replaceAll(RegExp(r'-+'), '-')
         .replaceAll(RegExp(r'^-|-$'), '');
-    
+
     // Add timestamp to ensure uniqueness as fallback
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     return '$baseSlug-$timestamp';

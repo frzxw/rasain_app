@@ -36,10 +36,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(        title: const Text(
+      appBar: AppBar(
+        title: const Text(
           'Community',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),        backgroundColor: AppColors.primary,
+        ),
+        backgroundColor: AppColors.primary,
         elevation: 0,
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -111,7 +113,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             padding: const EdgeInsets.all(16),
                             itemCount: state.posts.length,
                             itemBuilder: (context, index) {
-                              final post = state.posts[index];                              return PostCard(
+                              final post = state.posts[index];
+                              return PostCard(
                                 post: post,
                                 onLike: () => _handleLikePost(post.id),
                                 onComment: () => _handleCommentPost(post),
@@ -344,19 +347,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
-    );  }
+    );
+  }
 
   // Like functionality is now handled directly by CommunityCubit.toggleLikePost
-  
+
   void _showComments(CommunityPost post) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => CommentsOverlay(
-        postId: post.id,
-        postContent: post.content ?? 'Community Post',
-        currentCommentCount: post.commentCount,      ),
+      builder:
+          (context) => CommentsOverlay(
+            postId: post.id,
+            postContent: post.content ?? 'Community Post',
+            currentCommentCount: post.commentCount,
+          ),
     );
   }
 
@@ -367,7 +373,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Show login dialog if user is not authenticated
       _showLoginPrompt();
       return;
-    }    final TextEditingController contentController = TextEditingController();
+    }
+    final TextEditingController contentController = TextEditingController();
     String? selectedCategory;
     XFile? selectedImage;
 
@@ -445,7 +452,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                       AppSizes.radiusS,
                                     ),
                                     color: AppColors.surface,
-                                  ),                                  child: ClipRRect(
+                                  ),
+                                  child: ClipRRect(
                                     borderRadius: BorderRadius.circular(
                                       AppSizes.radiusS,
                                     ),
@@ -535,7 +543,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             return DropdownMenuItem<String>(
                               value: category,
                               child: Text(category),
-                            );                          }).toList(),
+                            );
+                          }).toList(),
                     ),
 
                     const SizedBox(height: AppSizes.marginL),
@@ -557,13 +566,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                 backgroundColor: AppColors.error,
                               ),
                             );
-                            return;                          }
+                            return;
+                          }
 
                           // Create post logic
                           try {
                             Uint8List? imageBytes;
                             String? fileName;
-                            
+
                             if (selectedImage != null) {
                               imageBytes = await selectedImage!.readAsBytes();
                               fileName = selectedImage!.name;
@@ -577,7 +587,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             );
 
                             Navigator.pop(context, true);
-                            
+
                             // Show success message
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -603,78 +613,73 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
             );
           },
-        );      },
+        );
+      },
     );
   }
 
   void _showLoginPrompt() {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.login,
-              color: AppColors.primary,
-              size: 28,
+      builder:
+          (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Login Diperlukan',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
+            title: Row(
+              children: [
+                Icon(Icons.login, color: AppColors.primary, size: 28),
+                const SizedBox(width: 12),
+                const Text(
+                  'Login Diperlukan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                ),
+              ],
             ),
-          ],
-        ),
-        content: const Text(
-          'Anda perlu masuk terlebih dahulu untuk mengakses fitur komunitas.',
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              'Nanti',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
+            content: const Text(
+              'Anda perlu masuk terlebih dahulu untuk mengakses fitur komunitas.',
+              style: TextStyle(fontSize: 16),
             ),
-          ),          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(); // Close dialog first
-              // Show the new unified auth dialog
-              AuthDialog.showAuthDialog(
-                context,
-                startWithLogin: true,
-                redirectMessage: 'Masuk untuk bergabung dengan komunitas dan berinteraksi dengan pengguna lain.',
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(
+                  'Nanti',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Close dialog first
+                  // Show the new unified auth dialog
+                  AuthDialog.showAuthDialog(
+                    context,
+                    startWithLogin: true,
+                    redirectMessage:
+                        'Masuk untuk bergabung dengan komunitas dan berinteraksi dengan pengguna lain.',
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text(
+                  'Masuk',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-            ),
-            child: const Text(
-              'Masuk',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -685,7 +690,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       _showLoginPrompt();
       return;
     }
-    
+
     // User is authenticated, proceed with like
     context.read<CommunityCubit>().toggleLikePost(postId);
   }
@@ -697,7 +702,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       _showLoginPrompt();
       return;
     }
-    
+
     // User is authenticated, proceed with showing comments
     _showComments(post);
   }

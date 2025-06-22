@@ -1,7 +1,7 @@
 class DifficultyLevelMapper {
   static const Map<String, String> _uiToDatabase = {
     'Mudah': 'mudah',
-    'Sedang': 'sedang', 
+    'Sedang': 'sedang',
     'Sulit': 'sulit',
   };
 

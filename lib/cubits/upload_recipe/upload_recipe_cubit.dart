@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/recipe_service.dart';
+import '../../models/recipe_ingredient.dart';
+import '../../models/recipe_instruction.dart';
 import 'upload_recipe_state.dart';
 
 class UploadRecipeCubit extends Cubit<UploadRecipeState> {
@@ -22,6 +24,8 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
     String? difficultyLevel,
     Map<String, dynamic>? nutritionInfo,
     String? tips,
+    List<RecipeIngredient>? detailedIngredients,
+    List<RecipeInstruction>? detailedInstructions,
   }) async {
     emit(state.copyWith(status: UploadRecipeStatus.loading));
 
@@ -40,6 +44,8 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
         difficultyLevel: difficultyLevel,
         nutritionInfo: nutritionInfo,
         tips: tips,
+        detailedIngredients: detailedIngredients,
+        detailedInstructions: detailedInstructions,
       );
 
       if (result != null) {

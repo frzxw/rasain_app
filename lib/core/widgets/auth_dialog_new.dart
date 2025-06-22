@@ -98,39 +98,26 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
     _formKey = GlobalKey<FormState>();
+
     // Initialize animations
     _slideController = AnimationController(
-      duration: const Duration(
-        milliseconds: 400,
-      ), // Slightly longer for smoother feel
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
     _fadeController = AnimationController(
-      duration: const Duration(
-        milliseconds: 300,
-      ), // Longer fade for better visibility
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(
-        0,
-        0.15,
-      ), // Start slightly lower for more dramatic effect
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _slideController,
-        curve: Curves.easeOutCubic, // More elegant curve
-      ),
-    );
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fadeController,
-        curve: Curves.easeInQuart, // Smoother fade in
-      ),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
     // Start animations
     _fadeController.forward();
@@ -156,14 +143,9 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
       _confirmPasswordController.clear();
     });
 
-    // Smooth transition animation with scale effect
+    // Animate transition
     _slideController.reverse().then((_) {
       _slideController.forward();
-    });
-
-    // Add a subtle fade effect during transition
-    _fadeController.reverse().then((_) {
-      _fadeController.forward();
     });
   }
 
@@ -294,26 +276,14 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
-            AppColors.primary.withOpacity(0.9),
-          ],
+          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          stops: const [0.0, 0.6, 1.0], // More controlled gradient
         ),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -324,25 +294,11 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: Icon(
-                    _isLogin ? Icons.login : Icons.person_add,
-                    color: Colors.white,
-                    size: 24,
-                    key: ValueKey(_isLogin),
-                  ),
+                child: Icon(
+                  _isLogin ? Icons.login : Icons.person_add,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
               const SizedBox(width: 16),
@@ -350,46 +306,30 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        _isLogin ? 'Selamat Datang!' : 'Bergabung dengan Kami!',
-                        key: ValueKey(_isLogin),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    Text(
+                      _isLogin ? 'Selamat Datang!' : 'Bergabung dengan Kami!',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        _isLogin
-                            ? 'Masuk ke akun Anda'
-                            : 'Buat akun baru untuk memulai',
-                        key: ValueKey('${_isLogin}_subtitle'),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
-                        ),
+                    Text(
+                      _isLogin
+                          ? 'Masuk ke akun Anda'
+                          : 'Buat akun baru untuk memulai',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white.withOpacity(0.1),
-                ),
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  splashRadius: 20,
-                  tooltip: 'Tutup',
-                ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white),
               ),
             ],
           ),
@@ -438,220 +378,140 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
               children: [
                 // Name field for registration
                 if (!_isLogin)
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 400),
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, 20 * (1 - value)),
-                        child: Opacity(
-                          opacity: value,
-                          child: _buildAnimatedField(
-                            controller: _nameController,
-                            label: 'Nama Lengkap',
-                            icon: Icons.person_outline,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Nama tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                            enabled: state.status != AuthStatus.loading,
-                          ),
-                        ),
-                      );
+                  _buildAnimatedField(
+                    controller: _nameController,
+                    label: 'Nama Lengkap',
+                    icon: Icons.person_outline,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Nama tidak boleh kosong';
+                      }
+                      return null;
                     },
+                    enabled: state.status != AuthStatus.loading,
                   ),
 
                 // Email field
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 500),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  builder: (context, value, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: Opacity(
-                        opacity: value,
-                        child: _buildAnimatedField(
-                          controller: _emailController,
-                          label: 'Email',
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Email tidak boleh kosong';
-                            }
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Format email tidak valid';
-                            }
-                            return null;
-                          },
-                          enabled: state.status != AuthStatus.loading,
-                        ),
-                      ),
-                    );
+                _buildAnimatedField(
+                  controller: _emailController,
+                  label: 'Email',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Email tidak boleh kosong';
+                    }
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
+                      return 'Format email tidak valid';
+                    }
+                    return null;
                   },
+                  enabled: state.status != AuthStatus.loading,
                 ),
 
                 // Password field
-                TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 600),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  builder: (context, value, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: Opacity(
-                        opacity: value,
-                        child: _buildAnimatedField(
-                          controller: _passwordController,
-                          label: 'Kata Sandi',
-                          icon: Icons.lock_outline,
-                          isPassword: true,
-                          isPasswordVisible: _isPasswordVisible,
-                          togglePasswordVisibility: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Kata sandi tidak boleh kosong';
-                            }
-                            if (!_isLogin && value.length < 6) {
-                              return 'Kata sandi minimal 6 karakter';
-                            }
-                            return null;
-                          },
-                          enabled: state.status != AuthStatus.loading,
-                        ),
-                      ),
-                    );
+                _buildAnimatedField(
+                  controller: _passwordController,
+                  label: 'Kata Sandi',
+                  icon: Icons.lock_outline,
+                  isPassword: true,
+                  isPasswordVisible: _isPasswordVisible,
+                  togglePasswordVisibility: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
                   },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Kata sandi tidak boleh kosong';
+                    }
+                    if (!_isLogin && value.length < 6) {
+                      return 'Kata sandi minimal 6 karakter';
+                    }
+                    return null;
+                  },
+                  enabled: state.status != AuthStatus.loading,
                 ),
 
                 // Confirm password field for registration
                 if (!_isLogin)
-                  TweenAnimationBuilder<double>(
-                    duration: const Duration(milliseconds: 700),
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, 20 * (1 - value)),
-                        child: Opacity(
-                          opacity: value,
-                          child: _buildAnimatedField(
-                            controller: _confirmPasswordController,
-                            label: 'Konfirmasi Kata Sandi',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                            isPasswordVisible: _isConfirmPasswordVisible,
-                            togglePasswordVisibility: () {
-                              setState(() {
-                                _isConfirmPasswordVisible =
-                                    !_isConfirmPasswordVisible;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Konfirmasi kata sandi tidak boleh kosong';
-                              }
-                              if (value != _passwordController.text) {
-                                return 'Kata sandi tidak cocok';
-                              }
-                              return null;
-                            },
-                            enabled: state.status != AuthStatus.loading,
+                  _buildAnimatedField(
+                    controller: _confirmPasswordController,
+                    label: 'Konfirmasi Kata Sandi',
+                    icon: Icons.lock_outline,
+                    isPassword: true,
+                    isPasswordVisible: _isConfirmPasswordVisible,
+                    togglePasswordVisibility: () {
+                      setState(() {
+                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Konfirmasi kata sandi tidak boleh kosong';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Kata sandi tidak cocok';
+                      }
+                      return null;
+                    },
+                    enabled: state.status != AuthStatus.loading,
+                  ),
+
+                // Error message
+                if (state.errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            state.errorMessage!,
+                            style: TextStyle(color: Colors.red, fontSize: 12),
                           ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
-                // Error message
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child:
-                      state.errorMessage != null
-                          ? Container(
-                            key: const ValueKey('error_message'),
-                            margin: const EdgeInsets.only(top: 16),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  color: Colors.red,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    state.errorMessage!,
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          : const SizedBox.shrink(),
-                ),
+                ],
+
                 // Loading indicator
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child:
-                      state.status == AuthStatus.loading
-                          ? Container(
-                            key: const ValueKey('loading_indicator'),
-                            margin: const EdgeInsets.only(top: 16),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: AppColors.primary.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  _isLogin ? 'Masuk...' : 'Membuat akun...',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                          : const SizedBox.shrink(),
-                ),
+                if (state.status == AuthStatus.loading) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _isLogin ? 'Masuk...' : 'Membuat akun...',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -671,64 +531,47 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
     String? Function(String?)? validator,
     bool enabled = true,
   }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Focus(
-        onFocusChange: (hasFocus) {
-          // Add subtle focus animation if needed
-        },
-        child: TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: isPassword && !isPasswordVisible,
-          enabled: enabled,
-          validator: validator,
-          decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(icon, color: AppColors.primary),
-            ),
-            suffixIcon:
-                isPassword
-                    ? IconButton(
-                      icon: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          isPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          color: AppColors.textSecondary,
-                          key: ValueKey(isPasswordVisible),
-                        ),
-                      ),
-                      onPressed: togglePasswordVisibility,
-                    )
-                    : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primary, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            filled: true,
-            fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: isPassword && !isPasswordVisible,
+        enabled: enabled,
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: AppColors.primary),
+          suffixIcon:
+              isPassword
+                  ? IconButton(
+                    icon: Icon(
+                      isPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: togglePasswordVisibility,
+                  )
+                  : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red),
+          ),
+          filled: true,
+          fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
         ),
       ),
     );
@@ -746,43 +589,22 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
               // Main action button
               SizedBox(
                 width: double.infinity,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleSubmit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: isLoading ? 0 : 2,
-                      shadowColor: AppColors.primary.withOpacity(0.3),
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child:
-                          isLoading
-                              ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                ),
-                              )
-                              : Text(
-                                _isLogin ? 'Masuk' : 'Buat Akun',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                key: ValueKey(_isLogin),
-                              ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _isLogin ? 'Masuk' : 'Buat Akun',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -811,37 +633,34 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
                   ),
                 ),
               ],
+
               // Toggle between login/register
               const SizedBox(height: 16),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Row(
-                  key: ValueKey(_isLogin),
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isLogin ? 'Belum punya akun?' : 'Sudah punya akun?',
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _isLogin ? 'Belum punya akun?' : 'Sudah punya akun?',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: isLoading ? null : _toggleMode,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: Text(
+                      _isLogin ? 'Daftar di sini' : 'Masuk di sini',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
                     ),
-                    TextButton(
-                      onPressed: isLoading ? null : _toggleMode,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      child: Text(
-                        _isLogin ? 'Daftar di sini' : 'Masuk di sini',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

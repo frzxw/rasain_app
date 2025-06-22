@@ -404,7 +404,8 @@ class _ReviewSectionState extends State<ReviewSection> {
               AuthDialog.showAuthDialog(
                 context,
                 startWithLogin: true,
-                redirectMessage: 'Masuk atau daftar untuk memberikan ulasan dan berbagi pengalaman Anda.',
+                redirectMessage:
+                    'Masuk atau daftar untuk memberikan ulasan dan berbagi pengalaman Anda.',
               );
             },
             style: ElevatedButton.styleFrom(

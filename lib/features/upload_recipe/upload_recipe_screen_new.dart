@@ -121,11 +121,13 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   bool _isUserAuthenticated() {
     return Supabase.instance.client.auth.currentUser != null;
   }
+
   void _navigateToLogin() {
     AuthDialog.showAuthDialog(
       context,
       startWithLogin: true,
-      redirectMessage: 'Masuk untuk mulai membuat dan berbagi resep dengan komunitas.',
+      redirectMessage:
+          'Masuk untuk mulai membuat dan berbagi resep dengan komunitas.',
     );
   }
 

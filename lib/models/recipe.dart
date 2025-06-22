@@ -64,25 +64,13 @@ class Recipe {
       estimatedCost: json['estimated_cost']?.toString(),
       cookTime: json['cook_time']?.toString(),
       servings: json['servings'],
-      difficultyLevel: DifficultyLevelMapper.toUI(json['difficulty_level'] as String?),
+      difficultyLevel: DifficultyLevelMapper.toUI(
+        json['difficulty_level'] as String?,
+      ),
       nutritionInfo: json['nutrition_info'] as Map<String, dynamic>?,
       tips: json['tips'] as String?,
-      ingredients:
-          json['ingredients'] != null
-              ? List<Map<String, dynamic>>.from(json['ingredients'])
-              : null,
-      instructions:
-          json['instructions'] != null
-              ? (json['instructions'] is List<String>
-                  ?
-                  // Convert string instructions to map format with only 'text' field
-                  List<Map<String, dynamic>>.from(
-                    (json['instructions'] as List).map(
-                      (step) => {'text': step, 'videoUrl': null},
-                    ),
-                  )
-                  : List<Map<String, dynamic>>.from(json['instructions']))
-              : null,
+      ingredients: _parseIngredients(json),
+      instructions: _parseInstructions(json),
       description: json['description'],
       categories:
           json['categories'] != null
@@ -168,4 +156,73 @@ class Recipe {
 
   @override
   int get hashCode => id.hashCode;
+
+  // Helper methods for parsing relational data
+  static List<Map<String, dynamic>>? _parseIngredients(
+    Map<String, dynamic> json,
+  ) {
+    // Check for relational data from JOIN query
+    if (json['recipe_ingredients'] != null) {
+      final List<dynamic> ingredientsList =
+          json['recipe_ingredients'] as List<dynamic>;
+      return ingredientsList
+          .map(
+            (ingredient) => {
+              'name': ingredient['ingredient_name'] ?? '',
+              'quantity': ingredient['quantity'] ?? '',
+              'unit': ingredient['unit'] ?? '',
+              'order_index': ingredient['order_index'] ?? 0,
+            },
+          )
+          .toList();
+    }
+
+    // Fallback to direct JSON field
+    if (json['ingredients'] != null) {
+      return List<Map<String, dynamic>>.from(json['ingredients']);
+    }
+
+    return null;
+  }
+
+  static List<Map<String, dynamic>>? _parseInstructions(
+    Map<String, dynamic> json,
+  ) {
+    // Check for relational data from JOIN query
+    if (json['recipe_instructions'] != null) {
+      final List<dynamic> instructionsList =
+          json['recipe_instructions'] as List<dynamic>;
+      // Sort by step_number to maintain order
+      instructionsList.sort(
+        (a, b) => (a['step_number'] ?? 0).compareTo(b['step_number'] ?? 0),
+      );
+
+      return instructionsList
+          .map(
+            (instruction) => {
+              'text': instruction['instruction_text'] ?? '',
+              'step_number': instruction['step_number'] ?? 1,
+              'videoUrl': instruction['video_url'],
+              'imageUrl': instruction['image_url'],
+            },
+          )
+          .toList();
+    }
+
+    // Fallback to direct JSON field
+    if (json['instructions'] != null) {
+      if (json['instructions'] is List<String>) {
+        // Convert string instructions to map format
+        return List<Map<String, dynamic>>.from(
+          (json['instructions'] as List).map(
+            (step) => {'text': step, 'videoUrl': null},
+          ),
+        );
+      } else {
+        return List<Map<String, dynamic>>.from(json['instructions']);
+      }
+    }
+
+    return null;
+  }
 }

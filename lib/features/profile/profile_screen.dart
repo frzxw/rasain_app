@@ -318,11 +318,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {                  // Show unified auth dialog starting with login
+                onPressed: () {
+                  // Show unified auth dialog starting with login
                   AuthDialog.showAuthDialog(
                     context,
                     startWithLogin: true,
-                    redirectMessage: 'Masuk ke akun Anda untuk mengakses profil dan fitur lengkap.',
+                    redirectMessage:
+                        'Masuk ke akun Anda untuk mengakses profil dan fitur lengkap.',
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -337,11 +339,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {                  // Show unified auth dialog starting with registration
+                onPressed: () {
+                  // Show unified auth dialog starting with registration
                   AuthDialog.showAuthDialog(
                     context,
                     startWithLogin: false,
-                    redirectMessage: 'Buat akun baru untuk menikmati semua fitur Rasain.',
+                    redirectMessage:
+                        'Buat akun baru untuk menikmati semua fitur Rasain.',
                   );
                 },
                 style: OutlinedButton.styleFrom(
