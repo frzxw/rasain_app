@@ -6,6 +6,7 @@ import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/app_bar.dart';
+import '../../core/widgets/auth_dialog.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../cubits/community/community_state.dart';
@@ -14,6 +15,7 @@ import '../../cubits/auth/auth_state.dart';
 import 'widgets/post_card.dart';
 import 'widgets/filter_tags.dart';
 import 'comments_overlay.dart';
+
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -362,16 +364,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Show login dialog if user is not authenticated
       _showLoginPrompt();
       return;
-    }    final TextEditingController contentController = TextEditingController();
-    
+    }
+    final TextEditingController contentController = TextEditingController();
+
     // Initialize selectedCategory with current filter from cubit state
-    String? selectedCategory = context.read<CommunityCubit>().state.selectedCategory;
+    String? selectedCategory =
+        context.read<CommunityCubit>().state.selectedCategory;
     // If current filter is 'Semua', don't select any category initially
     if (selectedCategory == 'Semua') {
       selectedCategory = null;
     }
-    
-    XFile? selectedImage;    // Updated with specific categories requested
+
+    XFile? selectedImage; // Updated with specific categories requested
     final availableCategories = [
       'Kreasi',
       'Review',
@@ -537,7 +541,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           }).toList(),
                     ),
 
-                    const SizedBox(height: AppSizes.marginL),                    // Post Button
+                    const SizedBox(height: AppSizes.marginL), // Post Button
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
