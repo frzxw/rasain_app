@@ -80,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Check if 'All' is already in the categories from database
           final hasAll = uniqueCategories.contains('All');
-
           setState(() {
             if (hasAll) {
               // If 'All' is in database, just use the categories as-is but ensure 'All' is first
@@ -90,6 +89,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // If 'All' is not in database, prepend it
               _categories = ['All', ...uniqueCategories];
             }
+
+            // Set default category to 'All' after categories are loaded
+            _selectedCategory = 'All';
           });
 
           debugPrint('📱 Categories loaded: $_categories');
@@ -108,6 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
               'Daging',
               'Manis',
             ];
+            // Set default category to 'All' in fallback case too
+            _selectedCategory = 'All';
           });
         }
       }
