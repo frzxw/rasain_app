@@ -22,8 +22,7 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  @override
+class _ProfileScreenState extends State<ProfileScreen> {  @override
   void initState() {
     super.initState();
     // Initialize data
@@ -31,9 +30,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Check if user is authenticated
       context.read<AuthCubit>().initialize();
 
-      // Load saved recipes
+      // Load saved recipes and user recipes
       context.read<RecipeCubit>().initialize();
       context.read<RecipeCubit>().getLikedRecipes();
+      context.read<RecipeCubit>().refreshUserRecipes();
     });
   }
 
@@ -66,11 +66,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildAuthenticatedProfile(BuildContext context, UserProfile user) {
-    return RefreshIndicator(
+  Widget _buildAuthenticatedProfile(BuildContext context, UserProfile user) {    return RefreshIndicator(
       onRefresh: () async {
         await context.read<AuthCubit>().initialize();
         await context.read<RecipeCubit>().getLikedRecipes();
+        await context.read<RecipeCubit>().refreshUserRecipes();
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
