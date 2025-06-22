@@ -625,7 +625,7 @@ class _AuthDialogWidgetState extends State<AuthDialogWidget>
                             );
                           },
                   child: Text(
-                    'Lupa kata sandi?',
+                    '',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
