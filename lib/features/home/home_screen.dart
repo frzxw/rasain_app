@@ -11,7 +11,18 @@ import '../../models/recipe.dart';
 import 'widgets/category_slider.dart';
 import 'widgets/recipe_carousel.dart';
 import 'widgets/whats_cooking_stream.dart';
-import 'package:rasain_app/features/home/widgets/filter_recipe_widget.dart';
+import 'widgets/filter_recipe_widget.dart';
+import 'widgets/greeting_header.dart';
+import 'widgets/quick_action_buttons.dart';
+
+import 'widgets/modern_stats_cards.dart';
+import 'widgets/modern_floating_action_button.dart';
+import 'widgets/trending_recipes_section.dart';
+import 'widgets/modern_search_bar.dart';
+import 'widgets/section_header.dart';
+import 'widgets/loading_state.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/trending_topics.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -101,204 +112,180 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppColors.primary,
           child: CustomScrollView(
             slivers: [
-              _buildSliverAppBar(),
+              // Modern App Bar with Search
+              _buildModernAppBar(),
+
+              // Main Content
               if (_isSearching)
                 _buildSearchResults()
               else if (_selectedCategory != 'All')
                 _buildCategoryResults()
               else
-                _buildHomeContent(),
+                _buildModernHomeContent(),
             ],
           ),
         ),
       ),
+      // Modern Floating Action Button
+      floatingActionButton: const ModernFloatingActionButton(),
     );
   }
 
-  SliverAppBar _buildSliverAppBar() {
+  SliverAppBar _buildModernAppBar() {
     return SliverAppBar(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      floating: true,
-      pinned: true,
-      snap: false,
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      expandedHeight: 120,
-      flexibleSpace: FlexibleSpaceBar(background: _buildAppBarContent()),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(50.0),
-        child: CategorySlider(
-          categories: _categories,
-          selectedCategory: _selectedCategory,
-          onCategorySelected: _handleCategoryFilter,
+      floating: true,
+      pinned: false,
+      snap: true,
+      expandedHeight: 200,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Column(
+          children: [
+            // Search Bar
+            ModernSearchBar(
+              controller: _searchController,
+              hasActiveFilters: _hasActiveFilters,
+              onFilterTap: _showFilterDialog,
+              onCameraTap: () {
+                // TODO: Implement camera search
+                setState(() {
+                  _isImageSearching = true;
+                });
+              },
+            ),
+
+            // Category Slider
+            if (_categories.isNotEmpty)
+              CategorySlider(
+                categories: _categories,
+                selectedCategory: _selectedCategory,
+                onCategorySelected: _handleCategoryFilter,
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildAppBarContent() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppSizes.radiusM),
-              ),
-              child: TextField(
-                controller: _searchController,                decoration: InputDecoration(
-                  hintText: 'Cari resep...',
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppColors.textSecondary,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingM,
-                    vertical: 14,
-                  ),
-                ),
-                textInputAction: TextInputAction.search,
-                onSubmitted:
-                    (query) => context.read<RecipeCubit>().searchRecipes(query),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.marginM),
-          // Filter Button
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _hasActiveFilters ? AppColors.primary : AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.tune,
-                color: _hasActiveFilters ? Colors.white : AppColors.textPrimary,
-              ),
-              onPressed: _showFilterDialog,
-            ),
-          ),
-          const SizedBox(width: AppSizes.marginM),
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusM),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.notifications_outlined,
-                color: AppColors.textPrimary,
-              ),
-              onPressed: () => GoRouter.of(context).push('/notifications'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHomeContent() {
+  Widget _buildModernHomeContent() {
     return SliverList(
       delegate: SliverChildListDelegate([
-        const SizedBox(height: AppSizes.marginL),
-        _buildSectionTitle('Rekomendasi Menu Untuk Anda'),
+        // Greeting Header
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.paddingM,
+            vertical: AppSizes.paddingS,
+          ),
+          child: GreetingHeader(
+            userName: null, // TODO: Get from auth service
+          ),
+        ),
+        const SizedBox(height: AppSizes.marginS),
+
+        // Quick Action Buttons
+        const QuickActionButtons(),
+
+        const SizedBox(height: AppSizes.marginL), // Trending Topics Section
+        SectionHeader(
+          title: 'Trending Hari Ini',
+          subtitle: 'Resep yang sedang populer',
+          icon: Icons.trending_up,
+          iconColor: AppColors.primary,
+          onSeeAllTap: () {
+            // TODO: Navigate to trending page
+          },
+        ),
         const SizedBox(height: AppSizes.marginS),
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
-            if (state.status == RecipeStatus.loading) {
-              return RecipeCarousel(recipes: const [], isLoading: true);
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading recipes',
-              );
-            }
-            return RecipeCarousel(
-              recipes: state.recommendedRecipes,
-              isLoading: false,
+            return TrendingTopics(
+              trendingRecipes: state.featuredRecipes.take(5).toList(),
+              onTopicTap: (recipeName) {
+                _searchController.text = recipeName;
+                _onSearchChanged();
+              },
             );
           },
         ),
-        const SizedBox(height: AppSizes.marginL),
-        _buildSectionTitle('Hidangan Populer'),
+
+        const SizedBox(height: AppSizes.marginL), // Featured Recipes Section
+        SectionHeader(
+          title: 'Resep Pilihan',
+          subtitle: 'Rekomendasi chef terbaik untuk kamu',
+          icon: Icons.star,
+          iconColor: AppColors.primary,
+          onSeeAllTap: () {
+            // TODO: Navigate to featured recipes
+          },
+        ),
         const SizedBox(height: AppSizes.marginS),
+
+        // Recipe Content based on state
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
-            if (state.status == RecipeStatus.loading) {
-              return RecipeCarousel(recipes: const [], isLoading: true);
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading recipes',
-              );
+            switch (state.status) {
+              case RecipeStatus.loading:
+                return const LoadingState(
+                  message: 'Memuat resep terbaik...',
+                  showAnimation: true,
+                );
+
+              case RecipeStatus.loaded:
+                if (state.recipes.isEmpty) {
+                  return EmptyState.noRecipes(
+                    onUploadTap: () => context.push('/upload-recipe'),
+                  );
+                }
+                return RecipeCarousel(recipes: state.recipes.take(10).toList());
+
+              case RecipeStatus.error:
+                return _buildErrorWidget(
+                  state.errorMessage ?? 'Terjadi kesalahan',
+                );
+
+              default:
+                return const SizedBox.shrink();
             }
-            return RecipeCarousel(
-              recipes: state.featuredRecipes,
-              isLoading: false,
-            );
           },
         ),
         const SizedBox(height: AppSizes.marginL),
-        _buildSectionTitle('Dari Dapur Anda'),
-        const SizedBox(height: AppSizes.marginS),
-        BlocBuilder<RecipeCubit, RecipeState>(
-          builder: (context, state) {
-            if (state.status == RecipeStatus.loading) {
-              return RecipeCarousel(recipes: const [], isLoading: true);
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading recipes',
-              );
-            }
-            final pantryRecipes =
-                state.recipes
-                    .where(
-                      (recipe) =>
-                          recipe.categories?.contains('Dari Dapur') == true,
-                    )
-                    .toList();
-            return RecipeCarousel(recipes: pantryRecipes, isLoading: false);
-          },
-        ),
-        const SizedBox(height: AppSizes.marginL),        _buildSectionTitle('Masak Apa Hari Ini?'),
-        const SizedBox(height: AppSizes.marginS),
-        BlocBuilder<RecipeCubit, RecipeState>(
-          builder: (context, state) {
-            if (state.status == RecipeStatus.loading) {
-              return WhatsCookingStream(recipes: const [], isLoading: true);
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading recipes',
-              );
-            }
-            
-            // Gabungkan resep dari berbagai sumber, prioritaskan user recipes
-            final List<Recipe> todayRecipes = [];
-            
-            // Tambahkan user recipes di posisi teratas (max 2)
-            if (state.userRecipes.isNotEmpty) {
-              todayRecipes.addAll(state.userRecipes.take(2));
-            }
-            
-            // Tambahkan resep lainnya hingga total 5
-            final otherRecipes = state.recipes
-                .where((recipe) => !todayRecipes.any((userRecipe) => userRecipe.id == recipe.id))
-                .take(5 - todayRecipes.length)
-                .toList();
-            todayRecipes.addAll(otherRecipes);
-            
-            return WhatsCookingStream(
-              recipes: todayRecipes,
-              isLoading: false,
-            );
-          },
-        ),
+
+        // Modern Stats Cards
+        const ModernStatsCards(),
+
         const SizedBox(height: AppSizes.marginL),
+
+        // Trending Recipes Section
+        const TrendingRecipesSection(),
+
+        const SizedBox(
+          height: AppSizes.marginL,
+        ), // What's Cooking Stream Section
+        SectionHeader(
+          title: 'What\'s Cooking',
+          subtitle: 'Jelajahi resep dari komunitas',
+          icon: Icons.restaurant,
+          iconColor: AppColors.primary,
+          onSeeAllTap: () {
+            // TODO: Navigate to community recipes
+          },
+        ),
+        const SizedBox(height: AppSizes.marginS),
+
+        BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, state) {
+            if (state.status == RecipeStatus.loaded &&
+                state.recipes.isNotEmpty) {
+              return WhatsCookingStream(
+                recipes: state.recipes.skip(10).take(5).toList(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        // Bottom spacing
+        const SizedBox(height: 100),
       ]),
     );
   }
@@ -306,15 +293,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSearchResults() {
     if (_isImageSearching) {
       return const SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: AppColors.primary),
-              SizedBox(height: AppSizes.marginM),
-              Text('Menganalisis gambar...'),
-            ],
-          ),
+        child: LoadingState(
+          message: 'Menganalisis gambar untuk menemukan resep...',
+          showAnimation: true,
         ),
       );
     }
@@ -322,58 +303,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return BlocBuilder<RecipeCubit, RecipeState>(
       builder: (context, state) {
         if (state.status == RecipeStatus.loading && state.recipes.isEmpty) {
-          return SliverPadding(
-            padding: const EdgeInsets.all(AppSizes.paddingM),
-            sliver: SliverMasonryGrid.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childCount: 6,
-              itemBuilder: (context, index) {
-                return ShimmerWidget(
-                  child: Container(
-                    height: (index % 2 + 1) * 100.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                    ),
-                  ),
-                );
-              },
+          return const SliverFillRemaining(
+            child: LoadingState(
+              message: 'Mencari resep yang cocok...',
+              showAnimation: false,
             ),
           );
         }
 
         if (state.recipes.isEmpty) {
           return SliverFillRemaining(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(height: AppSizes.marginM),
-                  Text(
-                    'Tidak ada resep ditemukan',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: AppSizes.marginS),
-                  Text(
-                    'Coba kata kunci lain atau kategori berbeda.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+            child: EmptyState.noSearchResults(
+              query: _searchController.text,
+              onClearTap: () {
+                _searchController.clear();
+                setState(() => _isSearching = false);
+                context.read<RecipeCubit>().initialize();
+              },
             ),
           );
         }
+
         return SliverPadding(
           padding: const EdgeInsets.all(AppSizes.paddingM),
           sliver: SliverMasonryGrid.count(
@@ -382,8 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisSpacing: 16,
             childCount: state.recipes.length,
             itemBuilder: (context, index) {
-              final recipe = state.recipes[index];
-              return _buildSearchResultItem(recipe);
+              return _buildSearchResultItem(state.recipes[index]);
             },
           ),
         );
@@ -395,7 +344,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return SliverList(
       delegate: SliverChildListDelegate([
         const SizedBox(height: AppSizes.marginL),
-        _buildSectionTitle('$_selectedCategory'),
+        SectionHeader(
+          title: _selectedCategory,
+          subtitle: 'Resep dalam kategori $_selectedCategory',
+          icon: Icons.category,
+          iconColor: AppColors.primary,
+        ),
         const SizedBox(height: AppSizes.marginS),
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
@@ -406,27 +360,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 state.errorMessage ?? 'Error loading recipes',
               );
             } else if (state.recipes.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.paddingL),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.restaurant_menu,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: AppSizes.marginM),
-                      Text(
-                        'Tidak ada resep untuk kategori $_selectedCategory',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
+              return EmptyState(
+                title: 'Belum ada resep',
+                subtitle: 'Tidak ada resep untuk kategori $_selectedCategory',
+                icon: Icons.restaurant_menu,
+                iconColor: AppColors.primary,
+                onActionTap: () {
+                  setState(() {
+                    _selectedCategory = 'All';
+                  });
+                  context.read<RecipeCubit>().initialize();
+                },
+                actionText: 'Lihat Semua Resep',
               );
             }
             return _buildRecipeGrid(state.recipes);
@@ -477,13 +422,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return _buildSearchResultItem(recipe);
         },
       ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-      child: Text(title, style: Theme.of(context).textTheme.headlineSmall),
     );
   }
 
@@ -598,7 +536,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'All') {
       debugPrint('📋 Loading all recipes');
       context.read<RecipeCubit>().initialize();
-    } else {      debugPrint('🔍 Filtering by category: $category');
+    } else {
+      debugPrint('🔍 Filtering by category: $category');
       context.read<RecipeCubit>().filterByCategory(category);
     }
   }

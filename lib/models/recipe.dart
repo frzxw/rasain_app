@@ -4,11 +4,13 @@ class Recipe {
   final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
-  final int reviewCount;  final int? estimatedCost;
+  final int reviewCount;
+  final int? estimatedCost;
   final int? cookTime;
   final int? servings;
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -38,31 +40,44 @@ class Recipe {
         .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
         .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
   }
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      id: json['id'],
+      id:
+          json['id']
+              .toString(), // Convert to string to handle both int and string
       name: json['name'],
-      slug: json['slug']?.isNotEmpty == true 
-          ? json['slug'] 
-          : generateSlug(json['name'] ?? ''), // Auto-generate if missing
+      slug:
+          json['slug']?.isNotEmpty == true
+              ? json['slug']
+              : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],      estimatedCost: json['estimated_cost'] as int?,
+      reviewCount: json['review_count'],
+      estimatedCost: json['estimated_cost'] as int?,
       cookTime: json['cook_time'] as int?,
       servings: json['servings'],
-      ingredients: json['ingredients'] != null ? 
-        List<Map<String, dynamic>>.from(json['ingredients']) : null,
-      instructions: json['instructions'] != null ?
-        (json['instructions'] is List<String> ?
-          // Convert string instructions to map format with only 'text' field
-          List<Map<String, dynamic>>.from(
-            (json['instructions'] as List).map((step) => {'text': step, 'videoUrl': null})
-          )
-          : List<Map<String, dynamic>>.from(json['instructions'])
-        ) : null,
+      ingredients:
+          json['ingredients'] != null
+              ? List<Map<String, dynamic>>.from(json['ingredients'])
+              : null,
+      instructions:
+          json['instructions'] != null
+              ? (json['instructions'] is List<String>
+                  ?
+                  // Convert string instructions to map format with only 'text' field
+                  List<Map<String, dynamic>>.from(
+                    (json['instructions'] as List).map(
+                      (step) => {'text': step, 'videoUrl': null},
+                    ),
+                  )
+                  : List<Map<String, dynamic>>.from(json['instructions']))
+              : null,
       description: json['description'],
-      categories: json['categories'] != null ?
-        List<String>.from(json['categories']) : null,
+      categories:
+          json['categories'] != null
+              ? List<String>.from(json['categories'])
+              : null,
       isSaved: json['is_saved'] ?? false,
     );
   }
@@ -92,7 +107,8 @@ class Recipe {
     String? slug,
     String? imageUrl,
     double? rating,
-    int? reviewCount,    int? estimatedCost,
+    int? reviewCount,
+    int? estimatedCost,
     int? cookTime,
     int? servings,
     List<Map<String, dynamic>>? ingredients,
