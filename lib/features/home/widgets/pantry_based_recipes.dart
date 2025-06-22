@@ -316,8 +316,7 @@ class PantryBasedRecipes extends StatelessWidget {
                         context.go('/recipe/${recipe.slug ?? recipe.id}');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary,                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
@@ -329,7 +328,8 @@ class PantryBasedRecipes extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),                    ),
+                      ),
+                    ),
                   ),
                 ],
               ),

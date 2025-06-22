@@ -103,29 +103,10 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<RecipeCubit>().initialize();
       }
     }
-  }
-  @override
+  }  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _refreshHomeData,
-          color: AppColors.primary,
-          child: CustomScrollView(
-            slivers: [
-              // Modern App Bar with Search
-              _buildModernAppBar(),
-
-              // Main Content
-              if (_isSearching)
-                _buildSearchResults()
-              else if (_selectedCategory != 'All')
-                _buildCategoryResults()
-              else
-                _buildModernHomeContent(),
-            ],
-    return BlocListener<PantryCubit, PantryState>(      listener: (context, state) {
+    return BlocListener<PantryCubit, PantryState>(
+      listener: (context, state) {
         // Refresh pantry-based recipes when pantry items change
         if (state.status == PantryStatus.loaded) {
           context.read<RecipeCubit>().fetchPantryBasedRecipes();
@@ -139,20 +120,23 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.primary,
             child: CustomScrollView(
               slivers: [
-                _buildSliverAppBar(),
+                // Modern App Bar with Search
+                _buildModernAppBar(),
+
+                // Main Content
                 if (_isSearching)
                   _buildSearchResults()
                 else if (_selectedCategory != 'All')
                   _buildCategoryResults()
                 else
-                  _buildHomeContent(),
+                  _buildModernHomeContent(),
               ],
             ),
           ),
         ),
+        // Modern Floating Action Button
+        floatingActionButton: const ModernFloatingActionButton(),
       ),
-      // Modern Floating Action Button
-      floatingActionButton: const ModernFloatingActionButton(),
     );
   }
 

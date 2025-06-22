@@ -296,8 +296,7 @@ class RecipeCubit extends Cubit<RecipeState> {
                       recipe.cookTime! >= timeRange.start.toInt() &&
                       recipe.cookTime! <= timeRange.end.toInt(),
                 )
-                .toList();
-      }
+                .toList();      }
 
       emit(
         state.copyWith(recipes: filteredRecipes, status: RecipeStatus.loaded),
@@ -309,6 +308,21 @@ class RecipeCubit extends Cubit<RecipeState> {
           errorMessage: 'Failed to filter recipes: ${e.toString()}',
         ),
       );
+    }
+  }
+
+  Future<void> fetchPantryBasedRecipes() async {
+    try {
+      // For now, use a placeholder implementation
+      // In the future, this could integrate with pantry data to provide recommendations
+      final pantryBasedRecipes = _recipeService.recommendedRecipes.take(5).toList();
+      
+      emit(state.copyWith(
+        pantryBasedRecipes: pantryBasedRecipes,
+      ));
+    } catch (e) {
+      // Silently handle error for now since this is a placeholder
+      debugPrint('Error fetching pantry-based recipes: $e');
     }
   }
 }
