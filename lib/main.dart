@@ -76,8 +76,7 @@ void main() async {
             final authCubit = AuthCubit(authService);
             // Initialize AuthListener after AuthCubit is created
             AuthListener(authService, authCubit);
-            return authCubit;
-          },
+            return authCubit;          },
         ),
         BlocProvider(create: (context) => RecipeCubit(recipeService)),
         BlocProvider(create: (context) => PantryCubit(pantryService, recipeService)),

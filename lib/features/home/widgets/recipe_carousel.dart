@@ -9,7 +9,7 @@ class RecipeCarousel extends StatelessWidget {
   final bool isLoading;
   final double cardWidth;
   final double cardHeight;
-  
+
   const RecipeCarousel({
     super.key,
     required this.recipes,
@@ -23,19 +23,17 @@ class RecipeCarousel extends StatelessWidget {
     if (isLoading) {
       return _buildLoadingState();
     }
-    
+
     if (recipes.isEmpty) {
       return _buildEmptyState();
     }
-    
+
     return SizedBox(
       height: cardHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: recipes.length,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingM,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
         itemBuilder: (context, index) {
           final recipe = recipes[index];
           return _buildRecipeCard(context, recipe);
@@ -43,7 +41,7 @@ class RecipeCarousel extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildRecipeCard(BuildContext context, Recipe recipe) {
     return Container(
       width: cardWidth,
@@ -72,24 +70,26 @@ class RecipeCarousel extends StatelessWidget {
                   height: 180,
                   width: double.infinity,
                   color: AppColors.surface,
-                  child: recipe.imageUrl != null
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+                  child:
+                      recipe.imageUrl != null
+                          ? Image.network(
+                            recipe.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => const Icon(
+                                  Icons.restaurant,
+                                  color: AppColors.textSecondary,
+                                  size: AppSizes.iconXL,
+                                ),
+                          )
+                          : const Icon(
                             Icons.restaurant,
                             color: AppColors.textSecondary,
                             size: AppSizes.iconXL,
                           ),
-                        )
-                      : const Icon(
-                          Icons.restaurant,
-                          color: AppColors.textSecondary,
-                          size: AppSizes.iconXL,
-                        ),
                 ),
               ),
-              
+
               // Recipe Content
               Padding(
                 padding: const EdgeInsets.all(AppSizes.paddingM),
@@ -103,9 +103,9 @@ class RecipeCarousel extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: AppSizes.marginS),
-                    
+
                     // Rating and Reviews
                     Row(
                       children: [
@@ -117,16 +117,16 @@ class RecipeCarousel extends StatelessWidget {
                         ),
                       ],
                     ),
-                    
                     const SizedBox(height: AppSizes.marginM),
-                    
+
                     // Info Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Cook Time
                         if (recipe.cookTime != null)
-                          Row(                            children: [
+                          Row(
+                            children: [
                               const Icon(
                                 Icons.access_time,
                                 size: AppSizes.iconS,
@@ -139,7 +139,7 @@ class RecipeCarousel extends StatelessWidget {
                               ),
                             ],
                           ),
-                        
+
                         // Estimated Cost
                         if (recipe.estimatedCost != null)
                           Row(
@@ -147,9 +147,8 @@ class RecipeCarousel extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 'Est. Rp ${recipe.estimatedCost}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
@@ -164,7 +163,7 @@ class RecipeCarousel extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildRatingStars(double rating) {
     return Row(
       children: List.generate(5, (index) {
@@ -190,16 +189,14 @@ class RecipeCarousel extends StatelessWidget {
       }),
     );
   }
-  
+
   Widget _buildLoadingState() {
     return SizedBox(
       height: cardHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: 3,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.paddingM,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
         itemBuilder: (context, index) {
           return Container(
             width: cardWidth,
@@ -266,15 +263,13 @@ class RecipeCarousel extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return SizedBox(
       height: cardHeight,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.paddingM,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
@@ -286,10 +281,7 @@ class RecipeCarousel extends StatelessWidget {
               SizedBox(height: AppSizes.marginM),
               Text(
                 'Belum ada resep tersedia',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
             ],
           ),

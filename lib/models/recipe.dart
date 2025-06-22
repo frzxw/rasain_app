@@ -4,18 +4,19 @@ class Recipe {
   final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
-  final int reviewCount;  final int? estimatedCost;
+  final int reviewCount;
+  final int? estimatedCost;
   final int? cookTime;
   final int? servings;
   final String? difficultyLevel; // easy, medium, hard
   final Map<String, dynamic>? nutritionInfo; // JSON format nutrition data
   final String? tips; // Cooking tips
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>?
-  instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
+
   Recipe({
     required this.id,
     required this.name,
@@ -35,11 +36,12 @@ class Recipe {
     this.categories,
     this.isSaved = false,
   });
-  // Helper function to generate URL-friendly slug
+
+  // Generate slug from name for SEO-friendly URLs
   static String generateSlug(String name) {
     return name
         .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\s]'), '') // Remove special characters
+        .replaceAll(RegExp(r'[^a-z0-9\s-]'), '') // Remove special characters
         .replaceAll(RegExp(r'\s+'), '-') // Replace spaces with hyphens
         .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
         .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
@@ -47,17 +49,15 @@ class Recipe {
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      id:
-          json['id']
-              .toString(), // Convert to string to handle both int and string
+      id: json['id'],
       name: json['name'],
-      slug:
-          json['slug']?.isNotEmpty == true
+      slug: json['slug'] != null && json['slug'].toString().isNotEmpty
               ? json['slug']
               : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],      estimatedCost: json['estimated_cost'] as int?,
+      reviewCount: json['review_count'],
+      estimatedCost: json['estimated_cost'] as int?,
       cookTime: json['cook_time'] as int?,
       servings: json['servings'],
       difficultyLevel: json['difficulty_level'] as String?,
@@ -87,6 +87,7 @@ class Recipe {
       isSaved: json['is_saved'] ?? false,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -94,7 +95,8 @@ class Recipe {
       'slug': slug ?? generateSlug(name),
       'image_url': imageUrl,
       'rating': rating,
-      'review_count': reviewCount,      'estimated_cost': estimatedCost,
+      'review_count': reviewCount,
+      'estimated_cost': estimatedCost,
       'cook_time': cookTime,
       'servings': servings,
       'difficulty_level': difficultyLevel,
@@ -115,7 +117,8 @@ class Recipe {
     String? slug,
     String? imageUrl,
     double? rating,
-    int? reviewCount,    int? estimatedCost,
+    int? reviewCount,
+    int? estimatedCost,
     int? cookTime,
     int? servings,
     String? difficultyLevel,
@@ -133,7 +136,8 @@ class Recipe {
       slug: slug ?? this.slug,
       imageUrl: imageUrl ?? this.imageUrl,
       rating: rating ?? this.rating,
-      reviewCount: reviewCount ?? this.reviewCount,      estimatedCost: estimatedCost ?? this.estimatedCost,
+      reviewCount: reviewCount ?? this.reviewCount,
+      estimatedCost: estimatedCost ?? this.estimatedCost,
       cookTime: cookTime ?? this.cookTime,
       servings: servings ?? this.servings,
       difficultyLevel: difficultyLevel ?? this.difficultyLevel,
@@ -146,4 +150,18 @@ class Recipe {
       isSaved: isSaved ?? this.isSaved,
     );
   }
+
+  @override
+  String toString() {
+    return 'Recipe(id: $id, name: $name, slug: $slug, rating: $rating, reviewCount: $reviewCount, isSaved: $isSaved)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Recipe && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

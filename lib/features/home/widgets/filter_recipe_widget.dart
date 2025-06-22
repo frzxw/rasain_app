@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
+import '../../../core/constants/sizes.dart';
 
 class FilterRecipeWidget extends StatefulWidget {
   final RangeValues priceRange;
@@ -29,176 +30,489 @@ class FilterRecipeWidget extends StatefulWidget {
   State<FilterRecipeWidget> createState() => _FilterRecipeWidgetState();
 }
 
-class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
-  // Price range constants (in Rupiah)
-  static const double minPrice = 0;
-  static const double maxPrice = 100000; // 100k IDR
-
-  // Time range constants (in minutes)
-  static const double minTime = 0;
-  static const double maxTime = 180; // 3 hours
-
-  late RangeValues _currentPriceRange;
-  late RangeValues _currentTimeRange;
-  String? _selectedDifficultyLevel;
-
-  // Selected price range index for quick buttons
-  int _selectedPriceIndex = 0;
-  // Selected time range index for quick buttons
-  int _selectedTimeIndex = 0;
+class _FilterRecipeWidgetState extends State<FilterRecipeWidget>
+    with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _currentPriceRange = widget.priceRange;
-    _currentTimeRange = widget.timeRange;
-    _selectedDifficultyLevel = widget.selectedDifficultyLevel;
-    _updateSelectedIndices();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _animationController.forward();
   }
 
-  void _updateSelectedIndices() {
-    // Update price index based on current range
-    if (_currentPriceRange.start == 0 && _currentPriceRange.end == 100000) {
-      _selectedPriceIndex = 0; // Semua
-    } else if (_currentPriceRange.start == 0 &&
-        _currentPriceRange.end == 10000) {
-      _selectedPriceIndex = 1; // <10k
-    } else if (_currentPriceRange.start == 10000 &&
-        _currentPriceRange.end == 25000) {
-      _selectedPriceIndex = 2; // 10k-25k
-    } else if (_currentPriceRange.start == 25000 &&
-        _currentPriceRange.end == 50000) {
-      _selectedPriceIndex = 3; // 25k-50k
-    } else if (_currentPriceRange.start == 50000 &&
-        _currentPriceRange.end == 100000) {
-      _selectedPriceIndex = 4; // 50k+
-    } else {
-      _selectedPriceIndex = -1; // Custom
-    }
-
-    // Update time index based on current range
-    if (_currentTimeRange.start == 0 && _currentTimeRange.end == 180) {
-      _selectedTimeIndex = 0; // Semua
-    } else if (_currentTimeRange.start == 0 && _currentTimeRange.end == 30) {
-      _selectedTimeIndex = 1; // <30 min
-    } else if (_currentTimeRange.start == 30 && _currentTimeRange.end == 60) {
-      _selectedTimeIndex = 2; // 30-60 min
-    } else if (_currentTimeRange.start == 60 && _currentTimeRange.end == 120) {
-      _selectedTimeIndex = 3; // 1-2 jam
-    } else if (_currentTimeRange.start == 120 && _currentTimeRange.end == 180) {
-      _selectedTimeIndex = 4; // 2+ jam
-    } else {
-      _selectedTimeIndex = -1; // Custom
-    }
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Center(
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _slideAnimation.value * 50),
+          child: Opacity(
+            opacity: _fadeAnimation.value,
             child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppSizes.radiusXL),
+                ),
+              ),
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(AppSizes.paddingL),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildPriceFilter(),
+                          const SizedBox(height: AppSizes.marginXL),
+                          _buildTimeFilter(),
+                          const SizedBox(height: AppSizes.marginXL),
+                          _buildDifficultyFilter(),
+                          const SizedBox(height: AppSizes.marginXL * 2),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _buildActionButtons(context),
+                ],
               ),
             ),
           ),
+        );
+      },
+    );
+  }
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSizes.paddingS),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: Icon(
+              Icons.tune,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppSizes.marginM),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Filter Resep',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentPriceRange = const RangeValues(
-                        minPrice,
-                        maxPrice,
-                      );
-                      _currentTimeRange = const RangeValues(minTime, maxTime);
-                      _selectedDifficultyLevel = null;
-                      _selectedPriceIndex = 0;
-                      _selectedTimeIndex = 0;
-                    });
-                    widget.onPriceRangeChanged(_currentPriceRange);
-                    widget.onTimeRangeChanged(_currentTimeRange);
-                    widget.onDifficultyLevelChanged(null);
-                  },
-                  child: const Text(
-                    'Reset',
-                    style: TextStyle(color: AppColors.primary),
+                const SizedBox(height: 2),
+                Text(
+                  'Temukan resep sesuai preferensi Anda',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(
+              Icons.close,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Price Filter Section
-                  _buildPriceFilterSection(),
-                  const SizedBox(height: 32),
+  Widget _buildPriceFilter() {
+    return _buildFilterSection(
+      title: 'Estimasi Biaya',
+      subtitle: 'Rp ${_formatCurrency(widget.priceRange.start.round())} - Rp ${_formatCurrency(widget.priceRange.end.round())}',
+      icon: Icons.attach_money,
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.marginM),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.primary.withOpacity(0.2),
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withOpacity(0.2),
+              valueIndicatorColor: AppColors.primary,
+              valueIndicatorTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: RangeSlider(
+              values: widget.priceRange,
+              min: 0,
+              max: 100000,
+              divisions: 20,
+              labels: RangeLabels(
+                'Rp ${_formatCurrency(widget.priceRange.start.round())}',
+                'Rp ${_formatCurrency(widget.priceRange.end.round())}',
+              ),
+              onChanged: widget.onPriceRangeChanged,
+            ),
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPriceChip('Murah', const RangeValues(0, 25000)),
+              _buildPriceChip('Sedang', const RangeValues(25000, 50000)),
+              _buildPriceChip('Mahal', const RangeValues(50000, 100000)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                  // Time Filter Section
-                  _buildTimeFilterSection(),
-                  const SizedBox(height: 32),
+  Widget _buildTimeFilter() {
+    return _buildFilterSection(
+      title: 'Waktu Memasak',
+      subtitle: '${widget.timeRange.start.round()} - ${widget.timeRange.end.round()} menit',
+      icon: Icons.access_time,
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.marginM),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.success,
+              inactiveTrackColor: AppColors.success.withOpacity(0.2),
+              thumbColor: AppColors.success,
+              overlayColor: AppColors.success.withOpacity(0.2),
+              valueIndicatorColor: AppColors.success,
+              valueIndicatorTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: RangeSlider(
+              values: widget.timeRange,
+              min: 0,
+              max: 120,
+              divisions: 24,
+              labels: RangeLabels(
+                '${widget.timeRange.start.round()}m',
+                '${widget.timeRange.end.round()}m',
+              ),
+              onChanged: widget.onTimeRangeChanged,
+            ),
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildTimeChip('Cepat', const RangeValues(0, 30)),
+              _buildTimeChip('Sedang', const RangeValues(30, 60)),
+              _buildTimeChip('Lama', const RangeValues(60, 120)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                  // Difficulty Level Filter Section
-                  _buildDifficultyFilterSection(),
-                  const SizedBox(height: 32),
+  Widget _buildDifficultyFilter() {
+    return _buildFilterSection(
+      title: 'Tingkat Kesulitan',
+      subtitle: widget.selectedDifficultyLevel ?? 'Pilih tingkat kesulitan',
+      icon: Icons.bar_chart,
+      child: Column(
+        children: [
+          const SizedBox(height: AppSizes.marginM),
+          Wrap(
+            spacing: AppSizes.marginM,
+            runSpacing: AppSizes.marginS,
+            children: [
+              _buildDifficultyChip('Mudah', Colors.green),
+              _buildDifficultyChip('Sedang', Colors.orange),
+              _buildDifficultyChip('Sulit', Colors.red),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-                  // Apply Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        widget.onApplyFilters();
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Terapkan Filter',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+  Widget _buildFilterSection({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSizes.paddingS),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSizes.marginM),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
-                ],
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceChip(String label, RangeValues range) {
+    final isSelected = widget.priceRange.start == range.start &&
+        widget.priceRange.end == range.end;
+
+    return GestureDetector(
+      onTap: () => widget.onPriceRangeChanged(range),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingM,
+          vertical: AppSizes.paddingS,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeChip(String label, RangeValues range) {
+    final isSelected = widget.timeRange.start == range.start &&
+        widget.timeRange.end == range.end;
+
+    return GestureDetector(
+      onTap: () => widget.onTimeRangeChanged(range),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingM,
+          vertical: AppSizes.paddingS,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.success : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(
+            color: isSelected ? AppColors.success : AppColors.border,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyChip(String label, Color color) {
+    final isSelected = widget.selectedDifficultyLevel == label;
+
+    return GestureDetector(
+      onTap: () => widget.onDifficultyLevelChanged(isSelected ? null : label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingL,
+          vertical: AppSizes.paddingM,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          border: Border.all(
+            color: isSelected ? color : color.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white : color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AppSizes.marginS),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: isSelected ? Colors.white : color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: AppColors.border.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: widget.onResetFilters,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
+                side: BorderSide(color: AppColors.textSecondary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+              ),
+              child: Text(
+                'Reset',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSizes.marginM),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: widget.onApplyFilters,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingM),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Terapkan Filter',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -207,332 +521,13 @@ class _FilterRecipeWidgetState extends State<FilterRecipeWidget> {
     );
   }
 
-  Widget _buildPriceFilterSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Rentang Harga',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 16),
-
-        // Quick Price Selection Buttons
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildQuickSelectChip('Semua', 0, true),
-            _buildQuickSelectChip('<10k', 1, true),
-            _buildQuickSelectChip('10k-25k', 2, true),
-            _buildQuickSelectChip('25k-50k', 3, true),
-            _buildQuickSelectChip('50k+', 4, true),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Price Range Slider
-        Column(
-          children: [
-            RangeSlider(
-              values: _currentPriceRange,
-              min: minPrice,
-              max: maxPrice,
-              divisions: 20,
-              activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withOpacity(0.3),
-              labels: RangeLabels(
-                _formatPrice(_currentPriceRange.start),
-                _formatPrice(_currentPriceRange.end),
-              ),
-              onChanged: (RangeValues values) {
-                setState(() {
-                  _currentPriceRange = values;
-                  _selectedPriceIndex = -1; // Mark as custom
-                });
-                widget.onPriceRangeChanged(values);
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatPrice(_currentPriceRange.start),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    _formatPrice(_currentPriceRange.end),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimeFilterSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Waktu Memasak',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 16),
-
-        // Quick Time Selection Buttons
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildQuickSelectChip('Semua', 0, false),
-            _buildQuickSelectChip('<30 min', 1, false),
-            _buildQuickSelectChip('30-60 min', 2, false),
-            _buildQuickSelectChip('1-2 jam', 3, false),
-            _buildQuickSelectChip('2+ jam', 4, false),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Time Range Slider
-        Column(
-          children: [
-            RangeSlider(
-              values: _currentTimeRange,
-              min: minTime,
-              max: maxTime,
-              divisions: 18,
-              activeColor: AppColors.primary,
-              inactiveColor: AppColors.primary.withOpacity(0.3),
-              labels: RangeLabels(
-                _formatTime(_currentTimeRange.start),
-                _formatTime(_currentTimeRange.end),
-              ),
-              onChanged: (RangeValues values) {
-                setState(() {
-                  _currentTimeRange = values;
-                  _selectedTimeIndex = -1; // Mark as custom
-                });
-                widget.onTimeRangeChanged(values);
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatTime(_currentTimeRange.start),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    _formatTime(_currentTimeRange.end),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDifficultyFilterSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Tingkat Kesulitan',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        if (widget.availableDifficultyLevels.isEmpty)
-          const Text(
-            'Memuat tingkat kesulitan...',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          )
-        else
-          // Single row for all difficulty options
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // All option
-                _buildDifficultyChip(
-                  'Semua',
-                  _selectedDifficultyLevel == null,
-                  () {
-                    setState(() {
-                      _selectedDifficultyLevel = null;
-                    });
-                    widget.onDifficultyLevelChanged(null);
-                  },
-                ),
-                const SizedBox(width: 8),
-
-                // Available difficulty levels in a row
-                ...widget.availableDifficultyLevels.map((level) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildDifficultyChip(
-                      level,
-                      _selectedDifficultyLevel == level,
-                      () {
-                        setState(() {
-                          _selectedDifficultyLevel = level;
-                        });
-                        widget.onDifficultyLevelChanged(level);
-                      },
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildDifficultyChip(
-    String label,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickSelectChip(String label, int index, bool isPrice) {
-    final bool isSelected =
-        isPrice ? _selectedPriceIndex == index : _selectedTimeIndex == index;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isPrice) {
-            _selectedPriceIndex = index;
-            switch (index) {
-              case 0: // Semua
-                _currentPriceRange = const RangeValues(minPrice, maxPrice);
-                break;
-              case 1: // <10k
-                _currentPriceRange = const RangeValues(0, 10000);
-                break;
-              case 2: // 10k-25k
-                _currentPriceRange = const RangeValues(10000, 25000);
-                break;
-              case 3: // 25k-50k
-                _currentPriceRange = const RangeValues(25000, 50000);
-                break;
-              case 4: // 50k+
-                _currentPriceRange = const RangeValues(50000, maxPrice);
-                break;
-            }
-            widget.onPriceRangeChanged(_currentPriceRange);
-          } else {
-            _selectedTimeIndex = index;
-            switch (index) {
-              case 0: // Semua
-                _currentTimeRange = const RangeValues(minTime, maxTime);
-                break;
-              case 1: // <30 min
-                _currentTimeRange = const RangeValues(0, 30);
-                break;
-              case 2: // 30-60 min
-                _currentTimeRange = const RangeValues(30, 60);
-                break;
-              case 3: // 1-2 jam
-                _currentTimeRange = const RangeValues(60, 120);
-                break;
-              case 4: // 2+ jam
-                _currentTimeRange = const RangeValues(120, maxTime);
-                break;
-            }
-            widget.onTimeRangeChanged(_currentTimeRange);
-          }
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatTime(double minutes) {
-    if (minutes >= 60) {
-      final hours = (minutes / 60).floor();
-      final remainingMinutes = (minutes % 60).round();
-      if (remainingMinutes == 0) {
-        return '${hours}h';
-      } else {
-        return '${hours}h ${remainingMinutes}m';
+  String _formatCurrency(int amount) {
+    if (amount >= 1000) {
+      if (amount >= 1000000) {
+        return '${(amount / 1000000).toStringAsFixed(amount % 1000000 == 0 ? 0 : 1)}jt';
       }
+      return '${(amount / 1000).toStringAsFixed(amount % 1000 == 0 ? 0 : 0)}rb';
     }
-    return '${minutes.round()}m';
-  }
-
-  String _formatPrice(double price) {
-    if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}k';
-    }
-    return price.toStringAsFixed(0);
+    return amount.toString();
   }
 }

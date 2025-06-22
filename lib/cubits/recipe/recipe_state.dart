@@ -5,13 +5,16 @@ enum RecipeStatus { initial, loading, loaded, error }
 
 class RecipeState extends Equatable {
   final List<Recipe> recipes;
-  final List<Recipe> featuredRecipes;  final List<Recipe> recommendedRecipes;
+  final List<Recipe> featuredRecipes;
+  final List<Recipe> recommendedRecipes;
   final List<Recipe> savedRecipes;
   final List<Recipe> userRecipes; // Add user recipes
   final List<Recipe> pantryBasedRecipes; // Add pantry-based recipes
   final RecipeStatus status;
   final String? errorMessage;
   final Map<String, List<Recipe>> categoryRecipes;
+  final List<String> availableDifficultyLevels; // Added difficulty levels list
+
   const RecipeState({
     this.recipes = const [],
     this.featuredRecipes = const [],
@@ -22,7 +25,9 @@ class RecipeState extends Equatable {
     this.status = RecipeStatus.initial,
     this.errorMessage,
     this.categoryRecipes = const {},
+    this.availableDifficultyLevels = const [], // Default empty list
   });
+
   RecipeState copyWith({
     List<Recipe>? recipes,
     List<Recipe>? featuredRecipes,
@@ -33,6 +38,7 @@ class RecipeState extends Equatable {
     RecipeStatus? status,
     String? errorMessage,
     Map<String, List<Recipe>>? categoryRecipes,
+    List<String>? availableDifficultyLevels, // Added difficulty levels to copyWith
   }) {
     return RecipeState(
       recipes: recipes ?? this.recipes,
@@ -44,8 +50,12 @@ class RecipeState extends Equatable {
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       categoryRecipes: categoryRecipes ?? this.categoryRecipes,
+      availableDifficultyLevels:
+          availableDifficultyLevels ??
+          this.availableDifficultyLevels, // Handle difficulty levels
     );
   }
+
   @override
   List<Object?> get props => [
     recipes,
@@ -57,5 +67,6 @@ class RecipeState extends Equatable {
     status,
     errorMessage,
     categoryRecipes,
+    availableDifficultyLevels, // Added to props
   ];
 }

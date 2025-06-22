@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/recipe.dart';
 import 'supabase_service.dart';
@@ -1475,6 +1476,30 @@ class RecipeService extends ChangeNotifier {
         .replaceAll(RegExp(r'^-|-$'), '');
   }
 
+  // Get available difficulty levels from database
+  Future<List<String>> getAvailableDifficultyLevels() async {
+    try {
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select('difficulty_level')
+          .not('difficulty_level', 'is', null);
+
+      final difficultyLevels =
+          response
+              .map((row) => row['difficulty_level'] as String?)
+              .where((level) => level != null && level.isNotEmpty)
+              .cast<String>()
+              .toSet()
+              .toList();
+
+      difficultyLevels.sort(); // Sort alphabetically
+      debugPrint('✅ Found difficulty levels: $difficultyLevels');
+      return difficultyLevels;
+    } catch (e) {
+      debugPrint('❌ Error fetching difficulty levels: $e');
+      return ['Mudah', 'Sedang', 'Sulit']; // Default fallback
+    }
+  }
   // Helpers
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -1531,11 +1556,45 @@ class RecipeService extends ChangeNotifier {
         _savedRecipes.add(recipe.copyWith(isSaved: true));
       }
     } else {
-      // If we're unsaving, remove from saved list
-      _savedRecipes.removeWhere((r) => r.id == recipeId);
+      // If we're unsaving, remove from saved list      _savedRecipes.removeWhere((r) => r.id == recipeId);
     }
-  } // Get recipe categories from database
+  }
 
+  // Filter recipes by price, time, and difficulty level
+  List<Recipe> filterRecipes({
+    RangeValues? priceRange,
+    RangeValues? timeRange,
+    String? difficultyLevel,
+  }) {
+    List<Recipe> filteredRecipes = List.from(_allRecipes);
+
+    // Filter by price range
+    if (priceRange != null) {
+      filteredRecipes = filteredRecipes.where((recipe) {
+        if (recipe.estimatedCost == null) return false;
+        return recipe.estimatedCost! >= priceRange.start &&
+               recipe.estimatedCost! <= priceRange.end;
+      }).toList();
+    }
+
+    // Filter by time range
+    if (timeRange != null) {
+      filteredRecipes = filteredRecipes.where((recipe) {
+        if (recipe.cookTime == null) return false;
+        return recipe.cookTime! >= timeRange.start &&
+               recipe.cookTime! <= timeRange.end;
+      }).toList();
+    }
+
+    // Filter by difficulty level
+    if (difficultyLevel != null && difficultyLevel.isNotEmpty) {
+      filteredRecipes = filteredRecipes.where((recipe) {
+        return recipe.difficultyLevel == difficultyLevel;
+      }).toList();
+    }
+
+    return filteredRecipes;
+  }
   Future<List<String>> getRecipeCategories() async {
     try {
       print('🔍 Fetching categories from recipe_categories table...');
@@ -1735,11 +1794,11 @@ class RecipeService extends ChangeNotifier {
             recipe_instructions(step_number, instruction_text)
           ''')
           .eq('created_by', userId)
-          .order('created_at', ascending: false);
-
-      print(
+          .order('created_at', ascending: false);      print(
         '📥 Raw user recipes response: ${response.length} recipes',
-      ); // Convert to Recipe objects
+      ); 
+      
+      // Convert to Recipe objects
       final List<Recipe> userRecipesList = [];
       for (final json in response) {
         try {

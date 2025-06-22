@@ -16,7 +16,6 @@ import 'widgets/whats_cooking_stream.dart';
 import 'widgets/filter_recipe_widget.dart';
 import 'widgets/greeting_header.dart';
 import 'widgets/quick_action_buttons.dart';
-
 import 'widgets/modern_stats_cards.dart';
 import 'widgets/modern_floating_action_button.dart';
 import 'widgets/trending_recipes_section.dart';
@@ -35,50 +34,22 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<String> _categories = []; // Start empty, load from database
+  final List<String> _categories = ['All'];
   String _selectedCategory = 'All';
   bool _isSearching = false;
   bool _isImageSearching = false;
-  // Filter state
-  RangeValues _priceRange = const RangeValues(0, 100000);
-  RangeValues _timeRange = const RangeValues(0, 180);
-  String? _selectedDifficultyLevel;
-  List<String> _availableDifficultyLevels = [];
   bool _hasActiveFilters = false;
+
+  // Filter state variables
+  RangeValues _priceRange = const RangeValues(0, 100000);
+  RangeValues _timeRange = const RangeValues(0, 120);
+  String? _selectedDifficultyLevel;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final recipeCubit = context.read<RecipeCubit>();
-      if (recipeCubit.state.status == RecipeStatus.initial) {
-        recipeCubit.initialize();
-      }
-      // Fetch pantry-based recipes for "Dari Dapur Anda" section
-      recipeCubit.fetchPantryBasedRecipes();
-      _loadCategories();
-    });
-  }
-
-  Future<void> _loadCategories() async {
-    try {
-      debugPrint('🔍 Loading categories from database...');
-      final categories = await context.read<RecipeCubit>().getCategories();
-
-      // Remove duplicates if any
-      final uniqueCategories = categories.toSet().toList();
-
-      setState(() {
-        _categories = uniqueCategories;
-      });
-      debugPrint('✅ Categories loaded: ${uniqueCategories.join(', ')}');
-    } catch (e) {
-      debugPrint('❌ Failed to load categories: $e');
-      // Set default if failed to load from database
-      setState(() {
-        _categories = [];
-      });
-    }
+    _initializeData();
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
@@ -88,14 +59,20 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  void _initializeData() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RecipeCubit>().initialize();
+      context.read<PantryCubit>().loadItems();
+    });
+  }
+
   void _onSearchChanged() {
-    if (_searchController.text.isNotEmpty) {
-      if (!_isSearching) {
-        setState(() {
-          _isSearching = true;
-        });
-      }
-      context.read<RecipeCubit>().searchRecipes(_searchController.text);
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      setState(() {
+        _isSearching = true;
+      });
+      context.read<RecipeCubit>().searchRecipes(query);
     } else {
       if (_isSearching) {
         setState(() {
@@ -104,7 +81,83 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<RecipeCubit>().initialize();
       }
     }
-  }  @override
+  }
+
+  void _handleCategoryFilter(String category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+    
+    if (category == 'All') {
+      context.read<RecipeCubit>().initialize();
+    } else {
+      context.read<RecipeCubit>().loadCategoryRecipes(category);
+    }
+  }
+
+  Future<void> _refreshHomeData() async {
+    await Future.wait([
+      context.read<RecipeCubit>().initialize(),
+      context.read<PantryCubit>().loadItems(),
+    ]);
+  }
+
+  void _showFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BlocBuilder<RecipeCubit, RecipeState>(
+        builder: (context, state) {
+          return FilterRecipeWidget(
+            priceRange: _priceRange,
+            timeRange: _timeRange,
+            selectedDifficultyLevel: _selectedDifficultyLevel,
+            availableDifficultyLevels: state.availableDifficultyLevels,
+            onPriceRangeChanged: (range) {
+              setState(() {
+                _priceRange = range;
+                _hasActiveFilters = true;
+              });
+            },
+            onTimeRangeChanged: (range) {
+              setState(() {
+                _timeRange = range;
+                _hasActiveFilters = true;
+              });
+            },
+            onDifficultyLevelChanged: (level) {
+              setState(() {
+                _selectedDifficultyLevel = level;
+                _hasActiveFilters = level != null;
+              });
+            },
+            onApplyFilters: () {
+              context.read<RecipeCubit>().filterRecipes(
+                category: _selectedCategory != 'All' ? _selectedCategory : null,
+                priceRange: _priceRange,
+                timeRange: _timeRange,
+                difficultyLevel: _selectedDifficultyLevel,
+              );
+              Navigator.pop(context);
+            },
+            onResetFilters: () {
+              setState(() {
+                _priceRange = const RangeValues(0, 100000);
+                _timeRange = const RangeValues(0, 120);
+                _selectedDifficultyLevel = null;
+                _hasActiveFilters = false;
+              });
+              context.read<RecipeCubit>().resetFilters();
+              Navigator.pop(context);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocListener<PantryCubit, PantryState>(
       listener: (context, state) {
@@ -121,16 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
             color: AppColors.primary,
             child: CustomScrollView(
               slivers: [
-                // Modern App Bar with Search
-                _buildModernAppBar(),
-
-                // Main Content
+                _buildSliverAppBar(),
                 if (_isSearching)
                   _buildSearchResults()
                 else if (_selectedCategory != 'All')
                   _buildCategoryResults()
                 else
-                  _buildModernHomeContent(),
+                  _buildHomeContent(),
               ],
             ),
           ),
@@ -141,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  SliverAppBar _buildModernAppBar() {
+  SliverAppBar _buildSliverAppBar() {
     return SliverAppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -178,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModernHomeContent() {
+  Widget _buildHomeContent() {
     return SliverList(
       delegate: SliverChildListDelegate([
         // Greeting Header
@@ -194,7 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: AppSizes.marginS),
 
         // Quick Action Buttons
-        const QuickActionButtons(),        const SizedBox(height: AppSizes.marginL), 
+        const QuickActionButtons(),
+        const SizedBox(height: AppSizes.marginL), 
         
         // Pantry-Based Recipes Section
         SectionHeader(
@@ -210,33 +261,8 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: AppSizes.marginS),
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
-            return TrendingTopics(
-              trendingRecipes: state.featuredRecipes.take(5).toList(),
-              onTopicTap: (recipeName) {
-                _searchController.text = recipeName;
-                _onSearchChanged();
-              },
-            );
-          },        ),
-        const SizedBox(height: AppSizes.marginL),
-        _buildPantrySectionHeader(),
-        const SizedBox(height: AppSizes.marginS),
-
-        // Recipe Content based on state
-        BlocBuilder<RecipeCubit, RecipeState>(
-          builder: (context, state) {
-            if (state.status == RecipeStatus.loading && state.pantryBasedRecipes.isEmpty) {
-              return RecipeCarousel(recipes: const [], isLoading: true);
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading pantry recipes',
-              );
-            }
-            
-            // Use pantry-based recipes from the state
             final pantryRecipes = state.pantryBasedRecipes;
             
-            // If no pantry recipes available, show helpful message
             if (pantryRecipes.isEmpty) {
               return _buildEmptyPantryRecipesWidget();
             }
@@ -256,7 +282,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(
           height: AppSizes.marginL,
-        ), // What's Cooking Stream Section
+        ), 
+        
+        // What's Cooking Stream Section
         SectionHeader(
           title: 'What\'s Cooking',
           subtitle: 'Jelajahi resep dari komunitas',
@@ -273,44 +301,97 @@ class _HomeScreenState extends State<HomeScreen> {
             if (state.status == RecipeStatus.loaded &&
                 state.recipes.isNotEmpty) {
               return WhatsCookingStream(
-                recipes: state.recipes.skip(10).take(5).toList(),
+                recipes: state.recipes.take(5).toList(),
               );
+            } else {
+              return const LoadingState();
             }
-            return const SizedBox.shrink();
           },
         ),
-        // Bottom spacing
-        const SizedBox(height: 100),
+
+        const SizedBox(height: AppSizes.marginXL),
       ]),
     );
   }
 
-  Widget _buildSearchResults() {
-    if (_isImageSearching) {
-      return const SliverFillRemaining(
-        child: LoadingState(
-          message: 'Menganalisis gambar untuk menemukan resep...',
-          showAnimation: true,
+  Widget _buildEmptyPantryRecipesWidget() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
         ),
-      );
-    }
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.kitchen_outlined,
+            size: 64,
+            color: AppColors.primary.withOpacity(0.7),
+          ),
+          const SizedBox(height: AppSizes.marginM),
+          Text(
+            'Pantry Kosong',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: AppSizes.marginS),
+          Text(
+            'Tambahkan bahan ke pantry untuk mendapatkan rekomendasi resep yang dipersonalisasi',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSizes.marginL),
+          ElevatedButton.icon(
+            onPressed: () => context.go('/pantry'),
+            icon: const Icon(Icons.add),
+            label: const Text('Kelola Pantry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.paddingL,
+                vertical: AppSizes.paddingM,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildSearchResults() {
     return BlocBuilder<RecipeCubit, RecipeState>(
       builder: (context, state) {
-        if (state.status == RecipeStatus.loading && state.recipes.isEmpty) {
-          return const SliverFillRemaining(
-            child: LoadingState(
-              message: 'Mencari resep yang cocok...',
-              showAnimation: false,
-            ),
+        if (state.status == RecipeStatus.loading) {
+          return const SliverToBoxAdapter(child: LoadingState());
+        }
+
+        if (state.status == RecipeStatus.error) {
+          return SliverToBoxAdapter(
+            child: _buildErrorState(state.errorMessage ?? 'Terjadi kesalahan'),
           );
         }
 
         if (state.recipes.isEmpty) {
-          return SliverFillRemaining(
-            child: EmptyState.noSearchResults(
-              query: _searchController.text,
-              onClearTap: () {
+          return SliverToBoxAdapter(
+            child: EmptyState(
+              icon: Icons.search_off,
+              title: 'Tidak ada hasil',
+              subtitle: 'Coba kata kunci lain atau hapus filter pencarian',
+              actionText: 'Hapus Pencarian',
+              onActionTap: () {
                 _searchController.clear();
                 setState(() => _isSearching = false);
                 context.read<RecipeCubit>().initialize();
@@ -349,159 +430,140 @@ class _HomeScreenState extends State<HomeScreen> {
         BlocBuilder<RecipeCubit, RecipeState>(
           builder: (context, state) {
             if (state.status == RecipeStatus.loading) {
-              return _buildShimmerGrid();
-            } else if (state.status == RecipeStatus.error) {
-              return _buildErrorWidget(
-                state.errorMessage ?? 'Error loading recipes',
-              );
-            } else if (state.recipes.isEmpty) {
+              return const LoadingState();
+            }
+
+            if (state.status == RecipeStatus.error) {
+              return _buildErrorState(state.errorMessage ?? 'Terjadi kesalahan');
+            }
+
+            if (state.recipes.isEmpty) {
               return EmptyState(
-                title: 'Belum ada resep',
-                subtitle: 'Tidak ada resep untuk kategori $_selectedCategory',
-                icon: Icons.restaurant_menu,
-                iconColor: AppColors.primary,
+                icon: Icons.category_outlined,
+                title: 'Kategori kosong',
+                subtitle: 'Belum ada resep dalam kategori $_selectedCategory',
+                actionText: 'Lihat Semua Resep',
                 onActionTap: () {
-                  setState(() {
-                    _selectedCategory = 'All';
-                  });
+                  setState(() => _selectedCategory = 'All');
                   context.read<RecipeCubit>().initialize();
                 },
-                actionText: 'Lihat Semua Resep',
               );
             }
-            return _buildRecipeGrid(state.recipes);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
+              child: MasonryGridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                itemCount: state.recipes.length,
+                itemBuilder: (context, index) {
+                  return _buildSearchResultItem(state.recipes[index]);
+                },
+              ),
+            );
           },
         ),
-        const SizedBox(height: AppSizes.marginL),
+        const SizedBox(height: AppSizes.marginXL),
       ]),
-    );
-  }
-
-  Widget _buildShimmerGrid() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      child: MasonryGridView.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        itemCount: 6,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemBuilder: (context, index) {
-          return ShimmerWidget(
-            child: Container(
-              height: (index % 2 + 1) * 100.0,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppSizes.radiusM),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecipeGrid(List<Recipe> recipes) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingM),
-      child: MasonryGridView.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        itemCount: recipes.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemBuilder: (context, index) {
-          final recipe = recipes[index];
-          return _buildSearchResultItem(recipe);
-        },
-      ),
     );
   }
 
   Widget _buildSearchResultItem(Recipe recipe) {
     return GestureDetector(
-      onTap: () {
-        final identifier =
-            recipe.slug?.isNotEmpty == true ? recipe.slug! : recipe.id;
-        GoRouter.of(context).push('/recipe/$identifier');
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
+      onTap: () => context.push('/recipe/${recipe.slug ?? recipe.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Hero(
-              tag: 'recipe_image_${recipe.id}',
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppSizes.radiusM),
-                ),
-                child: Container(
-                  height: 120,
-                  width: double.infinity,
-                  color: AppColors.surface,
-                  child:
-                      recipe.imageUrl != null
-                          ? Image.network(
-                            recipe.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (_, __, ___) => const Icon(
-                                  Icons.restaurant_menu,
-                                  color: AppColors.textSecondary,
-                                  size: AppSizes.iconL,
-                                ),
-                          )
-                          : const Icon(
-                            Icons.restaurant_menu,
+            // Recipe Image
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppSizes.radiusM),
+              ),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: recipe.imageUrl != null
+                    ? Image.network(
+                        recipe.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(
+                          color: AppColors.surface,
+                          child: const Icon(
+                            Icons.image_not_supported_outlined,
                             color: AppColors.textSecondary,
-                            size: AppSizes.iconL,
                           ),
-                ),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.surface,
+                        child: const Icon(
+                          Icons.restaurant,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
               ),
             ),
+            // Recipe Info
             Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingS),
+              padding: const EdgeInsets.all(AppSizes.paddingM),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     recipe.name,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: AppSizes.marginS),
+                  const SizedBox(height: AppSizes.marginXS),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.star,
-                        color: AppColors.highlight,
-                        size: AppSizes.iconS,
+                        size: 16,
+                        color: Colors.amber[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${recipe.rating} (${recipe.reviewCount})',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  if (recipe.estimatedCost != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSizes.paddingS),
-                      child: Text(
-                        'Est. Rp ${recipe.estimatedCost}',
+                        recipe.rating.toStringAsFixed(1),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      if (recipe.cookTime != null) ...[
+                        Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${recipe.cookTime}m',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -511,157 +573,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _refreshHomeData() async {
-    setState(() {
-      _searchController.clear();
-      _isSearching = false;
-      _selectedCategory = 'All';
-    });
-    await context.read<RecipeCubit>().initialize();
-  }
-
-  void _handleCategoryFilter(String category) {
-    debugPrint('🏷️ Category selected: $category');
-    setState(() {
-      _selectedCategory = category;
-      _searchController.clear();
-      _isSearching = false; // Reset search state
-    });
-
-    if (category == 'All') {
-      debugPrint('📋 Loading all recipes');
-      context.read<RecipeCubit>().initialize();
-    } else {
-      debugPrint('🔍 Filtering by category: $category');
-      context.read<RecipeCubit>().filterByCategory(category);
-    }
-  }
-
-  void _showFilterDialog() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {        return FilterRecipeWidget(
-          priceRange: _priceRange,
-          timeRange: _timeRange,
-          selectedDifficultyLevel: _selectedDifficultyLevel,
-          availableDifficultyLevels: _availableDifficultyLevels,
-          onPriceRangeChanged: (RangeValues range) {
-            setState(() {
-              _priceRange = range;
-            });
-          },
-          onTimeRangeChanged: (RangeValues range) {
-            setState(() {
-              _timeRange = range;
-            });
-          },
-          onDifficultyLevelChanged: (String? level) {
-            setState(() {
-              _selectedDifficultyLevel = level;
-            });
-          },
-          onApplyFilters: _applyFilters,
-          onResetFilters: _resetFilters,
-        );
-      },
-    );
-  }
-  void _applyFilters() {
-    // Check if filters are different from default values
-    final bool hasPriceFilter =
-        _priceRange.start > 0 || _priceRange.end < 100000;
-    final bool hasTimeFilter = _timeRange.start > 0 || _timeRange.end < 180;
-    final bool hasDifficultyFilter = _selectedDifficultyLevel != null;
-
-    setState(() {
-      _hasActiveFilters = hasPriceFilter || hasTimeFilter || hasDifficultyFilter;
-      _isSearching = false;
-      _searchController.clear();
-    });
-
-    // Apply filters with current category
-    context.read<RecipeCubit>().filterRecipes(
-      priceRange: hasPriceFilter ? _priceRange : null,
-      timeRange: hasTimeFilter ? _timeRange : null,
-      difficultyLevel: _selectedDifficultyLevel,
-      category: _selectedCategory != 'All' ? _selectedCategory : null,
-    );
-  }
-  void _resetFilters() {
-    setState(() {
-      _priceRange = const RangeValues(0, 100000);
-      _timeRange = const RangeValues(0, 180);
-      _selectedDifficultyLevel = null;
-      _hasActiveFilters = false;
-      _isSearching = false;
-      _searchController.clear();
-      _selectedCategory = 'All';
-    });
-
-    // Reload initial data
-    context.read<RecipeCubit>().initialize();
-    // Also refresh pantry-based recipes
-    context.read<RecipeCubit>().fetchPantryBasedRecipes();
-  }
-
-  Widget _buildEmptyPantryRecipesWidget() {
+  Widget _buildErrorState(String errorMessage) {
     return Container(
-      padding: const EdgeInsets.all(AppSizes.paddingL),
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.marginM),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.kitchen_outlined,
-            size: AppSizes.iconXL,
-            color: AppColors.textSecondary,
-          ),
-          const SizedBox(height: AppSizes.marginM),
-          Text(
-            'Belum Ada Resep dari Dapur Anda',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSizes.marginS),
-          Text(
-            'Tambahkan bahan-bahan ke pantry Anda untuk mendapatkan rekomendasi resep yang bisa dibuat',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSizes.marginM),
-          ElevatedButton.icon(
-            onPressed: () {
-              context.push('/pantry');
-            },
-            icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text('Isi Pantry', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingL,
-                vertical: AppSizes.paddingM,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(String errorMessage) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingL),
+      padding: const EdgeInsets.all(AppSizes.paddingXL),
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -690,51 +605,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPantrySectionHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingM),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Dari Dapur Anda',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: AppSizes.marginXS),
-                BlocBuilder<RecipeCubit, RecipeState>(
-                  builder: (context, state) {
-                    final pantryRecipesCount = state.pantryBasedRecipes.length;
-                    return Text(
-                      pantryRecipesCount > 0 
-                          ? '$pantryRecipesCount resep yang bisa dibuat dari bahan di pantry Anda'
-                          : 'Resep berdasarkan bahan di pantry Anda',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              context.push('/pantry');
-            },
-            icon: const Icon(
-              Icons.kitchen_outlined,
-              color: AppColors.primary,
-            ),
-            tooltip: 'Kelola Pantry',
-          ),
-        ],
       ),
     );
   }
