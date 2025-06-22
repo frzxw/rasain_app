@@ -19,9 +19,8 @@ class RecipeCubit extends Cubit<RecipeState> {
       final popularRecipes = _recipeService.popularRecipes;
 
       // Get recommended recipes
-      final recommendedRecipes = _recipeService.recommendedRecipes;
-
-      // Get saved recipes
+      final recommendedRecipes =
+          _recipeService.recommendedRecipes; // Get saved recipes
       final savedRecipes = _recipeService.savedRecipes;
 
       // Get all recipes: combine different sources and remove duplicates by ID
@@ -51,19 +50,25 @@ class RecipeCubit extends Cubit<RecipeState> {
             categoryRecipeMap[category]![recipe.id] = recipe;
           }
         }
-      }
-
-      // Convert to final format
+      } // Convert to final format
       final Map<String, List<Recipe>> categoryRecipes = {};
       categoryRecipeMap.forEach((category, recipeMap) {
         categoryRecipes[category] = recipeMap.values.toList();
-      });      emit(
+      });
+
+      // Get difficulty levels
+      final availableDifficultyLevels =
+          await _recipeService.getAvailableDifficultyLevels();
+
+      emit(
         state.copyWith(
           recipes: allRecipes,
           featuredRecipes: popularRecipes,
           recommendedRecipes: recommendedRecipes,
           savedRecipes: savedRecipes,
           categoryRecipes: categoryRecipes,
+          availableDifficultyLevels:
+              availableDifficultyLevels, // Add difficulty levels to state
           status: RecipeStatus.loaded,
         ),
       );
@@ -186,14 +191,15 @@ class RecipeCubit extends Cubit<RecipeState> {
     }
   }
 
-  // Filter recipes by price and time
+  // Filter recipes by price, time, and difficulty level
   Future<void> filterRecipes({
     RangeValues? priceRange,
     RangeValues? timeRange,
     String? category,
+    String? difficultyLevel,
   }) async {
     debugPrint(
-      '🔍 RecipeCubit: Filtering recipes with price: $priceRange, time: $timeRange, category: $category',
+      '🔍 RecipeCubit: Filtering recipes with price: $priceRange, time: $timeRange, category: $category, difficulty: $difficultyLevel',
     );
     emit(state.copyWith(status: RecipeStatus.loading));
     try {
@@ -201,6 +207,7 @@ class RecipeCubit extends Cubit<RecipeState> {
         priceRange: priceRange,
         timeRange: timeRange,
         category: category,
+        difficultyLevel: difficultyLevel,
       );
       emit(
         state.copyWith(recipes: filteredRecipes, status: RecipeStatus.loaded),
@@ -232,51 +239,12 @@ class RecipeCubit extends Cubit<RecipeState> {
     return uniqueList;
   }
 
-  // Fetch recipes based on user's pantry items
-  Future<void> fetchPantryBasedRecipes() async {
+  // Get available difficulty levels from database
+  Future<List<String>> getDifficultyLevels() async {
     try {
-      debugPrint('🔍 RecipeCubit: Fetching pantry-based recipes');
-      await _recipeService.fetchPantryRecipes();
-      final pantryBasedRecipes = _recipeService.pantryRecipes;
-      
-      debugPrint('✅ RecipeCubit: Found ${pantryBasedRecipes.length} pantry-based recipes');
-      
-      emit(state.copyWith(
-        pantryBasedRecipes: pantryBasedRecipes,
-      ));
+      return await _recipeService.getAvailableDifficultyLevels();
     } catch (e) {
-      debugPrint('❌ RecipeCubit: Error fetching pantry-based recipes: $e');
-      emit(state.copyWith(
-        pantryBasedRecipes: [],
-        errorMessage: 'Failed to load pantry-based recipes: $e',
-      ));
+      return ['Mudah', 'Sedang', 'Sulit']; // Default fallback
     }
-  }
-
-  // Get recipes that can be made with pantry ingredients
-  List<Recipe> getPantryCompatibleRecipes() {
-    return state.pantryBasedRecipes;
-  }
-
-  // Calculate how many ingredients user has for a recipe
-  double calculateIngredientMatchPercentage(Recipe recipe, List<String> pantryIngredients) {
-    if (recipe.ingredients == null || recipe.ingredients!.isEmpty) {
-      return 0.0;
-    }
-
-    int matchedIngredients = 0;
-    final totalIngredients = recipe.ingredients!.length;
-
-    for (final ingredient in recipe.ingredients!) {
-      final ingredientName = ingredient['name']?.toString().toLowerCase() ?? '';
-      
-      if (pantryIngredients.any((pantryItem) => 
-          ingredientName.contains(pantryItem.toLowerCase()) ||
-          pantryItem.toLowerCase().contains(ingredientName))) {
-        matchedIngredients++;
-      }
-    }
-
-    return matchedIngredients / totalIngredients;
   }
 }
