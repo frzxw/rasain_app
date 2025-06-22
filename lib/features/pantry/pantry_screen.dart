@@ -592,7 +592,7 @@ class _PantryScreenState extends State<PantryScreen>
             children: [
               Expanded(
                 child: CustomButton(
-                  label: 'Tambah Manual',
+                  label: 'Tambah',
                   icon: Icons.edit_outlined,
                   onPressed: () {
                     setState(() {
