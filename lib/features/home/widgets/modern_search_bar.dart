@@ -7,7 +7,7 @@ class ModernSearchBar extends StatelessWidget {
   final VoidCallback? onFilterTap;
   final bool hasActiveFilters;
   final VoidCallback? onCameraTap;
-  
+
   const ModernSearchBar({
     super.key,
     required this.controller,
@@ -15,7 +15,6 @@ class ModernSearchBar extends StatelessWidget {
     this.hasActiveFilters = false,
     this.onCameraTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -23,9 +22,15 @@ class ModernSearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 2,
+        ), // Added border for visibility
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(
+              0.15,
+            ), // Increased shadow for visibility
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -45,8 +50,10 @@ class ModernSearchBar extends StatelessWidget {
                 ),
                 prefixIcon: const Icon(
                   Icons.search,
-                  color: AppColors.textSecondary,
-                  size: 20,
+                  color:
+                      AppColors
+                          .primary, // Changed to primary color for visibility
+                  size: 24, // Increased size
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
@@ -60,7 +67,7 @@ class ModernSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Camera Search Button
           if (onCameraTap != null)
             _buildActionButton(
@@ -68,20 +75,23 @@ class ModernSearchBar extends StatelessWidget {
               onTap: onCameraTap!,
               color: AppColors.success,
             ),
-          
+
           // Filter Button
           if (onFilterTap != null)
             _buildActionButton(
               icon: Icons.tune,
               onTap: onFilterTap!,
-              color: hasActiveFilters ? AppColors.primary : AppColors.textSecondary,
+              color:
+                  hasActiveFilters
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
               isActive: hasActiveFilters,
             ),
         ],
       ),
     );
   }
-  
+
   Widget _buildActionButton({
     required IconData icon,
     required VoidCallback onTap,
@@ -99,11 +109,7 @@ class ModernSearchBar extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            Icon(
-              icon,
-              color: color,
-              size: 20,
-            ),
+            Icon(icon, color: color, size: 20),
             if (isActive)
               Positioned(
                 top: -2,

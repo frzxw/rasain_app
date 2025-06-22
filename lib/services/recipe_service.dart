@@ -1568,25 +1568,37 @@ class RecipeService extends ChangeNotifier {
     RangeValues? timeRange,
     String? difficultyLevel,
   }) {
-    List<Recipe> filteredRecipes = List.from(_allRecipes);
-
-    // Filter by price range
+    List<Recipe> filteredRecipes = List.from(
+      _allRecipes,
+    ); // Filter by price range
     if (priceRange != null) {
       filteredRecipes =
           filteredRecipes.where((recipe) {
             if (recipe.estimatedCost == null) return false;
-            return recipe.estimatedCost! >= priceRange.start &&
-                recipe.estimatedCost! <= priceRange.end;
-          }).toList();
-    }
 
-    // Filter by time range
+            // Convert string estimatedCost to double for comparison
+            final costDouble = double.tryParse(
+              recipe.estimatedCost!.replaceAll(RegExp(r'[^0-9.]'), ''),
+            );
+            if (costDouble == null) return false;
+
+            return costDouble >= priceRange.start &&
+                costDouble <= priceRange.end;
+          }).toList();
+    } // Filter by time range
     if (timeRange != null) {
       filteredRecipes =
           filteredRecipes.where((recipe) {
             if (recipe.cookTime == null) return false;
-            return recipe.cookTime! >= timeRange.start &&
-                recipe.cookTime! <= timeRange.end;
+
+            // Convert string cookTime to int for comparison
+            final cookTimeInt = int.tryParse(
+              recipe.cookTime!.replaceAll(RegExp(r'[^0-9]'), ''),
+            );
+            if (cookTimeInt == null) return false;
+
+            return cookTimeInt >= timeRange.start &&
+                cookTimeInt <= timeRange.end;
           }).toList();
     }
 

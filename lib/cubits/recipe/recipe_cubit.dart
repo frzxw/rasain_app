@@ -2,7 +2,6 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../services/recipe_service.dart';
-import '../../models/recipe.dart';
 import 'recipe_state.dart';
 
 class RecipeCubit extends Cubit<RecipeState> {
@@ -231,6 +230,21 @@ class RecipeCubit extends Cubit<RecipeState> {
       );
     } catch (e) {
       debugPrint('Error toggling save: $e');
+    }
+  }
+
+  // Get available recipe categories
+  Future<List<String>> getCategories() async {
+    try {
+      return await _recipeService.getRecipeCategories();
+    } catch (e) {
+      debugPrint('Error getting categories: $e');
+      return [
+        'Appetizer',
+        'Main Course',
+        'Dessert',
+        'Beverage',
+      ]; // Fallback categories
     }
   }
 }
