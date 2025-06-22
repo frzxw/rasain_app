@@ -7,14 +7,15 @@ class Recipe {
   final String? imageUrl;
   final double rating;
   final int reviewCount;
-  final int? estimatedCost;
-  final int? cookTime;
+  final String? estimatedCost; // Changed to String to match database
+  final String? cookTime; // Changed to String to match database
   final int? servings;
   final String? difficultyLevel; // easy, medium, hard
   final Map<String, dynamic>? nutritionInfo; // JSON format nutrition data
   final String? tips; // Cooking tips
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -53,14 +54,15 @@ class Recipe {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      slug: json['slug'] != null && json['slug'].toString().isNotEmpty
+      slug:
+          json['slug'] != null && json['slug'].toString().isNotEmpty
               ? json['slug']
               : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
       reviewCount: json['review_count'],
-      estimatedCost: json['estimated_cost'] as int?,
-      cookTime: json['cook_time'] as int?,
+      estimatedCost: json['estimated_cost']?.toString(),
+      cookTime: json['cook_time']?.toString(),
       servings: json['servings'],
       difficultyLevel: DifficultyLevelMapper.toUI(json['difficulty_level'] as String?),
       nutritionInfo: json['nutrition_info'] as Map<String, dynamic>?,
@@ -120,8 +122,8 @@ class Recipe {
     String? imageUrl,
     double? rating,
     int? reviewCount,
-    int? estimatedCost,
-    int? cookTime,
+    String? estimatedCost,
+    String? cookTime,
     int? servings,
     String? difficultyLevel,
     Map<String, dynamic>? nutritionInfo,

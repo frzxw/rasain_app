@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
+import '../../../cubits/recipe/recipe_cubit.dart';
+import '../../../cubits/recipe/recipe_state.dart';
 import 'trending_recipe_card.dart';
 
 class TrendingRecipesSection extends StatefulWidget {
@@ -15,49 +18,6 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-
-  final List<Map<String, dynamic>> _trendingRecipes = [
-    {
-      'id': 1,
-      'name': 'Nasi Goreng Spesial',
-      'chef': 'Sarah',
-      'rating': 4.8,
-      'time': 25,
-      'image': null,
-    },
-    {
-      'id': 2,
-      'name': 'Ayam Bakar Bumbu Rujak',
-      'chef': 'Ahmad',
-      'rating': 4.9,
-      'time': 45,
-      'image': null,
-    },
-    {
-      'id': 3,
-      'name': 'Soto Ayam Lamongan',
-      'chef': 'Budi',
-      'rating': 4.7,
-      'time': 60,
-      'image': null,
-    },
-    {
-      'id': 4,
-      'name': 'Rendang Daging Sapi',
-      'chef': 'Siti',
-      'rating': 4.9,
-      'time': 120,
-      'image': null,
-    },
-    {
-      'id': 5,
-      'name': 'Gado-gado Jakarta',
-      'chef': 'Rina',
-      'rating': 4.6,
-      'time': 20,
-      'image': null,
-    },
-  ];
 
   @override
   void initState() {
@@ -96,7 +56,23 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
               children: [
                 _buildSectionHeader(),
                 const SizedBox(height: AppSizes.marginM),
-                _buildTrendingList(),
+                BlocBuilder<RecipeCubit, RecipeState>(
+                  builder: (context, state) {
+                    if (state.status == RecipeStatus.loading) {
+                      return _buildLoadingState();
+                    } else if (state.status == RecipeStatus.loaded) {
+                      // Tampilkan maksimal 5 resep trending
+                      final trendingRecipes = state.recipes.take(5).toList();
+                      return _buildTrendingList(trendingRecipes);
+                    } else if (state.status == RecipeStatus.error) {
+                      return _buildErrorState(
+                        state.errorMessage ?? 'Terjadi kesalahan',
+                      );
+                    } else {
+                      return _buildEmptyState();
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -189,7 +165,11 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
     );
   }
 
-  Widget _buildTrendingList() {
+  Widget _buildTrendingList(List<Recipe> recipes) {
+    if (recipes.isEmpty) {
+      return _buildEmptyState();
+    }
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -209,9 +189,9 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
       ),
       child: Column(
         children:
-            _trendingRecipes.asMap().entries.map((entry) {
+            recipes.asMap().entries.map((entry) {
               int index = entry.key;
-              Map<String, dynamic> recipe = entry.value;
+              Recipe recipe = entry.value;
 
               return TweenAnimationBuilder<double>(
                 duration: Duration(milliseconds: 500 + (index * 100)),
@@ -225,18 +205,18 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
                       child: Column(
                         children: [
                           TrendingRecipeCard(
-                            recipe: Recipe.fromJson(recipe),
+                            recipe: recipe,
                             onTap: () {
                               // TODO: Navigate to recipe detail
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Opening ${recipe['name']}...'),
+                                  content: Text('Opening ${recipe.name}...'),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             },
                           ),
-                          if (index < _trendingRecipes.length - 1)
+                          if (index < recipes.length - 1)
                             Divider(
                               height: 1,
                               color: AppColors.border.withOpacity(0.3),
@@ -250,6 +230,103 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
                 },
               );
             }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      height: 300,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: AppColors.border.withOpacity(0.5), width: 1),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+            SizedBox(height: AppSizes.marginM),
+            Text(
+              'Memuat resep trending...',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: Colors.red.shade200, width: 1),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
+            const SizedBox(height: AppSizes.marginM),
+            Text(
+              'Gagal memuat resep',
+              style: TextStyle(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: AppSizes.marginS),
+            Text(
+              message,
+              style: TextStyle(color: Colors.red.shade600, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        border: Border.all(color: AppColors.border.withOpacity(0.5), width: 1),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.restaurant_menu,
+              color: AppColors.textSecondary,
+              size: 48,
+            ),
+            const SizedBox(height: AppSizes.marginM),
+            Text(
+              'Belum ada resep trending',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: AppSizes.marginS),
+            Text(
+              'Resep trending akan muncul di sini',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+          ],
+        ),
       ),
     );
   }
