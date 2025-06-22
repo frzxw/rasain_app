@@ -8,14 +8,12 @@ class PostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback onLike;
   final VoidCallback onComment;
-  final VoidCallback onShare;
 
   const PostCard({
     super.key,
     required this.post,
     required this.onLike,
     required this.onComment,
-    required this.onShare,
   });
 
   // Helper method untuk mendapatkan warna berdasarkan kategori
@@ -340,9 +338,8 @@ class PostCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface.withOpacity(0.3),
               borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            ),            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // Enhanced Like Button
                 _buildInteractionButton(
@@ -361,15 +358,6 @@ class PostCard extends StatelessWidget {
                   label: _formatCount(post.commentCount),
                   onPressed: onComment,
                   activeColor: Colors.blue,
-                ),
-
-                // Enhanced Share Button
-                _buildInteractionButton(
-                  context,
-                  icon: Icons.share_outlined,
-                  label: 'Bagikan',
-                  onPressed: onShare,
-                  activeColor: Colors.green,
                 ),
               ],
             ),
