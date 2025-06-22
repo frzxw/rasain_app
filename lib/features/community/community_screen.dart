@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,12 +36,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text(
+      appBar: AppBar(        title: const Text(
           'Community',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: AppColors.primary,
+        ),        backgroundColor: AppColors.primary,
         elevation: 0,
         flexibleSpace: Container(
           decoration: BoxDecoration(
@@ -116,7 +115,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                 post: post,
                                 onLike: () => _handleLikePost(post.id),
                                 onComment: () => _handleCommentPost(post),
-                                onShare: () => _sharePost(post),
                               );
                             },
                           ),
@@ -358,20 +356,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
       builder: (context) => CommentsOverlay(
         postId: post.id,
         postContent: post.content ?? 'Community Post',
-        currentCommentCount: post.commentCount,
-      ),
+        currentCommentCount: post.commentCount,      ),
     );
   }
 
-  void _sharePost(CommunityPost post) {
-    // Implementation for sharing a post would go here
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Membagikan postingan dari ${post.userName}...'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-  }
   Future<void> _showCreatePostDialog() async {
     // Check if user is authenticated
     final authState = context.read<AuthCubit>().state;
@@ -379,30 +367,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Show login dialog if user is not authenticated
       _showLoginPrompt();
       return;
-    }
-
-    final TextEditingController contentController = TextEditingController();
+    }    final TextEditingController contentController = TextEditingController();
     String? selectedCategory;
-    List<String> selectedIngredients = [];
     XFile? selectedImage;
 
-    // Updated with Indonesian ingredients
-    final availableIngredients = [
-      'Beras',
-      'Cabai Merah',
-      'Cabai Rawit',
-      'Bawang Merah',
-      'Bawang Putih',
-      'Daging Sapi',
-      'Ayam',
-      'Telur',
-      'Kecap Manis',
-      'Santan',
-      'Tempe',
-      'Terasi',
-    ];
-
-    // Updated with Indonesian cuisine categories
+    // Updated with Indonesian cuisine categories to match DB structure
     final availableCategories = [
       'Makanan Utama',
       'Pedas',
@@ -476,20 +445,26 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                       AppSizes.radiusS,
                                     ),
                                     color: AppColors.surface,
-                                  ),
-                                  child: ClipRRect(
+                                  ),                                  child: ClipRRect(
                                     borderRadius: BorderRadius.circular(
                                       AppSizes.radiusS,
                                     ),
-                                    child: Image.asset(
-                                      'path_to_placeholder', // This would be a FutureBuilder with Image.memory in a real app
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (_, __, ___) => const Icon(
-                                            Icons.image,
-                                            size: AppSizes.iconL,
-                                            color: AppColors.textSecondary,
-                                          ),
+                                    child: FutureBuilder<Uint8List>(
+                                      future: selectedImage!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                            width: 100,
+                                            height: 100,
+                                          );
+                                        } else {
+                                          return const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        }
+                                      },
                                     ),
                                   ),
                                 ),
@@ -560,40 +535,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             return DropdownMenuItem<String>(
                               value: category,
                               child: Text(category),
-                            );
-                          }).toList(),
-                    ),
-
-                    const SizedBox(height: AppSizes.marginM),
-
-                    // Ingredient Tags
-                    Text(
-                      'Tag Bahan-bahan',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: AppSizes.marginS),
-                    Wrap(
-                      spacing: AppSizes.marginS,
-                      runSpacing: AppSizes.marginS,
-                      children:
-                          availableIngredients.map((ingredient) {
-                            final isSelected = selectedIngredients.contains(
-                              ingredient,
-                            );
-                            return FilterChip(
-                              label: Text(ingredient),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    selectedIngredients.add(ingredient);
-                                  } else {
-                                    selectedIngredients.remove(ingredient);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
+                            );                          }).toList(),
                     ),
 
                     const SizedBox(height: AppSizes.marginL),
@@ -615,12 +557,43 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                 backgroundColor: AppColors.error,
                               ),
                             );
-                            return;
+                            return;                          }
+
+                          // Create post logic
+                          try {
+                            Uint8List? imageBytes;
+                            String? fileName;
+                            
+                            if (selectedImage != null) {
+                              imageBytes = await selectedImage!.readAsBytes();
+                              fileName = selectedImage!.name;
+                            }
+
+                            await context.read<CommunityCubit>().createPost(
+                              content: contentController.text.trim(),
+                              imageBytes: imageBytes,
+                              fileName: fileName,
+                              category: selectedCategory,
+                            );
+
+                            Navigator.pop(context, true);
+                            
+                            // Show success message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Postingan berhasil dibuat!'),
+                                backgroundColor: AppColors.success,
+                              ),
+                            );
+                          } catch (e) {
+                            // Show error message
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal membuat postingan: $e'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
                           }
-
-                          // Create post logic would go here
-
-                          Navigator.pop(context, true);
                         },
                         variant: ButtonVariant.primary,
                       ),
@@ -630,11 +603,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
             );
           },
-        );
-      },
-    ); // Refresh posts after creating a new one
-    context.read<CommunityCubit>().initialize();
-  }  void _showLoginPrompt() {
+        );      },
+    );
+  }
+
+  void _showLoginPrompt() {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -659,7 +632,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ],
         ),
         content: const Text(
-          'Anda perlu masuk terlebih dahulu untuk membuat postingan di komunitas.',
+          'Anda perlu masuk terlebih dahulu untuk mengakses fitur komunitas.',
           style: TextStyle(fontSize: 16),
         ),
         actions: [
