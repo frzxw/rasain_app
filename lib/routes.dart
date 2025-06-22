@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'features/home/home_screen.dart';
 import 'features/pantry/pantry_screen.dart';
-import 'features/chat/chat_screen.dart';
+import 'features/upload_recipe/upload_recipe_screen.dart';
 import 'features/community/community_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/recipe_detail/modern_recipe_detail_screen.dart';
@@ -17,7 +17,7 @@ import 'features/welcome_screen/welcome_screen.dart';
 class AppRoutes {
   static const String home = '/';
   static const String pantry = '/pantry';
-  static const String chat = '/chat';
+  static const String uploadRecipe = '/upload-recipe';
   static const String community = '/community';
   static const String profile = '/profile';
   static const String notifications = '/notifications';
@@ -79,10 +79,11 @@ GoRouter createRouter() {
                     NoTransitionPage(child: const PantryScreen()),
           ),
           GoRoute(
-            path: '/chat',
-            name: 'chat',
+            path: '/upload-recipe',
+            name: 'upload_recipe',
             pageBuilder:
-                (context, state) => NoTransitionPage(child: const ChatScreen()),
+                (context, state) =>
+                    NoTransitionPage(child: const UploadRecipeScreen()),
           ),
           GoRoute(
             path: '/community',
@@ -99,7 +100,8 @@ GoRouter createRouter() {
                     NoTransitionPage(child: const ProfileScreen()),
           ),
         ],
-      ),      GoRoute(
+      ),
+      GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/recipe/:slug',
         name: 'recipe_detail',

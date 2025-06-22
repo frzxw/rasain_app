@@ -4,11 +4,16 @@ class Recipe {
   final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
-  final int reviewCount;  final int? estimatedCost;
-  final int? cookTime;
+  final int reviewCount;
+  final String? estimatedCost; // Changed to String to match database
+  final String? cookTime; // Changed to String to match database
   final int? servings;
+  final String? difficultyLevel; // easy, medium, hard
+  final Map<String, dynamic>? nutritionInfo; // JSON format nutrition data
+  final String? tips; // Cooking tips
   final List<Map<String, dynamic>>? ingredients;
-  final List<Map<String, dynamic>>? instructions; // Changed to Map to support videos per step
+  final List<Map<String, dynamic>>?
+  instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
@@ -23,49 +28,68 @@ class Recipe {
     this.estimatedCost,
     this.cookTime,
     this.servings,
+    this.difficultyLevel,
+    this.nutritionInfo,
+    this.tips,
     this.ingredients,
     this.instructions,
     this.description,
     this.categories,
     this.isSaved = false,
   });
-  // Helper function to generate URL-friendly slug
+
+  // Generate slug from name for SEO-friendly URLs
   static String generateSlug(String name) {
     return name
         .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\s]'), '') // Remove special characters
+        .replaceAll(RegExp(r'[^a-z0-9\s-]'), '') // Remove special characters
         .replaceAll(RegExp(r'\s+'), '-') // Replace spaces with hyphens
         .replaceAll(RegExp(r'-+'), '-') // Replace multiple hyphens with single
         .replaceAll(RegExp(r'^-|-$'), ''); // Remove leading/trailing hyphens
   }
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
       name: json['name'],
-      slug: json['slug']?.isNotEmpty == true 
-          ? json['slug'] 
-          : generateSlug(json['name'] ?? ''), // Auto-generate if missing
+      slug:
+          json['slug'] != null && json['slug'].toString().isNotEmpty
+              ? json['slug']
+              : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],      estimatedCost: json['estimated_cost'] as int?,
-      cookTime: json['cook_time'] as int?,
+      reviewCount: json['review_count'],
+      estimatedCost: json['estimated_cost']?.toString(),
+      cookTime: json['cook_time']?.toString(),
       servings: json['servings'],
-      ingredients: json['ingredients'] != null ? 
-        List<Map<String, dynamic>>.from(json['ingredients']) : null,
-      instructions: json['instructions'] != null ?
-        (json['instructions'] is List<String> ?
-          // Convert string instructions to map format with only 'text' field
-          List<Map<String, dynamic>>.from(
-            (json['instructions'] as List).map((step) => {'text': step, 'videoUrl': null})
-          )
-          : List<Map<String, dynamic>>.from(json['instructions'])
-        ) : null,
+      difficultyLevel: json['difficulty_level'] as String?,
+      nutritionInfo: json['nutrition_info'] as Map<String, dynamic>?,
+      tips: json['tips'] as String?,
+      ingredients:
+          json['ingredients'] != null
+              ? List<Map<String, dynamic>>.from(json['ingredients'])
+              : null,
+      instructions:
+          json['instructions'] != null
+              ? (json['instructions'] is List<String>
+                  ?
+                  // Convert string instructions to map format with only 'text' field
+                  List<Map<String, dynamic>>.from(
+                    (json['instructions'] as List).map(
+                      (step) => {'text': step, 'videoUrl': null},
+                    ),
+                  )
+                  : List<Map<String, dynamic>>.from(json['instructions']))
+              : null,
       description: json['description'],
-      categories: json['categories'] != null ?
-        List<String>.from(json['categories']) : null,
+      categories:
+          json['categories'] != null
+              ? List<String>.from(json['categories'])
+              : null,
       isSaved: json['is_saved'] ?? false,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -77,6 +101,9 @@ class Recipe {
       'estimated_cost': estimatedCost,
       'cook_time': cookTime,
       'servings': servings,
+      'difficulty_level': difficultyLevel,
+      'nutrition_info': nutritionInfo,
+      'tips': tips,
       'ingredients': ingredients,
       'instructions': instructions,
       'description': description,
@@ -92,9 +119,13 @@ class Recipe {
     String? slug,
     String? imageUrl,
     double? rating,
-    int? reviewCount,    int? estimatedCost,
-    int? cookTime,
+    int? reviewCount,
+    String? estimatedCost,
+    String? cookTime,
     int? servings,
+    String? difficultyLevel,
+    Map<String, dynamic>? nutritionInfo,
+    String? tips,
     List<Map<String, dynamic>>? ingredients,
     List<Map<String, dynamic>>? instructions,
     String? description,
@@ -111,6 +142,9 @@ class Recipe {
       estimatedCost: estimatedCost ?? this.estimatedCost,
       cookTime: cookTime ?? this.cookTime,
       servings: servings ?? this.servings,
+      difficultyLevel: difficultyLevel ?? this.difficultyLevel,
+      nutritionInfo: nutritionInfo ?? this.nutritionInfo,
+      tips: tips ?? this.tips,
       ingredients: ingredients ?? this.ingredients,
       instructions: instructions ?? this.instructions,
       description: description ?? this.description,
@@ -118,4 +152,18 @@ class Recipe {
       isSaved: isSaved ?? this.isSaved,
     );
   }
+
+  @override
+  String toString() {
+    return 'Recipe(id: $id, name: $name, slug: $slug, rating: $rating, reviewCount: $reviewCount, isSaved: $isSaved)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Recipe && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

@@ -11,6 +11,7 @@ import '../../cubits/recipe/recipe_state.dart';
 import '../../models/user_profile.dart';
 import 'edit_profile_screen.dart';
 import 'widgets/saved_recipe_list.dart';
+import 'widgets/user_recipe_list.dart';
 import 'widgets/profile_menu_new.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -104,6 +105,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (context, state) {
                 return SavedRecipeList(
                   recipes: state.savedRecipes,
+                  isLoading: state.status == RecipeStatus.loading,
+                );
+              },
+            ),
+
+            const SizedBox(height: AppSizes.marginL),
+
+            // User Recipe List - Resep Buatan Saya
+            BlocBuilder<RecipeCubit, RecipeState>(
+              builder: (context, state) {
+                return UserRecipeList(
+                  recipes: state.userRecipes,
                   isLoading: state.status == RecipeStatus.loading,
                 );
               },

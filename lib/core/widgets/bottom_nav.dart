@@ -4,23 +4,20 @@ import '../theme/colors.dart';
 
 class ScaffoldWithBottomNavBar extends StatefulWidget {
   final Widget child;
-  
-  const ScaffoldWithBottomNavBar({
-    super.key,
-    required this.child,
-  });
+
+  const ScaffoldWithBottomNavBar({super.key, required this.child});
 
   @override
-  State<ScaffoldWithBottomNavBar> createState() => _ScaffoldWithBottomNavBarState();
+  State<ScaffoldWithBottomNavBar> createState() =>
+      _ScaffoldWithBottomNavBarState();
 }
 
 class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
   int _currentIndex = 0;
-
   static final List<(String, String, IconData)> _tabs = [
     ('/', 'Home', Icons.home_outlined),
     ('/pantry', 'Pantry', Icons.kitchen_outlined),
-    ('/chat', 'Chat', Icons.chat_outlined),
+    ('/upload-recipe', 'Upload', Icons.add_circle_outline),
     ('/community', 'Community', Icons.people_outline),
     ('/profile', 'Profile', Icons.person_outline),
   ];
@@ -31,7 +28,7 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
     final GoRouter router = GoRouter.of(context);
     final String location = router.location;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     _currentIndex = _getIndexFromLocation(location);
 
     return Scaffold(
@@ -50,9 +47,11 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
           currentIndex: _currentIndex,
           onTap: (index) => _onItemTapped(index, router),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+          backgroundColor:
+              Theme.of(context).bottomNavigationBarTheme.backgroundColor,
           selectedItemColor: AppColors.primary,
-          unselectedItemColor: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+          unselectedItemColor:
+              isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
           selectedLabelStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -62,12 +61,13 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
             fontWeight: FontWeight.w500,
           ),
           elevation: 0,
-          items: _tabs.map((tab) {
-            return BottomNavigationBarItem(
-              icon: Icon(tab.$3),
-              label: tab.$2,
-            );
-          }).toList(),
+          items:
+              _tabs.map((tab) {
+                return BottomNavigationBarItem(
+                  icon: Icon(tab.$3),
+                  label: tab.$2,
+                );
+              }).toList(),
         ),
       ),
     );
@@ -76,10 +76,10 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
   void _onItemTapped(int index, GoRouter router) {
     // If already on the page, don't navigate
     if (index == _currentIndex) return;
-    
+
     // Navigate to selected tab
     router.go(_tabs[index].$1);
-    
+
     setState(() {
       _currentIndex = index;
     });
