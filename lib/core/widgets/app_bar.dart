@@ -10,6 +10,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? leading;
   final bool centerTitle;
   final Color? backgroundColor;
+  final Color? titleColor;
   final double elevation;
   final bool showNotification;
   
@@ -21,16 +22,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.centerTitle = false,
     this.backgroundColor,
+    this.titleColor,
     this.elevation = 0,
     this.showNotification = false, // Changed default value to false
   });
   
   @override
-  Widget build(BuildContext context) {
-    return AppBar(
+  Widget build(BuildContext context) {    return AppBar(
       title: Text(
         title,
-        style: Theme.of(context).textTheme.headlineMedium,
+        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          color: titleColor,
+        ),
       ),
       leading: showBackButton 
           ? IconButton(
