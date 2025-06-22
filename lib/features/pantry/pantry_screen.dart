@@ -80,13 +80,12 @@ class _PantryScreenState extends State<PantryScreen>
       },
     );
   }
-
   Widget _buildUnauthenticatedView(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: CustomAppBar(title: 'Pantry Pintar'),
-      body: Center(
-        child: Padding(
+      body: SafeArea(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSizes.paddingXL),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -188,6 +187,9 @@ class _PantryScreenState extends State<PantryScreen>
                   ),
                 ),
               ),
+              
+              // Add extra space at bottom to prevent overflow
+              const SizedBox(height: AppSizes.marginXL),
             ],
           ),
         ),
