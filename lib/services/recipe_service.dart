@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/recipe.dart';
+import '../core/utils/difficulty_level_mapper.dart';
 import 'supabase_service.dart';
 
 // This class has been fully migrated to use Supabase
@@ -1337,10 +1338,10 @@ class RecipeService extends ChangeNotifier {
       // Upload image to Supabase Storage if provided
       if (images != null && images.isNotEmpty) {
         imageUrl = await _uploadRecipeImage(images.first, name);
-      } // Create recipe data matching database schema
+      }      // Create recipe data matching database schema
       final recipeData = {
         'name': name,
-        'slug': _generateSlug(name),
+        'slug': await _generateUniqueSlug(name),
         'image_url': imageUrl,
         'rating': 0.00,
         'review_count': 0,
@@ -1348,7 +1349,7 @@ class RecipeService extends ChangeNotifier {
         'cook_time': cookingTime.toString(), // Convert to string without "min"
         'servings': servings,
         'description': description,
-        'difficulty_level': difficultyLevel ?? 'medium',
+        'difficulty_level': DifficultyLevelMapper.toDatabase(difficultyLevel) ?? 'sedang',
         'nutrition_info': nutritionInfo ?? {},
         'tips': tips,
         'created_by': userId,
@@ -1465,16 +1466,56 @@ class RecipeService extends ChangeNotifier {
       print('❌ Error uploading recipe image: $e');
       return null;
     }
-  }
-
-  /// Generates a URL-friendly slug from recipe name
-  String _generateSlug(String name) {
-    return name
+  }  /// Generates a unique URL-friendly slug from recipe name
+  Future<String> _generateUniqueSlug(String name) async {
+    final baseSlug = name
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9\s]'), '')
         .replaceAll(RegExp(r'\s+'), '-')
         .replaceAll(RegExp(r'-+'), '-')
         .replaceAll(RegExp(r'^-|-$'), '');
+    
+    String slug = baseSlug;
+    int counter = 1;
+    
+    // Keep checking until we find a unique slug
+    while (await _slugExists(slug)) {
+      slug = '$baseSlug-$counter';
+      counter++;
+    }
+    
+    return slug;
+  }
+  
+  /// Check if a slug already exists in the database
+  Future<bool> _slugExists(String slug) async {
+    try {
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select('id')
+          .eq('slug', slug)
+          .maybeSingle();
+      
+      return response != null;
+    } catch (e) {
+      print('❌ Error checking slug existence: $e');
+      // If there's an error, assume it doesn't exist and add timestamp for safety
+      return false;
+    }
+  }
+
+  /// Generates a URL-friendly slug from recipe name (legacy method for compatibility)
+  String _generateSlug(String name) {
+    final baseSlug = name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), '')
+        .replaceAll(RegExp(r'\s+'), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+    
+    // Add timestamp to ensure uniqueness as fallback
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return '$baseSlug-$timestamp';
   }
 
   // Get available difficulty levels from database

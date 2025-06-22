@@ -1,3 +1,5 @@
+import '../core/utils/difficulty_level_mapper.dart';
+
 class Recipe {
   final String id;
   final String name;
@@ -60,7 +62,7 @@ class Recipe {
       estimatedCost: json['estimated_cost'] as int?,
       cookTime: json['cook_time'] as int?,
       servings: json['servings'],
-      difficultyLevel: json['difficulty_level'] as String?,
+      difficultyLevel: DifficultyLevelMapper.toUI(json['difficulty_level'] as String?),
       nutritionInfo: json['nutrition_info'] as Map<String, dynamic>?,
       tips: json['tips'] as String?,
       ingredients:
@@ -99,7 +101,7 @@ class Recipe {
       'estimated_cost': estimatedCost,
       'cook_time': cookTime,
       'servings': servings,
-      'difficulty_level': difficultyLevel,
+      'difficulty_level': DifficultyLevelMapper.toDatabase(difficultyLevel),
       'nutrition_info': nutritionInfo,
       'tips': tips,
       'ingredients': ingredients,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/recipe.dart';
+import '../core/utils/difficulty_level_mapper.dart';
 
 class FavoriteService extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
