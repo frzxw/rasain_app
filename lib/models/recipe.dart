@@ -4,17 +4,18 @@ class Recipe {
   final String? slug; // Added slug field for SEO-friendly URLs
   final String? imageUrl;
   final double rating;
-  final int reviewCount;
-  final int? estimatedCost;
+  final int reviewCount;  final int? estimatedCost;
   final int? cookTime;
   final int? servings;
+  final String? difficultyLevel; // easy, medium, hard
+  final Map<String, dynamic>? nutritionInfo; // JSON format nutrition data
+  final String? tips; // Cooking tips
   final List<Map<String, dynamic>>? ingredients;
   final List<Map<String, dynamic>>?
   instructions; // Changed to Map to support videos per step
   final String? description;
   final List<String>? categories;
   final bool isSaved;
-
   Recipe({
     required this.id,
     required this.name,
@@ -25,6 +26,9 @@ class Recipe {
     this.estimatedCost,
     this.cookTime,
     this.servings,
+    this.difficultyLevel,
+    this.nutritionInfo,
+    this.tips,
     this.ingredients,
     this.instructions,
     this.description,
@@ -53,10 +57,12 @@ class Recipe {
               : generateSlug(json['name'] ?? ''), // Auto-generate if missing
       imageUrl: json['image_url'],
       rating: (json['rating'] as num).toDouble(),
-      reviewCount: json['review_count'],
-      estimatedCost: json['estimated_cost'] as int?,
+      reviewCount: json['review_count'],      estimatedCost: json['estimated_cost'] as int?,
       cookTime: json['cook_time'] as int?,
       servings: json['servings'],
+      difficultyLevel: json['difficulty_level'] as String?,
+      nutritionInfo: json['nutrition_info'] as Map<String, dynamic>?,
+      tips: json['tips'] as String?,
       ingredients:
           json['ingredients'] != null
               ? List<Map<String, dynamic>>.from(json['ingredients'])
@@ -88,10 +94,12 @@ class Recipe {
       'slug': slug ?? generateSlug(name),
       'image_url': imageUrl,
       'rating': rating,
-      'review_count': reviewCount,
-      'estimated_cost': estimatedCost,
+      'review_count': reviewCount,      'estimated_cost': estimatedCost,
       'cook_time': cookTime,
       'servings': servings,
+      'difficulty_level': difficultyLevel,
+      'nutrition_info': nutritionInfo,
+      'tips': tips,
       'ingredients': ingredients,
       'instructions': instructions,
       'description': description,
@@ -107,10 +115,12 @@ class Recipe {
     String? slug,
     String? imageUrl,
     double? rating,
-    int? reviewCount,
-    int? estimatedCost,
+    int? reviewCount,    int? estimatedCost,
     int? cookTime,
     int? servings,
+    String? difficultyLevel,
+    Map<String, dynamic>? nutritionInfo,
+    String? tips,
     List<Map<String, dynamic>>? ingredients,
     List<Map<String, dynamic>>? instructions,
     String? description,
@@ -123,10 +133,12 @@ class Recipe {
       slug: slug ?? this.slug,
       imageUrl: imageUrl ?? this.imageUrl,
       rating: rating ?? this.rating,
-      reviewCount: reviewCount ?? this.reviewCount,
-      estimatedCost: estimatedCost ?? this.estimatedCost,
+      reviewCount: reviewCount ?? this.reviewCount,      estimatedCost: estimatedCost ?? this.estimatedCost,
       cookTime: cookTime ?? this.cookTime,
       servings: servings ?? this.servings,
+      difficultyLevel: difficultyLevel ?? this.difficultyLevel,
+      nutritionInfo: nutritionInfo ?? this.nutritionInfo,
+      tips: tips ?? this.tips,
       ingredients: ingredients ?? this.ingredients,
       instructions: instructions ?? this.instructions,
       description: description ?? this.description,

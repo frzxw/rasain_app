@@ -9,7 +9,6 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
   UploadRecipeCubit({RecipeService? recipeService})
     : _recipeService = recipeService ?? RecipeService(),
       super(const UploadRecipeState());
-
   Future<void> uploadRecipe({
     required String name,
     required String description,
@@ -19,11 +18,14 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
     required List<String> ingredients,
     required List<String> instructions,
     List<XFile>? images,
+    String? estimatedCost,
+    String? difficultyLevel,
+    Map<String, dynamic>? nutritionInfo,
+    String? tips,
   }) async {
     emit(state.copyWith(status: UploadRecipeStatus.loading));
 
-    try {
-      // Upload to service using named parameters
+    try {      // Upload to service using named parameters
       final result = await _recipeService.createUserRecipe(
         name: name,
         description: description,
@@ -33,6 +35,10 @@ class UploadRecipeCubit extends Cubit<UploadRecipeState> {
         ingredients: ingredients,
         instructions: instructions,
         images: images,
+        estimatedCost: estimatedCost,
+        difficultyLevel: difficultyLevel,
+        nutritionInfo: nutritionInfo,
+        tips: tips,
       );
 
       if (result != null) {

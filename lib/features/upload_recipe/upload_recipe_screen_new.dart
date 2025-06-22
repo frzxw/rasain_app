@@ -23,7 +23,6 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
   // Form controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -31,19 +30,24 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   final TextEditingController _cookingTimeController = TextEditingController();
   final TextEditingController _ingredientController = TextEditingController();
   final TextEditingController _instructionController = TextEditingController();
-
+  final TextEditingController _estimatedCostController = TextEditingController();
+  final TextEditingController _tipsController = TextEditingController();
+  final TextEditingController _caloriesController = TextEditingController();
+  final TextEditingController _proteinController = TextEditingController();
+  final TextEditingController _carbsController = TextEditingController();
+  final TextEditingController _fatController = TextEditingController();
   // Form data
   List<XFile> _selectedImages = [];
   List<Uint8List> _imageBytes = []; // For web preview
   List<String> _ingredients = [];
   List<String> _instructions = [];
   String? _selectedCategory;
+  String? _selectedDifficulty;
 
   // Animation controller
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
   final List<String> _categories = [
     'Makanan Utama',
     'Appetizer',
@@ -51,6 +55,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     'Minuman',
     'Snack',
     'Tradisional',
+  ];
+
+  final List<String> _difficultyLevels = [
+    'easy',
+    'medium',
+    'hard',
   ];
 
   @override

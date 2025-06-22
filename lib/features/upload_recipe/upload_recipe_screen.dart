@@ -24,7 +24,6 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
   // Form controllers
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -32,6 +31,14 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   final TextEditingController _cookingTimeController = TextEditingController();
   final TextEditingController _ingredientController = TextEditingController();
   final TextEditingController _instructionController = TextEditingController();
+  
+  // New controllers for missing fields
+  final TextEditingController _estimatedCostController = TextEditingController();
+  final TextEditingController _tipsController = TextEditingController();
+  final TextEditingController _caloriesController = TextEditingController();
+  final TextEditingController _proteinController = TextEditingController();
+  final TextEditingController _carbsController = TextEditingController();
+  final TextEditingController _fatController = TextEditingController();
 
   // Form data
   List<XFile> _selectedImages = [];
@@ -39,12 +46,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
   List<String> _ingredients = [];
   List<String> _instructions = [];
   String? _selectedCategory;
+  String? _selectedDifficulty; // New field for difficulty level
 
   // Animation controller
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
   final List<String> _categories = [
     'Makanan Utama',
     'Appetizer',
@@ -52,6 +59,12 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     'Minuman',
     'Snack',
     'Tradisional',
+  ];
+
+  final List<String> _difficultyLevels = [
+    'easy',
+    'medium',
+    'hard',
   ];
 
   @override
@@ -114,7 +127,6 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
       });
     });
   }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -125,6 +137,15 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     _cookingTimeController.dispose();
     _ingredientController.dispose();
     _instructionController.dispose();
+    
+    // Dispose new controllers
+    _estimatedCostController.dispose();
+    _tipsController.dispose();
+    _caloriesController.dispose();
+    _proteinController.dispose();
+    _carbsController.dispose();
+    _fatController.dispose();
+    
     super.dispose();
   }
 
@@ -617,9 +638,7 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
             return null;
           },
         ),
-        const SizedBox(height: AppSizes.marginM),
-
-        // Serving and Cooking Time
+        const SizedBox(height: AppSizes.marginM),        // Serving and Cooking Time
         Row(
           children: [
             Expanded(
@@ -646,6 +665,149 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
               ),
             ),
           ],
+        ),
+        const SizedBox(height: AppSizes.marginM),
+
+        // Difficulty Level and Estimated Cost
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _selectedDifficulty,
+                decoration: const InputDecoration(
+                  labelText: 'Tingkat Kesulitan',
+                  border: OutlineInputBorder(),
+                ),
+                items: _difficultyLevels.map((String difficulty) {
+                  String displayText;
+                  switch (difficulty) {
+                    case 'easy':
+                      displayText = 'Mudah';
+                      break;
+                    case 'medium':
+                      displayText = 'Sedang';
+                      break;
+                    case 'hard':
+                      displayText = 'Sulit';
+                      break;
+                    default:
+                      displayText = difficulty;
+                  }
+                  return DropdownMenuItem<String>(
+                    value: difficulty,
+                    child: Text(displayText),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedDifficulty = newValue;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Pilih tingkat kesulitan';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: AppSizes.marginM),
+            Expanded(
+              child: TextFormField(
+                controller: _estimatedCostController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Estimasi Biaya (Rp)',
+                  hintText: 'Contoh: 25000',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final cost = int.tryParse(value);
+                    if (cost == null || cost < 0) {
+                      return 'Masukkan biaya yang valid';
+                    }
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.marginM),
+
+        // Nutrition Information Section
+        Text(
+          'Informasi Gizi (Opsional)',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSizes.marginS),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _caloriesController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Kalori',
+                  hintText: 'per porsi',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSizes.marginS),
+            Expanded(
+              child: TextFormField(
+                controller: _proteinController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Protein (g)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.marginS),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _carbsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Karbohidrat (g)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSizes.marginS),
+            Expanded(
+              child: TextFormField(
+                controller: _fatController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Lemak (g)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.marginM),
+
+        // Tips Section
+        TextFormField(
+          controller: _tipsController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Tips Memasak (Opsional)',
+            hintText: 'Bagikan tips dan trik untuk hasil terbaik...',
+            border: OutlineInputBorder(),
+          ),
         ),
       ],
     );
@@ -887,9 +1049,23 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
       });
     }
   }
-
   void _uploadRecipe() {
     if (_formKey.currentState?.validate() ?? false) {
+      // Prepare nutrition info
+      Map<String, dynamic> nutritionInfo = {};
+      if (_caloriesController.text.isNotEmpty) {
+        nutritionInfo['calories'] = int.tryParse(_caloriesController.text);
+      }
+      if (_proteinController.text.isNotEmpty) {
+        nutritionInfo['protein'] = double.tryParse(_proteinController.text);
+      }
+      if (_carbsController.text.isNotEmpty) {
+        nutritionInfo['carbohydrates'] = double.tryParse(_carbsController.text);
+      }
+      if (_fatController.text.isNotEmpty) {
+        nutritionInfo['fat'] = double.tryParse(_fatController.text);
+      }
+
       context.read<UploadRecipeCubit>().uploadRecipe(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -899,10 +1075,15 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
         ingredients: _ingredients,
         instructions: _instructions,
         images: _selectedImages,
+        estimatedCost: _estimatedCostController.text.isNotEmpty 
+          ? _estimatedCostController.text 
+          : null,
+        difficultyLevel: _selectedDifficulty,
+        nutritionInfo: nutritionInfo.isNotEmpty ? nutritionInfo : null,
+        tips: _tipsController.text.isNotEmpty ? _tipsController.text.trim() : null,
       );
     }
   }
-
   void _resetForm() {
     _nameController.clear();
     _descriptionController.clear();
@@ -910,12 +1091,22 @@ class _UploadRecipeScreenState extends State<UploadRecipeScreen>
     _cookingTimeController.clear();
     _ingredientController.clear();
     _instructionController.clear();
+    
+    // Clear new controllers
+    _estimatedCostController.clear();
+    _tipsController.clear();
+    _caloriesController.clear();
+    _proteinController.clear();
+    _carbsController.clear();
+    _fatController.clear();
+    
     setState(() {
       _selectedImages.clear();
       _imageBytes.clear();
       _ingredients.clear();
       _instructions.clear();
       _selectedCategory = null;
+      _selectedDifficulty = null;
     });
   }
 }

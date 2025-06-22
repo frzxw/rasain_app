@@ -184,16 +184,17 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: AppSizes.marginS),
 
         // Quick Action Buttons
-        const QuickActionButtons(),
-
-        const SizedBox(height: AppSizes.marginL), // Trending Topics Section
+        const QuickActionButtons(),        const SizedBox(height: AppSizes.marginL), 
+        
+        // Pantry-Based Recipes Section
         SectionHeader(
-          title: 'Trending Hari Ini',
-          subtitle: 'Resep yang sedang populer',
-          icon: Icons.trending_up,
+          title: 'Masak dari Pantry Anda',
+          subtitle: 'Resep berdasarkan bahan yang Anda miliki',
+          icon: Icons.kitchen,
           iconColor: AppColors.primary,
           onSeeAllTap: () {
-            // TODO: Navigate to trending page
+            // Navigate to pantry-based recipes
+            context.go('/pantry');
           },
         ),
         const SizedBox(height: AppSizes.marginS),

@@ -1305,7 +1305,6 @@ class RecipeService extends ChangeNotifier {
       print('❌ Error updating recipe slugs: $e');
     }
   }
-
   /// Creates a new user recipe and uploads it to the database
   Future<String?> createUserRecipe({
     required String name,
@@ -1316,6 +1315,10 @@ class RecipeService extends ChangeNotifier {
     required List<String> ingredients,
     required List<String> instructions,
     List<dynamic>? images,
+    String? estimatedCost,
+    String? difficultyLevel,
+    Map<String, dynamic>? nutritionInfo,
+    String? tips,
   }) async {
     try {
       _setLoading(true);
@@ -1332,17 +1335,20 @@ class RecipeService extends ChangeNotifier {
       // Upload image to Supabase Storage if provided
       if (images != null && images.isNotEmpty) {
         imageUrl = await _uploadRecipeImage(images.first, name);
-      } // Create recipe data matching database schema
+      }      // Create recipe data matching database schema
       final recipeData = {
         'name': name,
         'slug': _generateSlug(name),
         'image_url': imageUrl,
         'rating': 0.00,
         'review_count': 0,
-        'estimated_cost': null,
+        'estimated_cost': estimatedCost,
         'cook_time': cookingTime.toString(), // Convert to string without "min"
         'servings': servings,
         'description': description,
+        'difficulty_level': difficultyLevel ?? 'medium',
+        'nutrition_info': nutritionInfo ?? {},
+        'tips': tips,
         'created_by': userId,
       };
 
