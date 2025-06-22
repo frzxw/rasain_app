@@ -1306,6 +1306,7 @@ class RecipeService extends ChangeNotifier {
       print('❌ Error updating recipe slugs: $e');
     }
   }
+
   /// Creates a new user recipe and uploads it to the database
   Future<String?> createUserRecipe({
     required String name,
@@ -1336,7 +1337,7 @@ class RecipeService extends ChangeNotifier {
       // Upload image to Supabase Storage if provided
       if (images != null && images.isNotEmpty) {
         imageUrl = await _uploadRecipeImage(images.first, name);
-      }      // Create recipe data matching database schema
+      } // Create recipe data matching database schema
       final recipeData = {
         'name': name,
         'slug': _generateSlug(name),
@@ -1500,6 +1501,7 @@ class RecipeService extends ChangeNotifier {
       return ['Mudah', 'Sedang', 'Sulit']; // Default fallback
     }
   }
+
   // Helpers
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -1570,31 +1572,35 @@ class RecipeService extends ChangeNotifier {
 
     // Filter by price range
     if (priceRange != null) {
-      filteredRecipes = filteredRecipes.where((recipe) {
-        if (recipe.estimatedCost == null) return false;
-        return recipe.estimatedCost! >= priceRange.start &&
-               recipe.estimatedCost! <= priceRange.end;
-      }).toList();
+      filteredRecipes =
+          filteredRecipes.where((recipe) {
+            if (recipe.estimatedCost == null) return false;
+            return recipe.estimatedCost! >= priceRange.start &&
+                recipe.estimatedCost! <= priceRange.end;
+          }).toList();
     }
 
     // Filter by time range
     if (timeRange != null) {
-      filteredRecipes = filteredRecipes.where((recipe) {
-        if (recipe.cookTime == null) return false;
-        return recipe.cookTime! >= timeRange.start &&
-               recipe.cookTime! <= timeRange.end;
-      }).toList();
+      filteredRecipes =
+          filteredRecipes.where((recipe) {
+            if (recipe.cookTime == null) return false;
+            return recipe.cookTime! >= timeRange.start &&
+                recipe.cookTime! <= timeRange.end;
+          }).toList();
     }
 
     // Filter by difficulty level
     if (difficultyLevel != null && difficultyLevel.isNotEmpty) {
-      filteredRecipes = filteredRecipes.where((recipe) {
-        return recipe.difficultyLevel == difficultyLevel;
-      }).toList();
+      filteredRecipes =
+          filteredRecipes.where((recipe) {
+            return recipe.difficultyLevel == difficultyLevel;
+          }).toList();
     }
 
     return filteredRecipes;
   }
+
   Future<List<String>> getRecipeCategories() async {
     try {
       print('🔍 Fetching categories from recipe_categories table...');
@@ -1794,10 +1800,9 @@ class RecipeService extends ChangeNotifier {
             recipe_instructions(step_number, instruction_text)
           ''')
           .eq('created_by', userId)
-          .order('created_at', ascending: false);      print(
-        '📥 Raw user recipes response: ${response.length} recipes',
-      ); 
-      
+          .order('created_at', ascending: false);
+      print('📥 Raw user recipes response: ${response.length} recipes');
+
       // Convert to Recipe objects
       final List<Recipe> userRecipesList = [];
       for (final json in response) {

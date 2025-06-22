@@ -8,9 +8,9 @@ class TrendingTopics extends StatelessWidget {
   final Function(String)? onTopicTap;
 
   const TrendingTopics({
-    super.key, 
-    required this.trendingRecipes, 
-    this.onTopicTap
+    super.key,
+    required this.trendingRecipes,
+    this.onTopicTap,
   });
 
   @override
@@ -25,11 +25,21 @@ class TrendingTopics extends StatelessWidget {
         itemCount: trendingRecipes.length > 5 ? 5 : trendingRecipes.length,
         itemBuilder: (context, index) {
           final recipe = trendingRecipes[index];
-          return _buildTrendingCard(context, recipe, index);
+          return _buildTopicCard(
+            context,
+            TrendingTopic(
+              id: recipe.id.toString(),
+              title: recipe.title,
+              description: recipe.description ?? '',
+              popularity: recipe.saves ?? 0,
+            ),
+            index,
+          );
         },
       ),
     );
   }
+
   Widget _buildTopicCard(BuildContext context, TrendingTopic topic, int index) {
     // Use shades of red for variety
     final colors = [

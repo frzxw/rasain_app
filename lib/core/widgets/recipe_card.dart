@@ -57,7 +57,7 @@ class _RecipeCardState extends State<RecipeCard>
       _favoriteController.reverse();
     });
 
-    context.read<RecipeCubit>().toggleSavedRecipe(widget.recipe.id);
+    context.read<RecipeCubit>().toggleLike(int.parse(widget.recipe.id));
     widget.onFavoriteToggle?.call();
   }
 

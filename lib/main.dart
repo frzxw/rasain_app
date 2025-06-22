@@ -35,7 +35,7 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);  // Create service instances
+  ]); // Create service instances
   final themeService = ThemeService();
   final authService = AuthService();
   final recipeService = RecipeService();
@@ -59,7 +59,8 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [        // Service providers
+      providers: [
+        // Service providers
         ChangeNotifierProvider.value(value: themeService),
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider.value(value: recipeService),
@@ -76,10 +77,13 @@ void main() async {
             final authCubit = AuthCubit(authService);
             // Initialize AuthListener after AuthCubit is created
             AuthListener(authService, authCubit);
-            return authCubit;          },
+            return authCubit;
+          },
         ),
         BlocProvider(create: (context) => RecipeCubit(recipeService)),
-        BlocProvider(create: (context) => PantryCubit(pantryService, recipeService)),
+        BlocProvider(
+          create: (context) => PantryCubit(pantryService, recipeService),
+        ),
         BlocProvider(
           create: (context) => UploadRecipeCubit(recipeService: recipeService),
         ),

@@ -15,7 +15,8 @@ class PantryBasedRecipes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<RecipeCubit, RecipeState>(
-      builder: (context, state) {        // Check if pantry-based recipes are available
+      builder: (context, state) {
+        // Check if pantry-based recipes are available
         final pantryRecipes = state.pantryBasedRecipes;
 
         if (state.status == RecipeStatus.loading) {
@@ -41,7 +42,8 @@ class PantryBasedRecipes extends StatelessWidget {
         itemBuilder: (context, index) {
           return Container(
             width: 280,
-            margin: const EdgeInsets.only(right: AppSizes.marginM),            child: ShimmerWidget(
+            margin: const EdgeInsets.only(right: AppSizes.marginM),
+            child: ShimmerWidget(
               child: Container(
                 width: double.infinity,
                 height: 220,
@@ -91,9 +93,9 @@ class PantryBasedRecipes extends StatelessWidget {
           const SizedBox(height: AppSizes.marginS),
           Text(
             'Tambahkan bahan-bahan ke pantry Anda untuk mendapatkan rekomendasi resep yang bisa dibuat',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.marginM),
@@ -152,73 +154,191 @@ class PantryBasedRecipes extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildPantryRecipeCard(Recipe recipe) {
     return Builder(
       builder: (context) {
         return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Recipe Image with Pantry Badge
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppSizes.radiusM),
-                  topRight: Radius.circular(AppSizes.radiusM),
-                ),
-                child: Container(
-                  height: 140,
-                  width: double.infinity,
-                  color: AppColors.surface,
-                  child: recipe.imageUrl != null
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-                        )
-                      : _buildPlaceholderImage(),
-                ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              // Pantry Match Badge
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Recipe Image with Pantry Badge
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(AppSizes.radiusM),
+                      topRight: Radius.circular(AppSizes.radiusM),
+                    ),
+                    child: Container(
+                      height: 140,
+                      width: double.infinity,
+                      color: AppColors.surface,
+                      child:
+                          recipe.imageUrl != null
+                              ? Image.network(
+                                recipe.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => _buildPlaceholderImage(),
+                              )
+                              : _buildPlaceholderImage(),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.kitchen,
-                        size: 12,
-                        color: Colors.white,
+                  // Pantry Match Badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                      const SizedBox(width: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.kitchen,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Pantry Match',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Recipe Details
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingM),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Pantry Match',
+                        recipe.name,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
                           fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppSizes.marginXS),
+
+                      // Recipe Stats
+                      Row(
+                        children: [
+                          if (recipe.cookTime != null) ...[
+                            Icon(
+                              Icons.schedule,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${recipe.cookTime}m',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(width: AppSizes.marginS),
+                          ],
+                          if (recipe.difficultyLevel != null) ...[
+                            Icon(
+                              Icons.speed,
+                              size: 14,
+                              color: _getDifficultyColor(
+                                recipe.difficultyLevel!,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getDifficultyText(recipe.difficultyLevel!),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getDifficultyColor(
+                                  recipe.difficultyLevel!,
+                                ),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: AppSizes.marginS),
+
+                      // Available Ingredients Indicator
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Bahan tersedia di pantry',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      // Action Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            context.go('/recipe/${recipe.slug ?? recipe.id}');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child: const Text(
+                            'Masak Sekarang',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -227,116 +347,7 @@ class PantryBasedRecipes extends StatelessWidget {
               ),
             ],
           ),
-          
-          // Recipe Details
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingM),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    recipe.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSizes.marginXS),
-                  
-                  // Recipe Stats
-                  Row(
-                    children: [
-                      if (recipe.cookTime != null) ...[
-                        Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${recipe.cookTime}m',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSizes.marginS),
-                      ],
-                      if (recipe.difficultyLevel != null) ...[
-                        Icon(
-                          Icons.speed,
-                          size: 14,
-                          color: _getDifficultyColor(recipe.difficultyLevel!),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getDifficultyText(recipe.difficultyLevel!),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: _getDifficultyColor(recipe.difficultyLevel!),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  
-                  const SizedBox(height: AppSizes.marginS),
-                  
-                  // Available Ingredients Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Bahan tersedia di pantry',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.go('/recipe/${recipe.slug ?? recipe.id}');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: const Text(
-                        'Masak Sekarang',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
+        );
       },
     );
   }
@@ -345,11 +356,7 @@ class PantryBasedRecipes extends StatelessWidget {
     return Container(
       color: AppColors.surface,
       child: const Center(
-        child: Icon(
-          Icons.restaurant,
-          color: AppColors.textSecondary,
-          size: 40,
-        ),
+        child: Icon(Icons.restaurant, color: AppColors.textSecondary, size: 40),
       ),
     );
   }
