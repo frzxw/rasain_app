@@ -118,35 +118,34 @@ class DataService {
 
   /// Add pantry item to Supabase
   Future<PantryItem?> addPantryItem(PantryItem item) async {
-    try {
-      debugPrint(
-        '🔄 DataService: Adding pantry item to database: ${item.name}',
-      );
-
-      // Get current user ID
+    try {      if (kDebugMode) {
+        debugPrint('🔄 DataService: Adding pantry item to database: ${item.name}');
+      }// Get current user ID  
       final userId = _supabaseService.client.auth.currentUser?.id;
-      debugPrint('� DataService: Current user ID: $userId');
-
-      if (userId == null) {
-        debugPrint(
-          '❌ DataService: User not authenticated, cannot add pantry item',
-        );
+      if (kDebugMode) {
+        debugPrint('🔍 DataService: Current user ID: ${userId ?? "null"}');
+      }      if (userId == null) {
+        if (kDebugMode) {
+          debugPrint('❌ DataService: User not authenticated, cannot add pantry item');
+        }
         return null;
+      }// Create item data with user_id and sanitize for UTF-8 safety
+      final itemData = _sanitizeJsonData(item.toJson());
+      itemData['user_id'] = userId;      if (kDebugMode) {
+        debugPrint('📝 DataService: Item data: $itemData');
       }
 
-      // Create item data with user_id
-      final itemData = item.toJson();
-      itemData['user_id'] = userId;
-
-      debugPrint('📝 DataService: Item data: $itemData');
-
       final data = await _supabaseService.insert('pantry_items', itemData);
-      debugPrint('✅ DataService: Successfully inserted item to database');
-      debugPrint('📄 DataService: Response data: $data');
+      
+      if (kDebugMode) {
+        debugPrint('✅ DataService: Successfully inserted item to database');
+        debugPrint('📄 DataService: Response data: $data');
+      }
 
-      return PantryItem.fromJson(data);
-    } catch (e) {
-      debugPrint('❌ DataService: Error adding pantry item: $e');
+      return PantryItem.fromJson(data);    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ DataService: Error adding pantry item: $e');
+      }
       return null;
     }
   }
@@ -465,5 +464,25 @@ class DataService {
       debugPrint('Error fetching user profile: $e');
       return null;
     }
+  }
+
+  // Helper method to sanitize text and prevent UTF-8 encoding issues
+  Map<String, dynamic> _sanitizeJsonData(Map<String, dynamic> data) {
+    final sanitized = <String, dynamic>{};
+
+    for (final entry in data.entries) {
+      if (entry.value is String) {
+        // Sanitize string values to ensure proper UTF-8 encoding
+        final sanitizedValue = entry.value
+            .replaceAll(RegExp(r'[^\u0000-\u007F\u0080-\uFFFF]'), '') // Remove invalid unicode
+            .replaceAll(RegExp(r'[\uFFFD]'), '') // Remove replacement characters
+            .trim();
+        sanitized[entry.key] = sanitizedValue;
+      } else {
+        sanitized[entry.key] = entry.value;
+      }
+    }
+
+    return sanitized;
   }
 }

@@ -1275,6 +1275,56 @@ class RecipeService extends ChangeNotifier {
     }
   }
 
+  // Get available difficulty levels from database
+  Future<List<String>> getAvailableDifficultyLevels() async {
+    try {
+      final response = await _supabaseService.client
+          .from('recipes')
+          .select('difficulty_level')
+          .not('difficulty_level', 'is', null);
+
+      final difficultyLevels =
+          response
+              .map((row) => row['difficulty_level'] as String?)
+              .where((level) => level != null && level.isNotEmpty)
+              .cast<String>()
+              .toSet()
+              .toList();
+
+      difficultyLevels.sort(); // Sort alphabetically
+      debugPrint('✅ Found difficulty levels: $difficultyLevels');
+      return difficultyLevels;
+    } catch (e) {
+      debugPrint('❌ Error fetching difficulty levels: $e');
+      return ['Mudah', 'Sedang', 'Sulit']; // Default fallback
+    }
+  }
+
+  // Get available recipe categories from database
+  Future<List<String>> getRecipeCategories() async {
+    try {
+      final response = await _supabaseService.client
+          .from('recipe_categories')
+          .select('name')
+          .order('name', ascending: true);
+
+      final categories = response.map((row) => row['name'] as String).toList();
+
+      debugPrint('✅ Found categories: $categories');
+      return categories;
+    } catch (e) {
+      debugPrint('❌ Error fetching categories: $e');
+      return [
+        'Makanan Utama',
+        'Pedas',
+        'Tradisional',
+        'Sup',
+        'Daging',
+        'Manis',
+      ]; // Default fallback
+    }
+  }
+
   // Helpers
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -1334,218 +1384,51 @@ class RecipeService extends ChangeNotifier {
       // If we're unsaving, remove from saved list
       _savedRecipes.removeWhere((r) => r.id == recipeId);
     }
-  } // Get recipe categories from database
+  } // Filter recipes by price, time, and difficulty level
 
-  Future<List<String>> getRecipeCategories() async {
-    try {
-      debugPrint('🔍 Fetching categories from recipe_categories table...');
-      final response = await _supabaseService.client
-          .from('recipe_categories')
-          .select('name')
-          .order('name');
-
-      final categories =
-          response
-              .map<String>((category) => category['name'] as String)
-              .toList();
-
-      debugPrint('✅ Found ${categories.length} categories from database');
-      debugPrint('📋 Categories: ${categories.join(', ')}');
-
-      // Add "All" at the beginning only if not already present
-      final result = ['All', ...categories];
-      return result;
-    } catch (e) {
-      debugPrint('❌ Error fetching categories: $e');
-      // Return just 'All' if database fails - don't hardcode categories
-      return ['All'];
-    }
-  }
-
-  // Test function untuk melihat data bahan-bahan dari recipe_ingredients table
-  Future<void> testRecipeIngredients() async {
-    try {
-      // Ambil beberapa recipe ID untuk testing
-      final recipes = await _supabaseService.client
-          .from('recipes')
-          .select('id, name')
-          .limit(3);
-
-      debugPrint('🧪 Testing recipe ingredients connection...');
-
-      for (final recipe in recipes) {
-        final recipeId = recipe['id'];
-        final recipeName = recipe['name'];
-
-        debugPrint('📝 Recipe: $recipeName (ID: $recipeId)');
-
-        final ingredients = await getRecipeIngredients(recipeId);
-
-        if (ingredients.isNotEmpty) {
-          debugPrint('✅ Found ${ingredients.length} ingredients:');
-          for (final ingredient in ingredients) {
-            debugPrint(
-              '   - ${ingredient['name']} (${ingredient['quantity']} ${ingredient['unit']})',
-            );
-          }
-        } else {
-          debugPrint('❌ No ingredients found for this recipe');
-
-          // Debug: cek apakah ada data di recipe_ingredients dengan recipe_id ini
-          final debugCheck = await _supabaseService.client
-              .from('recipe_ingredients')
-              .select('ingredient_name, quantity, unit')
-              .eq('recipe_id', recipeId);
-
-          debugPrint(
-            '   🔍 Direct check found ${debugCheck.length} ingredients',
-          );
-          for (final ing in debugCheck) {
-            debugPrint(
-              '   - ${ing['ingredient_name']} (${ing['quantity']} ${ing['unit']})',
-            );
-          }
-        }
-        debugPrint('');
-      }
-    } catch (e) {
-      debugPrint('❌ Error testing recipe ingredients: $e');
-    }
-  } // Quick test untuk recipe tertentu yang ada di screenshot
-
-  Future<void> testSpecificRecipe() async {
-    try {
-      // Test dengan recipe ID yang terlihat di screenshot: Soto Ayam Lamongan
-      const String recipeId = 'a3cb8da7-8fb1-0a9b-f34e-7cbd3ba4e08d';
-
-      debugPrint('🧪 Testing specific recipe: $recipeId');
-
-      // Ambil data recipe
-      final recipe =
-          await _supabaseService.client
-              .from('recipes')
-              .select('id, name, slug')
-              .eq('id', recipeId)
-              .maybeSingle();
-
-      if (recipe != null) {
-        debugPrint('✅ Recipe found: ${recipe['name']}');
-
-        // Ambil ingredients
-        final ingredients = await _supabaseService.client
-            .from('recipe_ingredients')
-            .select('ingredient_name, quantity, unit')
-            .eq('recipe_id', recipeId);
-
-        debugPrint('✅ Found ${ingredients.length} ingredients:');
-        for (final ingredient in ingredients) {
-          debugPrint(
-            '   - ${ingredient['ingredient_name']} (${ingredient['quantity']} ${ingredient['unit']})',
-          );
-        }
-
-        // Ambil instructions
-        final instructions = await _supabaseService.client
-            .from('recipe_instructions')
-            .select('step_number, instruction_text')
-            .eq('recipe_id', recipeId)
-            .order('step_number');
-
-        debugPrint('✅ Found ${instructions.length} instructions:');
-        for (final instruction in instructions) {
-          debugPrint(
-            '   ${instruction['step_number']}. ${instruction['instruction_text']}',
-          );
-        }
-
-        // Ambil reviews
-        final reviews = await getRecipeReviews(recipeId);
-        debugPrint('✅ Found ${reviews.length} reviews:');
-        for (final review in reviews.take(3)) {
-          // Tampilkan 3 review pertama
-          debugPrint(
-            '   ⭐ ${review['rating']}/5 by ${review['user_name']}: ${review['comment']}',
-          );
-        }
-
-        // Ambil review stats
-        final stats = await getRecipeReviewStats(recipeId);
-        debugPrint('📊 Review Stats:');
-        debugPrint(
-          '   Average: ${stats['average_rating']}/5 (${stats['total_reviews']} reviews)',
-        );
-        debugPrint('   Distribution: ${stats['rating_distribution']}');
-      } else {
-        debugPrint('❌ Recipe not found');
-      }
-    } catch (e) {
-      debugPrint('❌ Error testing specific recipe: $e');
-    }
-  } // Test function untuk submit review (hanya untuk testing)
-
-  Future<void> testSubmitReview() async {
-    try {
-      // Test dengan recipe ID yang ada di screenshot recipe_reviews
-      const String recipeId = 'b4dc9eb8-9ac2-1bac-a45f-8dce4cb5f19e';
-
-      debugPrint('🧪 Testing submit review for recipe: $recipeId');
-
-      // Ambil reviews yang sudah ada dulu
-      final existingReviews = await getRecipeReviews(recipeId);
-      debugPrint('✅ Existing reviews count: ${existingReviews.length}');
-
-      if (existingReviews.isNotEmpty) {
-        debugPrint('📝 Sample existing reviews:');
-        for (final review in existingReviews.take(3)) {
-          debugPrint('   ⭐ ${review['rating']}/5: ${review['comment']}');
-        }
-      }
-
-      // Test get review stats
-      final stats = await getRecipeReviewStats(recipeId);
-      debugPrint('📊 Review Stats:');
-      debugPrint(
-        '   Average: ${stats['average_rating']}/5 (${stats['total_reviews']} reviews)',
-      );
-      debugPrint('   Distribution: ${stats['rating_distribution']}');
-    } catch (e) {
-      debugPrint('❌ Error testing reviews: $e');
-    }
-  }
-
-  // Filter recipes by price and time
   Future<List<Recipe>> filterRecipes({
     RangeValues? priceRange,
     RangeValues? timeRange,
     String? category,
+    String? difficultyLevel,
   }) async {
     _setLoading(true);
     _clearError();
 
     try {
       debugPrint(
-        '🔍 Filtering recipes with price: $priceRange, time: $timeRange, category: $category',
+        '🔍 Filtering recipes with price: $priceRange, time: $timeRange, category: $category, difficulty: $difficultyLevel',
       );
 
       var query = _supabaseService.client.from('recipes').select();
 
       // Apply price filter
       if (priceRange != null) {
-        query = query
-            .gte('estimated_cost', priceRange.start.round())
-            .lte('estimated_cost', priceRange.end.round());
+        if (priceRange.start > 0) {
+          query = query.gte('estimated_cost', priceRange.start.round());
+        }
+        if (priceRange.end < 100000) {
+          query = query.lte('estimated_cost', priceRange.end.round());
+        }
       }
 
       // Apply time filter
       if (timeRange != null) {
-        query = query
-            .gte('cook_time', timeRange.start.round())
-            .lte('cook_time', timeRange.end.round());
+        if (timeRange.start > 0) {
+          query = query.gte('cook_time', timeRange.start.round());
+        }
+        if (timeRange.end < 180) {
+          query = query.lte('cook_time', timeRange.end.round());
+        }
       }
 
-      // Apply category filter if specified and not 'All'
+      // Apply difficulty level filter
+      if (difficultyLevel != null && difficultyLevel.isNotEmpty) {
+        query = query.eq('difficulty_level', difficultyLevel);
+      }
+
+      // Apply category filter using junction table
       if (category != null && category != 'All') {
-        // Get category ID first
         final categoryResponse =
             await _supabaseService.client
                 .from('recipe_categories')
@@ -1555,7 +1438,6 @@ class RecipeService extends ChangeNotifier {
 
         final categoryId = categoryResponse['id'];
 
-        // Get recipe IDs that belong to this category
         final mappingResponse = await _supabaseService.client
             .from('recipe_categories_recipes')
             .select('recipe_id')
