@@ -1113,20 +1113,25 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');
-      return response
+      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');      return response
           .map<Map<String, dynamic>>(
-            (review) => {
-              'id': review['id']?.toString() ?? '',
-              'user_id': review['user_id']?.toString() ?? '',
-              'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
-              'comment':
-                  review['comment']?.toString() ??
-                  '', // Fixed: using 'comment' instead of 'review_text'
-              'date': review['created_at']?.toString() ?? '',
-              'user_name':
-                  'User', // Default name, bisa diambil dari user_profiles nanti
-              'user_image': null,
+            (review) {
+              // Extract user profile data from the JOIN
+              final userProfile = review['user_profiles'];
+              final userName = userProfile != null && userProfile['name'] != null
+                  ? userProfile['name'].toString()
+                  : 'User ${(review['user_id']?.toString() ?? '').length > 8 ? (review['user_id']?.toString() ?? '').substring(0, 8) : review['user_id']?.toString() ?? ''}';
+              final userImage = userProfile != null ? userProfile['image_url'] : null;
+
+              return {
+                'id': review['id']?.toString() ?? '',
+                'user_id': review['user_id']?.toString() ?? '',
+                'rating': (review['rating'] as num?)?.toDouble() ?? 0.0,
+                'comment': review['comment']?.toString() ?? '',
+                'date': review['created_at']?.toString() ?? '',
+                'user_name': userName,
+                'user_image': userImage,
+              };
             },
           )
           .toList();
