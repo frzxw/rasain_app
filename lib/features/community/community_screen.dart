@@ -37,11 +37,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: CustomAppBar(
-        title: 'Community',
+      backgroundColor: Colors.grey.shade50,      appBar: CustomAppBar(
+        title: 'Komunitas',
         showNotification: true,
         backgroundColor: AppColors.primary,
+        titleColor: Colors.white,
         elevation: 0,
       ),
       body: BlocConsumer<CommunityCubit, CommunityState>(
@@ -349,9 +349,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder:
-          (context) => CommentsOverlay(
-            postId: post.id,
-            postContent: post.content ?? 'Community Post',
+          (context) => CommentsOverlay(            postId: post.id,
+            postContent: post.content ?? 'Postingan Komunitas',
             currentCommentCount: post.commentCount,
           ),
     );
