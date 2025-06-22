@@ -1093,10 +1093,13 @@ class RecipeService extends ChangeNotifier {
       }
     }
 
-    return recipesWithDetails;  }  // Get reviews for a specific recipe from recipe_reviews table
+    return recipesWithDetails;
+  }
+
+  // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
     try {
-      // Use JOIN with user_profiles like community service does
+      // Use LEFT JOIN to include all reviews, even if user has no profile
       final response = await _supabaseService.client
           .from('recipe_reviews')
           .select('''
@@ -1105,7 +1108,8 @@ class RecipeService extends ChangeNotifier {
             rating,
             comment,
             created_at,
-            user_profiles!inner(
+            recipe_id,
+            user_profiles(
               name,
               image_url
             )
@@ -1113,7 +1117,18 @@ class RecipeService extends ChangeNotifier {
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);
 
-      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');      return response
+      print('✅ Fetched ${response.length} reviews for recipe: $recipeId');
+      
+      // Safety check: filter out any reviews that don't belong to this recipe
+      final validReviews = response.where((review) => 
+        review['recipe_id'] == recipeId
+      ).toList();
+      
+      if (validReviews.length != response.length) {
+        print('⚠️ Filtered out ${response.length - validReviews.length} reviews with wrong recipe_id');
+      }
+
+      return validReviews
           .map<Map<String, dynamic>>(
             (review) {
               // Extract user profile data from the JOIN
@@ -1140,7 +1155,6 @@ class RecipeService extends ChangeNotifier {
       return [];
     }
   }
-
   // Submit a review for a recipe
   Future<bool> submitRecipeReview(
     String recipeId,
@@ -1148,6 +1162,9 @@ class RecipeService extends ChangeNotifier {
     String comment,
   ) async {
     try {
+      print('🔄 Starting review submission for recipe: $recipeId');
+      print('📊 Rating: $rating, Comment: "$comment"');
+      
       final userId = _supabaseService.client.auth.currentUser?.id;
 
       if (userId == null) {
@@ -1155,37 +1172,50 @@ class RecipeService extends ChangeNotifier {
         return false;
       }
 
+      print('👤 Submitting review as user: $userId');
+
       // Check if user has already reviewed this recipe
       final existingReviews = await _supabaseService.client
           .from('recipe_reviews')
           .select('id')
           .eq('user_id', userId)
           .eq('recipe_id', recipeId);
+          
+      print('📋 Found ${existingReviews.length} existing reviews from this user');
+      
       if (existingReviews.isNotEmpty) {
         // Update existing review, preserve created_at
-        await _supabaseService.client
+        print('🔄 Updating existing review...');
+        final updateResult = await _supabaseService.client
             .from('recipe_reviews')
             .update({
               'rating': rating,
               'comment': comment,
               'updated_at': DateTime.now().toIso8601String(),
             })
-            .eq('id', existingReviews.first['id']);
+            .eq('id', existingReviews.first['id'])
+            .select();
+            
+        print('📊 Update result: $updateResult');
         print(
           '✅ Review updated successfully for recipe: $recipeId (preserved created_at)',
         );
       } else {
         // Insert new review
-        await _supabaseService.client.from('recipe_reviews').insert({
+        print('➕ Inserting new review...');
+        final insertResult = await _supabaseService.client.from('recipe_reviews').insert({
           'recipe_id': recipeId,
           'user_id': userId,
           'rating': rating,
           'comment': comment,
-        });
+        }).select();
+        
+        print('📊 Insert result: $insertResult');
         print('✅ New review submitted successfully for recipe: $recipeId');
       }
 
       // Update average rating in the recipes table
+      print('🔄 Updating recipe average rating...');
       await _updateRecipeAverageRating(recipeId);
 
       return true;
@@ -1194,33 +1224,88 @@ class RecipeService extends ChangeNotifier {
       _setError('Failed to submit review: $e');
       return false;
     }
-  }
-
-  // Update average rating for a recipe
+  }  // Update average rating for a recipe
   Future<void> _updateRecipeAverageRating(String recipeId) async {
     try {
+      print('🔄 Starting rating update for recipe: $recipeId');
+      
       // Get all ratings for this recipe from recipe_reviews table
       final allRatings = await _supabaseService.client
           .from('recipe_reviews')
           .select('rating')
           .eq('recipe_id', recipeId);
 
+      print('📊 Found ${allRatings.length} ratings for recipe $recipeId');
+      print('📊 Raw ratings data: $allRatings');
+
       if (allRatings.isNotEmpty) {
         final avgRating =
             allRatings.map<num>((r) => r['rating']).reduce((a, b) => a + b) /
             allRatings.length;
 
-        await _supabaseService.client
-            .from('recipes')
-            .update({'rating': avgRating, 'review_count': allRatings.length})
-            .eq('id', recipeId);
+        print('📊 Calculated average: $avgRating');
+        print('📊 Total review count: ${allRatings.length}');
+
+        // Use RPC function to bypass RLS for rating updates
+        try {
+          final rpcResult = await _supabaseService.client.rpc(
+            'update_recipe_rating',
+            params: {
+              'recipe_id': recipeId,
+              'new_rating': avgRating,
+              'new_review_count': allRatings.length,
+            },
+          );
+          print('📊 RPC update result: $rpcResult');
+          print('✅ Updated via RPC function');
+        } catch (rpcError) {
+          print('⚠️ RPC function not available, using direct update: $rpcError');
+          
+          // Fallback: Direct update (might fail due to RLS)
+          final updateResult = await _supabaseService.client
+              .from('recipes')
+              .update({'rating': avgRating, 'review_count': allRatings.length})
+              .eq('id', recipeId)
+              .select('rating, review_count');
+
+          print('📊 Direct update result: $updateResult');
+          
+          if (updateResult.isEmpty) {
+            print('❌ Update failed - likely due to RLS policy. Recipe may not be owned by current user.');
+            print('🔧 Solution: Create RPC function or adjust RLS policy for rating updates.');
+          }
+        }
 
         print(
           '✅ Updated average rating for recipe $recipeId: $avgRating (${allRatings.length} reviews)',
         );
+      } else {
+        print('⚠️ No ratings found for recipe $recipeId');
+        // Update to 0 if no reviews exist
+        try {
+          await _supabaseService.client.rpc(
+            'update_recipe_rating',
+            params: {
+              'recipe_id': recipeId,
+              'new_rating': 0.0,
+              'new_review_count': 0,
+            },
+          );
+          print('✅ Reset to zero via RPC function');
+        } catch (rpcError) {
+          final updateResult = await _supabaseService.client
+              .from('recipes')
+              .update({'rating': 0.0, 'review_count': 0})
+              .eq('id', recipeId)
+              .select('rating, review_count');
+          
+          print('📊 Reset to zero - Direct update result: $updateResult');
+        }
       }
     } catch (e) {
       print('❌ Error updating average rating: $e');
+      print('🔍 Error details: ${e.toString()}');
+      print('🔍 Error type: ${e.runtimeType}');
     }
   }
 
@@ -1933,5 +2018,51 @@ class RecipeService extends ChangeNotifier {
   /// Refreshes user recipes after creating a new one
   Future<void> refreshUserRecipes() async {
     await fetchUserRecipes();
+  }
+
+  /// Test method to verify review and rating functionality
+  Future<void> testReviewSystem(String recipeId) async {
+    try {
+      print('🧪 Testing review system for recipe: $recipeId');
+      
+      // Check current recipe rating
+      final recipeCheck = await _supabaseService.client
+          .from('recipes')
+          .select('rating, review_count, name')
+          .eq('id', recipeId)
+          .single();
+          
+      print('📊 Current recipe state:');
+      print('   Name: ${recipeCheck['name']}');
+      print('   Rating: ${recipeCheck['rating']}');
+      print('   Review Count: ${recipeCheck['review_count']}');
+      
+      // Check all reviews for this recipe
+      final allReviews = await _supabaseService.client
+          .from('recipe_reviews')
+          .select('rating, comment, created_at')
+          .eq('recipe_id', recipeId)
+          .order('created_at', ascending: false);
+          
+      print('📊 All reviews in database:');
+      print('   Total reviews: ${allReviews.length}');
+      for (int i = 0; i < allReviews.length; i++) {
+        final review = allReviews[i];
+        print('   Review ${i + 1}: ${review['rating']}/5 - "${review['comment']}" (${review['created_at']})');
+      }
+      
+      // Calculate expected average
+      if (allReviews.isNotEmpty) {
+        final totalRating = allReviews.fold<double>(0.0, (sum, review) => sum + (review['rating'] as num).toDouble());
+        final expectedAverage = totalRating / allReviews.length;
+        print('📊 Expected average: $expectedAverage');
+        print('📊 Actual average: ${recipeCheck['rating']}');
+        print('📊 Match: ${expectedAverage == recipeCheck['rating'] ? '✅' : '❌'}');
+      }
+      
+      print('🧪 Review system test completed');
+    } catch (e) {
+      print('❌ Error testing review system: $e');
+    }
   }
 }

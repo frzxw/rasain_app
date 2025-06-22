@@ -31,17 +31,35 @@ class _ReviewSectionState extends State<ReviewSection> {
   List<Map<String, dynamic>> _reviews = [];
   bool _isLoadingReviews = true;
   final RecipeService _recipeService = RecipeService();
-
   @override
   void initState() {
     super.initState();
     _loadReviews();
   }
-  Future<void> _loadReviews() async {
+
+  @override
+  void didUpdateWidget(ReviewSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload reviews if recipe changed
+    if (oldWidget.recipe.id != widget.recipe.id) {
+      _loadReviews();
+    }
+  }  Future<void> _loadReviews() async {
     setState(() {
       _isLoadingReviews = true;
-    });    try {
-      final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);      // Check if current user has already reviewed this recipe
+    });    
+
+    try {
+      final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);
+      
+      // Debug: Check if any reviews belong to wrong recipe
+      for (final review in reviews) {
+        if (review['recipe_id'] != null && review['recipe_id'] != widget.recipe.id) {
+          print('❌ WRONG REVIEW: Review ${review['id']} belongs to recipe ${review['recipe_id']} but showing in ${widget.recipe.id}');
+        }
+      }
+      
+      // Check if current user has already reviewed this recipe
       final authState = context.read<AuthCubit>().state;
       bool userHasReviewed = false;
 
@@ -103,118 +121,68 @@ class _ReviewSectionState extends State<ReviewSection> {
       },
     );
   }
-
   Widget _buildRatingSummary(BuildContext context) {
-    return Row(
-      children: [
-        // Average Rating
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingL),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          // Left side - Rating display
+          Container(
+            padding: const EdgeInsets.all(AppSizes.paddingL),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: Column(
               children: [
                 Text(
                   widget.recipe.rating.toStringAsFixed(1),
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 36,
+                  ),
+                ),
+                const SizedBox(height: AppSizes.marginXS),
+                _buildStarRating(widget.recipe.rating),
+              ],
+            ),
+          ),
+          
+          const SizedBox(width: AppSizes.marginL),
+          
+          // Right side - Review info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rating Keseluruhan',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(height: AppSizes.marginXS),
                 Text(
-                  '/ 5.0',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  'Berdasarkan ${widget.recipe.reviewCount} ${widget.recipe.reviewCount == 1 ? 'ulasan' : 'ulasan'}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
                 ),
+                const SizedBox(height: AppSizes.marginS),
               ],
             ),
-            const SizedBox(height: AppSizes.marginXS),
-            _buildStarRating(widget.recipe.rating),
-            const SizedBox(height: AppSizes.marginXS),
-            Text(
-              '${widget.recipe.reviewCount} ${widget.recipe.reviewCount == 1 ? 'ulasan' : 'ulasan'}',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-
-        const Spacer(),
-
-        // Rating Distribution
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _buildRatingBar(context, 5, 0.6),
-            _buildRatingBar(context, 4, 0.2),
-            _buildRatingBar(context, 3, 0.1),
-            _buildRatingBar(context, 2, 0.05),
-            _buildRatingBar(context, 1, 0.05),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
-
-  Widget _buildRatingBar(BuildContext context, int stars, double fraction) {
-    return Row(
-      children: [
-        Text(
-          '$stars',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 4),
-        const Icon(
-          Icons.star,
-          size: AppSizes.iconXS,
-          color: AppColors.highlight,
-        ),
-        const SizedBox(width: 4),
-        SizedBox(
-          width: 100,
-          height: 6,
-          child: Stack(
-            children: [
-              // Background
-              Container(
-                width: 100,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              // Fill
-              Container(
-                width: 100 * fraction,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: AppColors.highlight,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          '${(fraction * 100).toInt()}%',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildStarRating(double rating) {
     return Row(
       children: List.generate(5, (index) {
@@ -306,35 +274,7 @@ class _ReviewSectionState extends State<ReviewSection> {
               vertical: AppSizes.paddingM,
             ),
           ),
-          maxLines: 3,
-        ),
-
-        const SizedBox(height: AppSizes.marginS),
-
-        // Photo attachment option
-        Row(
-          children: [
-            OutlinedButton.icon(
-              icon: const Icon(Icons.photo_camera),
-              label: const Text('Tambahkan Foto'),
-              onPressed: () {
-                // Add photo functionality would be implemented here
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Fitur tambah foto akan segera hadir'),
-                  ),
-                );
-              },
-            ),
-            const Spacer(),
-            Text(
-              'Foto membantu pengguna lain!',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+          maxLines: 3,        ),
 
         const SizedBox(height: AppSizes.marginM),
 
