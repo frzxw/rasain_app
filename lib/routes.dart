@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'features/home/home_screen.dart';
+import 'features/home/screens/all_community_recipes_screen.dart';
 import 'features/pantry/pantry_screen.dart';
 import 'features/upload_recipe/upload_recipe_screen.dart';
 import 'features/community/community_screen.dart';
@@ -116,6 +117,12 @@ GoRouter createRouter() {
         path: '/notifications',
         name: 'notifications',
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/all-community-recipes',
+        name: 'all_community_recipes',
+        builder: (context, state) => const AllCommunityRecipesScreen(),
       ),
     ],
   );

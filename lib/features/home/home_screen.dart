@@ -377,16 +377,14 @@ class _HomeScreenState extends State<HomeScreen> {
         // Trending Recipes Section
         const TrendingRecipesSection(),
 
-        const SizedBox(height: AppSizes.marginL),
-
-        // What's Cooking Stream Section
+        const SizedBox(height: AppSizes.marginL),        // What's Cooking Stream Section
         SectionHeader(
-          title: 'What\'s Cooking',
+          title: 'Masak Apa Hari Ini',
           subtitle: 'Jelajahi resep dari komunitas',
           icon: Icons.restaurant,
           iconColor: AppColors.primary,
           onSeeAllTap: () {
-            // TODO: Navigate to community recipes
+            context.go('/all-community-recipes');
           },
         ),
         const SizedBox(height: AppSizes.marginS),
