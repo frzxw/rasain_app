@@ -3,19 +3,14 @@ import 'package:flutter/foundation.dart';
 import '../../models/community_post.dart';
 import '../../models/post_comment.dart';
 import '../../services/community_service.dart';
-import '../../services/supabase_service.dart';
 import 'dart:typed_data';
 import 'community_state.dart';
 
 class CommunityCubit extends Cubit<CommunityState> {
   final CommunityService _communityService = CommunityService();
-  final SupabaseService _supabaseService = SupabaseService.instance;
 
   // Constants for better maintainability
-  static const Duration _databaseSyncDelay = Duration(milliseconds: 500);
-  static const int _maxTitleLength = 50;
   static const String _defaultCategory = 'Semua';
-  static const int _maxContentLength = 5000;
   
   // Track ongoing operations to prevent race conditions
   final Map<String, Future<void>> _ongoingLikeOperations = {};
@@ -25,19 +20,11 @@ class CommunityCubit extends Cubit<CommunityState> {
   Future<void> initialize() async {
     emit(state.copyWith(status: CommunityStatus.loading));
     try {
-      // Fetch community posts using the dedicated community service
-      List<CommunityPost> posts = await _communityService.getCommunityPosts();
+      // Fetch community posts with like status using the dedicated community service
+      final posts = await _communityService.getCommunityPostsWithLikeStatus();
 
-      // Update like status for current user
-      posts = await _updatePostsWithLikeStatus(posts);
-
-      // Extract all unique categories
-      final categories = [_defaultCategory];
-      for (var post in posts) {
-        if (post.category != null && !categories.contains(post.category)) {
-          categories.add(post.category!);
-        }
-      }
+      // Get categories from service
+      final categories = await _communityService.getPostCategories();
 
       emit(
         state.copyWith(
@@ -105,20 +92,9 @@ class CommunityCubit extends Cubit<CommunityState> {
       _ongoingLikeOperations.remove(postId);
     }
   }
-
   /// Performs the actual like operation with optimistic updates and error handling
   Future<void> _performLikeOperation(String postId) async {
     try {
-      // Get current user
-      final currentUser = _supabaseService.client.auth.currentUser;
-      if (currentUser == null) {
-        emit(state.copyWith(
-          status: CommunityStatus.error,
-          errorMessage: 'Please log in to like posts',
-        ));
-        return;
-      }
-
       // Find the post in both posts and allPosts
       final postsIndex = state.posts.indexWhere((p) => p.id == postId);
       final allPostsIndex = state.allPosts.indexWhere((p) => p.id == postId);
@@ -139,31 +115,30 @@ class CommunityCubit extends Cubit<CommunityState> {
         likeCount: newLikeCount,
       ));
 
-      // Database operation
+      // Database operation using service
       try {
-        if (newIsLiked) {
-          // Add like
-          await _supabaseService.client
-              .from('post_likes')
-              .insert({
-                'user_id': currentUser.id,
-                'post_id': postId,
-              });
+        final result = await _communityService.togglePostLikeWithDetails(postId);
+        
+        if (result.success) {
+          // Update with actual data from database
+          _updatePostInBothLists(postId, (post) => post.copyWith(
+            isLiked: result.isLiked,
+            likeCount: result.likeCount,
+          ));
         } else {
-          // Remove like
-          await _supabaseService.client
-              .from('post_likes')
-              .delete()
-              .eq('user_id', currentUser.id)
-              .eq('post_id', postId);
-        }
+          // Revert the optimistic update on service error
+          _updatePostInBothLists(postId, (post) => post.copyWith(
+            isLiked: isCurrentlyLiked,
+            likeCount: post.likeCount,
+          ));
 
-        // Wait for database triggers to update the like count
-        await Future.delayed(_databaseSyncDelay);
-        
-        // Refresh the actual like count from database to ensure consistency
-        await _refreshPostLikeCount(postId);
-        
+          emit(
+            state.copyWith(
+              status: CommunityStatus.error,
+              errorMessage: result.error ?? 'Failed to update like',
+            ),
+          );
+        }
       } catch (dbError) {
         // Revert the optimistic update on database error
         _updatePostInBothLists(postId, (post) => post.copyWith(
@@ -201,151 +176,53 @@ class CommunityCubit extends Cubit<CommunityState> {
       updatedAllPosts[allPostsIndex] = updater(updatedAllPosts[allPostsIndex]);
       
       emit(state.copyWith(posts: updatedPosts, allPosts: updatedAllPosts));
-    }
-  }// Helper method to refresh post like count from database
-  Future<void> _refreshPostLikeCount(String postId) async {
-    try {
-      // Get current user
-      final currentUser = _supabaseService.client.auth.currentUser;
-      if (currentUser == null) return;
+    }  }
 
-      // Get updated post data with like count
-      final updatedPostData = await _supabaseService.client
-          .from('community_posts')
-          .select('like_count')
-          .eq('id', postId)
-          .single();
-
-      // Check if current user has liked this post
-      final userLikeData = await _supabaseService.client
-          .from('post_likes')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .eq('post_id', postId);      final newLikeCount = updatedPostData['like_count']?.toInt() ?? 0;
-      final isLiked = userLikeData.isNotEmpty;
-      
-      // Update the like count and status in local state using helper method
-      _updatePostInBothLists(postId, (post) => post.copyWith(
-        likeCount: newLikeCount,
-        isLiked: isLiked,
-      ));
-    } catch (e) {
-      // Silently fail if refresh doesn't work
-      debugPrint('⚠️ Failed to refresh post like count: $e');
-    }
-  }
-    // Create a new community post
+  // Create a new community post
   Future<void> createPost({
     required String content,
     Uint8List? imageBytes,
     String? fileName,
     String? category,
   }) async {
-    // Input validation
-    if (!_validatePostInput(content)) {
+    // Input validation using service
+    if (!_communityService.validatePostInput(content)) {
+      emit(state.copyWith(
+        status: CommunityStatus.error,
+        errorMessage: 'Invalid post content',
+      ));
       return;
     }
 
     emit(state.copyWith(status: CommunityStatus.posting));
 
     try {
-      // Get current user
-      final currentUser = _supabaseService.client.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('User must be logged in to create posts');
-      }
-
-      // Get user profile for display name
-      String userName = 'User';
-      String? userImageUrl;
-      
-      try {
-        final userProfile = await _supabaseService.client
-            .from('user_profiles')
-            .select('name, image_url')
-            .eq('id', currentUser.id)
-            .single();
-        
-        userName = userProfile['name'] ?? 'User';
-        userImageUrl = userProfile['image_url'];
-      } catch (e) {
-        // Fallback to email or default name if profile not found
-        userName = currentUser.email?.split('@')[0] ?? 'User';
-      }      // Upload image to Supabase Storage if provided
-      String? uploadedImageUrl;
-      if (imageBytes != null && fileName != null) {
-        try {
-          final fileExt = fileName.split('.').last.toLowerCase();
-          final uniqueFileName = '${currentUser.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-          
-          // Upload to posts bucket
-          await _supabaseService.client.storage
-              .from('posts')
-              .uploadBinary(uniqueFileName, imageBytes);
-          
-          // Get public URL
-          uploadedImageUrl = _supabaseService.client.storage
-              .from('posts')
-              .getPublicUrl(uniqueFileName);
-              
-        } catch (uploadError) {
-          debugPrint('❌ Failed to upload image: $uploadError');
-          // Continue without image instead of complex fallback
-          uploadedImageUrl = null;
-        }
-      }// Generate a title from content (take first 50 characters or use category)
-      String title = '';
-      if (content.isNotEmpty) {
-        title = content.length > _maxTitleLength 
-            ? '${content.substring(0, _maxTitleLength)}...' 
-            : content;
-      } else if (category != null) {
-        title = 'Post tentang $category';
-      } else {
-        title = 'Post dari ${userName}';
-      }
-
-      // Insert post into database (matching DB schema with title)
-      final postData = {
-        'user_id': currentUser.id,
-        'title': title,
-        'content': content,
-        'image_url': uploadedImageUrl,
-        'category': category,
-        'like_count': 0,
-        'comment_count': 0,
-        'is_featured': false,
-      };
-
-      final insertedPost = await _supabaseService.client
-          .from('community_posts')
-          .insert(postData)
-          .select()
-          .single();      // Create CommunityPost object from inserted data
-      final newPost = CommunityPost(
-        id: insertedPost['id'].toString(),
-        userId: currentUser.id,
-        userName: userName,
-        userImageUrl: userImageUrl,
-        timestamp: DateTime.parse(insertedPost['created_at']),
-        title: title,
+      // Create post using service
+      final result = await _communityService.createPostWithFullDetails(
         content: content,
-        imageUrl: uploadedImageUrl,
+        imageBytes: imageBytes,
+        fileName: fileName,
         category: category,
-        taggedIngredients: null, // No longer using tagged ingredients
-        likeCount: 0,
-        commentCount: 0,
       );
 
-      // Add the new post to the list (at the beginning since it's newest)
-      final updatedPosts = [newPost, ...state.posts];
-      final updatedAllPosts = [newPost, ...state.allPosts];
+      if (result.success && result.post != null) {
+        // Add the new post to the list (at the beginning since it's newest)
+        final updatedPosts = [result.post!, ...state.posts];
+        final updatedAllPosts = [result.post!, ...state.allPosts];
 
-      emit(state.copyWith(
-        posts: updatedPosts,
-        allPosts: updatedAllPosts,
-        status: CommunityStatus.loaded,
-      ));
+        emit(state.copyWith(
+          posts: updatedPosts,
+          allPosts: updatedAllPosts,
+          status: CommunityStatus.loaded,
+        ));
+      } else {
+        emit(
+          state.copyWith(
+            status: CommunityStatus.error,
+            errorMessage: result.error ?? 'Failed to create post',
+          ),
+        );
+      }
     } catch (e) {
       emit(
         state.copyWith(
@@ -353,7 +230,8 @@ class CommunityCubit extends Cubit<CommunityState> {
           errorMessage: 'Failed to create post: ${e.toString()}',
         ),
       );
-    }  }  // Add a comment to a post
+    }
+  }  // Add a comment to a post
   Future<void> addComment(String postId, String comment) async {
     // Prevent race conditions
     if (_ongoingCommentOperations.containsKey(postId)) {
@@ -361,8 +239,12 @@ class CommunityCubit extends Cubit<CommunityState> {
       return;
     }
 
-    // Input validation
-    if (!_validateCommentInput(comment)) {
+    // Input validation using service
+    if (!_communityService.validateCommentInput(comment)) {
+      emit(state.copyWith(
+        status: CommunityStatus.error,
+        errorMessage: 'Invalid comment input',
+      ));
       return;
     }
 
@@ -373,8 +255,7 @@ class CommunityCubit extends Cubit<CommunityState> {
     } finally {
       _ongoingCommentOperations.remove(postId);
     }
-  }
-  /// Performs the actual comment addition with optimistic updates
+  }  /// Performs the actual comment addition with optimistic updates
   Future<void> _performAddComment(String postId, String comment) async {
     try {
       debugPrint('💬 Adding comment to post: $postId');
@@ -383,20 +264,20 @@ class CommunityCubit extends Cubit<CommunityState> {
       _updatePostInBothLists(postId, (post) => post.copyWith(
         commentCount: post.commentCount + 1,
       ));
-        // Create comment in database
-      final success = await _communityService.createComment(
+
+      // Create comment in database using service with detailed result
+      final result = await _communityService.createCommentWithCount(
         postId: postId,
         content: comment,
       );
 
-      if (success) {
+      if (result.success) {
         debugPrint('✅ Comment added successfully');
         
-        // Wait for database trigger to update the count
-        await Future.delayed(_databaseSyncDelay);
-        
-        // Refresh the specific post's comment count from database to ensure accuracy
-        await _refreshPostCommentCount(postId);
+        // Update with actual comment count from database
+        _updatePostInBothLists(postId, (post) => post.copyWith(
+          commentCount: result.commentCount,
+        ));
         
       } else {
         // Revert optimistic update on failure
@@ -406,7 +287,7 @@ class CommunityCubit extends Cubit<CommunityState> {
 
         emit(state.copyWith(
           status: CommunityStatus.error,
-          errorMessage: 'Failed to add comment',
+          errorMessage: result.error ?? 'Failed to add comment',
         ));
       }
     } catch (e) {
@@ -423,26 +304,6 @@ class CommunityCubit extends Cubit<CommunityState> {
       ));
     }
   }
-
-  // Helper method to refresh post comment count from database
-  Future<void> _refreshPostCommentCount(String postId) async {
-    try {
-      // Get updated post data with comment count
-      final updatedPostData = await _supabaseService.client
-          .from('community_posts')
-          .select('comment_count')
-          .eq('id', postId)
-          .single();      final newCommentCount = updatedPostData['comment_count']?.toInt() ?? 0;
-      
-      // Update the comment count in local state using helper method
-      _updatePostInBothLists(postId, (post) => post.copyWith(
-        commentCount: newCommentCount,
-      ));
-    } catch (e) {
-      // Silently fail if refresh doesn't work
-      debugPrint('⚠️ Failed to refresh post comment count: $e');
-    }
-  }
   // Get comments for a specific post
   Future<List<PostComment>> getPostComments(String postId) async {
     try {
@@ -452,84 +313,6 @@ class CommunityCubit extends Cubit<CommunityState> {
       debugPrint('❌ Error getting comments: $e');
       return [];
     }
-  }
-
-  // Helper method to update posts with like status for current user
-  Future<List<CommunityPost>> _updatePostsWithLikeStatus(List<CommunityPost> posts) async {
-    try {
-      final currentUser = _supabaseService.client.auth.currentUser;
-      if (currentUser == null) {
-        return posts;
-      }
-
-      // Get all post IDs
-      final postIds = posts.map((p) => p.id).toList();
-      
-      if (postIds.isEmpty) return posts;
-
-      // Query which posts the current user has liked
-      final likedPosts = await _supabaseService.client
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', currentUser.id)
-          .inFilter('post_id', postIds);
-
-      // Create a set of liked post IDs for quick lookup
-      final likedPostIds = likedPosts.map((like) => like['post_id'].toString()).toSet();
-
-      // Update posts with like status
-      final updatedPosts = posts.map((post) {
-        final isLiked = likedPostIds.contains(post.id);
-        return post.copyWith(isLiked: isLiked);
-      }).toList();      return updatedPosts;    } catch (e) {
-      return posts; // Return original posts if error occurs
-    }
-  }
-
-  /// Validates post input content
-  bool _validatePostInput(String content) {
-    final trimmedContent = content.trim();
-    
-    if (trimmedContent.isEmpty) {
-      emit(state.copyWith(
-        status: CommunityStatus.error,
-        errorMessage: 'Post content cannot be empty',
-      ));
-      return false;
-    }
-    
-    if (trimmedContent.length > _maxContentLength) {
-      emit(state.copyWith(
-        status: CommunityStatus.error,
-        errorMessage: 'Post content is too long (max $_maxContentLength characters)',
-      ));
-      return false;
-    }
-    
-    return true;
-  }
-
-  /// Validates comment input content
-  bool _validateCommentInput(String comment) {
-    final trimmedComment = comment.trim();
-    
-    if (trimmedComment.isEmpty) {
-      emit(state.copyWith(
-        status: CommunityStatus.error,
-        errorMessage: 'Comment cannot be empty',
-      ));
-      return false;
-    }
-    
-    if (trimmedComment.length > 1000) {
-      emit(state.copyWith(
-        status: CommunityStatus.error,
-        errorMessage: 'Comment is too long (max 1000 characters)',
-      ));
-      return false;
-    }
-    
-    return true;
   }  @override
   Future<void> close() {
     // Clean up ongoing operations to prevent memory leaks

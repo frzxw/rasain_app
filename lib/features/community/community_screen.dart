@@ -368,18 +368,20 @@ class _CommunityScreenState extends State<CommunityScreen> {
       _showLoginPrompt();
       return;
     }    final TextEditingController contentController = TextEditingController();
-    String? selectedCategory;
-    XFile? selectedImage;
-
-    // Updated with Indonesian cuisine categories to match DB structure
+    
+    // Initialize selectedCategory with current filter from cubit state
+    String? selectedCategory = context.read<CommunityCubit>().state.selectedCategory;
+    // If current filter is 'Semua', don't select any category initially
+    if (selectedCategory == 'Semua') {
+      selectedCategory = null;
+    }
+    
+    XFile? selectedImage;    // Updated with specific categories requested
     final availableCategories = [
-      'Makanan Utama',
-      'Pedas',
-      'Tradisional',
-      'Sup',
-      'Daging',
-      'Manis',
-      'Minuman',
+      'Kreasi',
+      'Review',
+      'Tips dan Trik',
+      'Lainnya',
     ];
 
     await showModalBottomSheet(
@@ -538,13 +540,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             );                          }).toList(),
                     ),
 
-                    const SizedBox(height: AppSizes.marginL),
-
-                    // Post Button
+                    const SizedBox(height: AppSizes.marginL),                    // Post Button
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
                         label: 'Kirim',
+                        textStyle: const TextStyle(color: Colors.white),
                         onPressed: () async {
                           // Validate form
                           if (contentController.text.trim().isEmpty &&
