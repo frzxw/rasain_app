@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (success && mounted) {
         // Success is handled by BlocListener
-        print('LoginScreen: Login successful');
+        print('LoginScreen: Login berhasil');
       }
     }
   }
@@ -43,13 +43,13 @@ class _LoginScreenState extends State<LoginScreen> {
       listener: (context, state) {
         if (state.status == AuthStatus.authenticated) {
           // Navigate to home screen
-          print('LoginScreen: User authenticated, navigating to home');
+            print('LoginScreen: User terautentikasi, navigasi ke beranda');
           context.go('/');
         } else if (state.status == AuthStatus.error) {
           // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage ?? 'Login failed'),
+                content: Text(state.errorMessage ?? 'Login gagal'),
               backgroundColor: Colors.red,
             ),
           );

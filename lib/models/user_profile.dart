@@ -45,8 +45,6 @@ class UserProfile {
       'saved_recipes_count': savedRecipesCount,
       'posts_count': postsCount,
       'is_notifications_enabled': isNotificationsEnabled,
-      'language': language,
-      'is_dark_mode_enabled': isDarkModeEnabled,
     };
   }
 

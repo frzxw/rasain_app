@@ -15,11 +15,11 @@ class ScaffoldWithBottomNavBar extends StatefulWidget {
 class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
   int _currentIndex = 0;
   static final List<(String, String, IconData)> _tabs = [
-    ('/', 'Home', Icons.home_outlined),
-    ('/pantry', 'Pantry', Icons.kitchen_outlined),
-    ('/upload-recipe', 'Upload', Icons.add_circle_outline),
-    ('/community', 'Community', Icons.people_outline),
-    ('/profile', 'Profile', Icons.person_outline),
+    ('/', 'Beranda', Icons.home_outlined),
+    ('/pantry', 'Dapur', Icons.kitchen_outlined),
+    ('/upload-recipe', 'Unggah', Icons.add_circle_outline),
+    ('/community', 'Komunitas', Icons.people_outline),
+    ('/profile', 'Profil', Icons.person_outline),
   ];
 
   @override

@@ -116,9 +116,6 @@ class AuthService extends ChangeNotifier {
         'bio': null,
         'saved_recipes_count': 0,
         'posts_count': 0,
-        'is_notifications_enabled': true,
-        'language': 'id',
-        'is_dark_mode_enabled': false,
       };
 
       debugPrint('📝 Profile data: $profileData');

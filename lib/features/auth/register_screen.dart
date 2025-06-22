@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (success && mounted) {
         // Success is handled by BlocListener
-        print('RegisterScreen: Registration successful');
+        print('RegisterScreen: Registrasi berhasil');
       }
     }
   }
@@ -54,10 +54,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return previous.status != current.status;
       },
       listener: (context, state) {
-        print('RegisterScreen: State changed - Status: ${state.status}');
+        print('RegisterScreen: Status berubah - Status: ${state.status}');
         if (state.status == AuthStatus.emailVerificationPending) {
           // Navigate to email verification screen
-          print('RegisterScreen: Navigating to email verification screen');
+            print('RegisterScreen: Navigasi ke layar verifikasi email');
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               context.go('/email-verification');
@@ -154,5 +154,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+      
   }
 }
