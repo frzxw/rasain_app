@@ -9,38 +9,14 @@ import '../../../models/user_profile.dart';
 class ProfileMenu extends StatefulWidget {
   final UserProfile user;
   final VoidCallback onLogout;
-  final Function(bool, String?, bool) onUpdateSettings;
 
-  const ProfileMenu({
-    super.key,
-    required this.user,
-    required this.onLogout,
-    required this.onUpdateSettings,
-  });
+  const ProfileMenu({super.key, required this.user, required this.onLogout});
 
   @override
   State<ProfileMenu> createState() => _ProfileMenuState();
 }
 
 class _ProfileMenuState extends State<ProfileMenu> {
-  bool _notificationsEnabled = true;
-  String _selectedLanguage = 'id'; // Default to Indonesian
-
-  final List<Map<String, dynamic>> _availableLanguages = [
-    {'code': 'id', 'name': 'Bahasa Indonesia'},
-    {'code': 'en', 'name': 'English'},
-    {'code': 'es', 'name': 'Spanish'},
-    {'code': 'fr', 'name': 'French'},
-    {'code': 'zh', 'name': 'Chinese'},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _notificationsEnabled = widget.user.isNotificationsEnabled;
-    _selectedLanguage = widget.user.language ?? 'id'; // Default to Indonesian
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -60,51 +36,12 @@ class _ProfileMenuState extends State<ProfileMenu> {
             ),
           ),
 
-          const SizedBox(height: AppSizes.marginS),
-
-          // General section card
-          _buildSectionCard(
-            title: 'Umum',
-            children: [
-              // Notifications
-              _buildSettingsToggle(
-                title: 'Notifikasi',
-                subtitle: 'Terima rekomendasi resep dan pembaruan',
-                value: _notificationsEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _notificationsEnabled = value;
-                  });
-                  widget.onUpdateSettings(
-                    _notificationsEnabled,
-                    _selectedLanguage,
-                    false,
-                  );
-                },
-              ),
-
-              _buildDivider(),
-
-              // Language Setting
-              _buildLanguageSetting(),
-            ],
-          ),
-
-          const SizedBox(height: AppSizes.marginL),
-
-          // Account Management Section Card
+          const SizedBox(
+            height: AppSizes.marginS,
+          ), // Account Management Section Card
           _buildSectionCard(
             title: 'Akun',
             children: [
-              // Change Password
-              _buildMenuButton(
-                icon: Icons.lock_outline,
-                title: 'Ubah Password',
-                onTap: () => _showChangePasswordDialog(context),
-              ),
-
-              _buildDivider(),
-
               // Logout
               _buildMenuButton(
                 icon: Icons.logout,
@@ -185,111 +122,6 @@ class _ProfileMenuState extends State<ProfileMenu> {
             ...children,
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsToggle({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLanguageSetting() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.paddingS),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bahasa',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  'Pilih bahasa yang Anda inginkan',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border, width: 0.5),
-            ),
-            child: DropdownButton<String>(
-              value: _selectedLanguage,
-              icon: const Icon(Icons.arrow_drop_down, size: 20),
-              underline: const SizedBox.shrink(),
-              elevation: 4,
-              isDense: true,
-              borderRadius: BorderRadius.circular(8),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedLanguage = newValue;
-                  });
-                  widget.onUpdateSettings(
-                    _notificationsEnabled,
-                    _selectedLanguage,
-                    false,
-                  );
-                }
-              },
-              items:
-                  _availableLanguages.map<DropdownMenuItem<String>>((
-                    Map<String, dynamic> language,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: language['code'],
-                      child: Text(language['name']),
-                    );
-                  }).toList(),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -399,193 +231,6 @@ class _ProfileMenuState extends State<ProfileMenu> {
                               child: const Text('Keluar'),
                             ),
                           ],
-                ),
-          ),
-    );
-  }
-
-  Future<void> _showChangePasswordDialog(BuildContext context) async {
-    final TextEditingController currentPasswordController =
-        TextEditingController();
-    final TextEditingController newPasswordController = TextEditingController();
-    final TextEditingController confirmPasswordController =
-        TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => StatefulBuilder(
-            builder:
-                (dialogContext, setState) => BlocBuilder<AuthCubit, AuthState>(
-                  builder:
-                      (context, state) => AlertDialog(
-                        title: const Text('Ubah Password'),
-                        content: Form(
-                          key: formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Current Password
-                              TextFormField(
-                                controller: currentPasswordController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password Saat Ini',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                ),
-                                obscureText: true,
-                                enabled: state.status != AuthStatus.loading,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Masukkan password saat ini';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: AppSizes.marginM),
-
-                              // New Password
-                              TextFormField(
-                                controller: newPasswordController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password Baru',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                ),
-                                obscureText: true,
-                                enabled: state.status != AuthStatus.loading,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Masukkan password baru';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Password minimal 6 karakter';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: AppSizes.marginM),
-
-                              // Confirm New Password
-                              TextFormField(
-                                controller: confirmPasswordController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Konfirmasi Password Baru',
-                                  prefixIcon: Icon(Icons.lock_outline),
-                                ),
-                                obscureText: true,
-                                enabled: state.status != AuthStatus.loading,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Konfirmasi password baru Anda';
-                                  }
-                                  if (value != newPasswordController.text) {
-                                    return 'Password tidak cocok';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              if (state.errorMessage != null) ...[
-                                const SizedBox(height: AppSizes.marginM),
-                                Container(
-                                  padding: const EdgeInsets.all(
-                                    AppSizes.paddingS,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: AppColors.error.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: AppColors.error,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          state.errorMessage!,
-                                          style: TextStyle(
-                                            color: AppColors.error,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-
-                              if (state.status == AuthStatus.loading) ...[
-                                const SizedBox(height: AppSizes.marginM),
-                                const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Mengubah password...',
-                                      style: TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () => Navigator.pop(dialogContext),
-                            child: const Text('Batal'),
-                          ),
-                          ElevatedButton(
-                            onPressed:
-                                state.status == AuthStatus.loading
-                                    ? null
-                                    : () async {
-                                      if (formKey.currentState!.validate()) {
-                                        final success = await context
-                                            .read<AuthCubit>()
-                                            .changePassword(
-                                              currentPasswordController.text,
-                                              newPasswordController.text,
-                                            );
-
-                                        if (success && dialogContext.mounted) {
-                                          Navigator.pop(dialogContext);
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Password berhasil diubah',
-                                              ),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                            child: const Text('Ubah Password'),
-                          ),
-                        ],
-                      ),
                 ),
           ),
     );

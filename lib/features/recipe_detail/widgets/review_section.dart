@@ -37,16 +37,11 @@ class _ReviewSectionState extends State<ReviewSection> {
     super.initState();
     _loadReviews();
   }
-
   Future<void> _loadReviews() async {
     setState(() {
       _isLoadingReviews = true;
-    });
-
-    try {
-      final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);
-
-      // Check if current user has already reviewed this recipe
+    });    try {
+      final reviews = await _recipeService.getRecipeReviews(widget.recipe.id);      // Check if current user has already reviewed this recipe
       final authState = context.read<AuthCubit>().state;
       bool userHasReviewed = false;
 
@@ -55,7 +50,6 @@ class _ReviewSectionState extends State<ReviewSection> {
         userHasReviewed = reviews.any(
           (review) => review['user_id'] == currentUserId,
         );
-        debugPrint('👤 User $currentUserId has reviewed: $userHasReviewed');
       }
 
       if (mounted) {
@@ -65,11 +59,7 @@ class _ReviewSectionState extends State<ReviewSection> {
           _isLoadingReviews = false;
         });
       }
-      debugPrint(
-        '✅ Loaded ${reviews.length} reviews for recipe ${widget.recipe.id}',
-      );
     } catch (e) {
-      debugPrint('❌ Error loading reviews: $e');
       if (mounted) {
         setState(() {
           _isLoadingReviews = false;
@@ -451,8 +441,7 @@ class _ReviewSectionState extends State<ReviewSection> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+      children: [        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
@@ -514,14 +503,13 @@ class _ReviewSectionState extends State<ReviewSection> {
             : _buildEmptyReviewsState(context),
       ],
     );
-  }
-
-  Widget _buildReviewItem(Map<String, dynamic> review) {
+  }  Widget _buildReviewItem(Map<String, dynamic> review) {
     final rating = review['rating']?.toDouble() ?? 0.0;
     final reviewText =
         review['comment'] ?? review['review_text'] ?? 'Tidak ada komentar';
-    final createdAt = review['date'] ?? review['created_at'] ?? '';
-    final userId = review['user_id'] ?? '';
+    final createdAt = review['date'] ?? review['created_at'] ?? '';    final userId = review['user_id'] ?? '';
+    final userName = review['user_name'] ?? 'User ${userId.length > 8 ? userId.substring(0, 8) : userId}';
+    final userImage = review['user_image'];
 
     // Format date
     String formattedDate = 'Tidak diketahui';
@@ -557,18 +545,22 @@ class _ReviewSectionState extends State<ReviewSection> {
         children: [
           // User Info and Rating
           Row(
-            children: [
-              // User Avatar (placeholder since we don't have user profile data yet)
+            children: [              // User Avatar with profile image
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Text(
-                  userId.isNotEmpty ? userId[0].toUpperCase() : 'U',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                backgroundImage: userImage != null && userImage.isNotEmpty 
+                    ? NetworkImage(userImage) 
+                    : null,
+                child: userImage == null || userImage.isEmpty
+                    ? Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
               ),
 
               const SizedBox(width: AppSizes.marginM),
@@ -579,7 +571,7 @@ class _ReviewSectionState extends State<ReviewSection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'User ${userId.length > 8 ? userId.substring(0, 8) : userId}',
+                      userName,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

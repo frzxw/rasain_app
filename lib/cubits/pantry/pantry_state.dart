@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../models/pantry_item.dart';
 import '../../models/recipe.dart';
 
-enum PantryStatus { initial, loading, loaded, error }
+enum PantryStatus { initial, loading, loaded, error, unauthenticated }
 
 class PantryState extends Equatable {
   final List<PantryItem> items;
@@ -14,6 +14,7 @@ class PantryState extends Equatable {
   final PantryStatus status;
   final String? errorMessage;
   final bool isLoadingRecipes;
+  final bool isAuthenticated;
 
   const PantryState({
     this.items = const [],
@@ -25,8 +26,8 @@ class PantryState extends Equatable {
     this.status = PantryStatus.initial,
     this.errorMessage,
     this.isLoadingRecipes = false,
-  });
-  PantryState copyWith({
+    this.isAuthenticated = false,
+  });  PantryState copyWith({
     List<PantryItem>? items,
     Map<String, List<PantryItem>>? categorizedItems,
     List<Recipe>? suggestedRecipes,
@@ -36,6 +37,7 @@ class PantryState extends Equatable {
     PantryStatus? status,
     String? errorMessage,
     bool? isLoadingRecipes,
+    bool? isAuthenticated,
   }) {
     return PantryState(
       items: items ?? this.items,
@@ -47,6 +49,7 @@ class PantryState extends Equatable {
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
       isLoadingRecipes: isLoadingRecipes ?? this.isLoadingRecipes,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
     );
   }
 
@@ -61,5 +64,6 @@ class PantryState extends Equatable {
     status, 
     errorMessage,
     isLoadingRecipes,
+    isAuthenticated,
   ];
 }

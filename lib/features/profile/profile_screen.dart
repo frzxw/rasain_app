@@ -187,15 +187,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 : null,
           ),
 
-          const SizedBox(height: AppSizes.marginM),
-
-          // User Name
+          const SizedBox(height: AppSizes.marginM), // User Name
           Text(
             user.name,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
+
+          // User Bio
+          if (user.bio != null && user.bio!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSizes.paddingS),
+              child: Text(
+                user.bio!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
 
           if (user.email != null)
             Padding(
