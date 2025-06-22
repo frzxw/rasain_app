@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/auth_dialog.dart';
+import '../../core/widgets/app_bar.dart';
 import '../../models/community_post.dart';
 import '../../cubits/community/community_cubit.dart';
 import '../../cubits/community/community_state.dart';
@@ -36,22 +36,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text(
-          'Community',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
+      appBar: CustomAppBar(
+        title: 'Community',
+        showNotification: true,
         backgroundColor: AppColors.primary,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
       ),
       body: BlocConsumer<CommunityCubit, CommunityState>(
         listener: (context, state) {
@@ -373,20 +362,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Show login dialog if user is not authenticated
       _showLoginPrompt();
       return;
+    }    final TextEditingController contentController = TextEditingController();
+    
+    // Initialize selectedCategory with current filter from cubit state
+    String? selectedCategory = context.read<CommunityCubit>().state.selectedCategory;
+    // If current filter is 'Semua', don't select any category initially
+    if (selectedCategory == 'Semua') {
+      selectedCategory = null;
     }
-    final TextEditingController contentController = TextEditingController();
-    String? selectedCategory;
-    XFile? selectedImage;
-
-    // Updated with Indonesian cuisine categories to match DB structure
+    
+    XFile? selectedImage;    // Updated with specific categories requested
     final availableCategories = [
-      'Makanan Utama',
-      'Pedas',
-      'Tradisional',
-      'Sup',
-      'Daging',
-      'Manis',
-      'Minuman',
+      'Kreasi',
+      'Review',
+      'Tips dan Trik',
+      'Lainnya',
     ];
 
     await showModalBottomSheet(
@@ -547,13 +537,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           }).toList(),
                     ),
 
-                    const SizedBox(height: AppSizes.marginL),
-
-                    // Post Button
+                    const SizedBox(height: AppSizes.marginL),                    // Post Button
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(
                         label: 'Kirim',
+                        textStyle: const TextStyle(color: Colors.white),
                         onPressed: () async {
                           // Validate form
                           if (contentController.text.trim().isEmpty &&

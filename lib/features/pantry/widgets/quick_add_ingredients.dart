@@ -21,19 +21,17 @@ class QuickAddIngredients extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Add',
+        children: [          Text(
+            'Tambah Cepat',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: AppSizes.marginM),
-          
-          // Categories with common ingredients
+            // Categories with common ingredients
           _buildCategorySection(
             context,
-            title: 'Vegetables',
+            title: 'Sayuran',
             icon: Icons.eco,
             color: Colors.green,
             items: [
@@ -43,10 +41,9 @@ class QuickAddIngredients extends StatelessWidget {
           ),
           
           const SizedBox(height: AppSizes.marginM),
-          
-          _buildCategorySection(
+            _buildCategorySection(
             context,
-            title: 'Proteins',
+            title: 'Protein',
             icon: Icons.egg,
             color: Colors.red,
             items: [
@@ -56,10 +53,9 @@ class QuickAddIngredients extends StatelessWidget {
           ),
           
           const SizedBox(height: AppSizes.marginM),
-          
-          _buildCategorySection(
+            _buildCategorySection(
             context,
-            title: 'Spices & Seasonings',
+            title: 'Bumbu & Rempah',
             icon: Icons.restaurant,
             color: Colors.purple,
             items: [
@@ -69,10 +65,9 @@ class QuickAddIngredients extends StatelessWidget {
           ),
           
           const SizedBox(height: AppSizes.marginM),
-          
-          _buildCategorySection(
+            _buildCategorySection(
             context,
-            title: 'Staples',
+            title: 'Bahan Pokok',
             icon: Icons.grain,
             color: Colors.brown,
             items: [
@@ -156,16 +151,15 @@ class QuickAddIngredients extends StatelessWidget {
       ),
     );
   }
-
   String _getCategoryFromTitle(String title) {
     switch (title) {
-      case 'Vegetables':
+      case 'Sayuran':
         return 'Vegetables';
-      case 'Proteins':
+      case 'Protein':
         return 'Meat';
-      case 'Spices & Seasonings':
+      case 'Bumbu & Rempah':
         return 'Spices';
-      case 'Staples':
+      case 'Bahan Pokok':
         return 'Grains';
       default:
         return 'Other';

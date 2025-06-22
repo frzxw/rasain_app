@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/sizes.dart';
 import '../../../core/theme/colors.dart';
 import '../../../models/recipe.dart';
@@ -207,13 +208,8 @@ class _TrendingRecipesSectionState extends State<TrendingRecipesSection>
                           TrendingRecipeCard(
                             recipe: recipe,
                             onTap: () {
-                              // TODO: Navigate to recipe detail
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Opening ${recipe.name}...'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              // Navigate to recipe detail using slug
+                              context.push('/recipe/${recipe.slug}');
                             },
                           ),
                           if (index < recipes.length - 1)

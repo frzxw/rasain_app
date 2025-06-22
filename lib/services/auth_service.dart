@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config/supabase_config.dart';
 import '../models/user_profile.dart';
+import 'notification_service.dart';
 
 class AuthService extends ChangeNotifier {
   final SupabaseClient _supabase = SupabaseConfig.client;
+  NotificationService? _notificationService;
 
   UserProfile? _currentUser;
   bool _isAuthenticated = false;
@@ -20,6 +22,11 @@ class AuthService extends ChangeNotifier {
 
     // Check current session on initialization
     _initializeAuth();
+  }
+
+  // Set notification service reference
+  void setNotificationService(NotificationService notificationService) {
+    _notificationService = notificationService;
   }
 
   // Initialize authentication state
@@ -41,10 +48,14 @@ class AuthService extends ChangeNotifier {
         '✅ User signed in, loading profile for: ${event.session?.user.id}',
       );
       _loadUserProfile(event.session?.user.id);
+      // Notify notification service about user login
+      _notificationService?.setCurrentUser(event.session?.user.id);
     } else if (event.event == AuthChangeEvent.signedOut) {
       debugPrint('❌ User signed out');
       _currentUser = null;
       _isAuthenticated = false;
+      // Notify notification service about user logout
+      _notificationService?.setCurrentUser(null);
       notifyListeners();
     }
   }

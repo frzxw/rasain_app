@@ -8,6 +8,7 @@ import '../../cubits/notification/notification_cubit.dart';
 import '../../cubits/notification/notification_state.dart';
 import '../../models/notification.dart';
 import '../../routes.dart';
+import 'package:go_router/go_router.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -368,6 +369,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return 'Lihat Detail';
       case NotificationType.system:
         return 'Detail';
+      case NotificationType.recipeSaved:
+      case NotificationType.recipeRemoved:
+        return 'Lihat Favorit';
+      case NotificationType.pantryItemAdded:
+      case NotificationType.pantryItemRemoved:
+        return 'Lihat Dapur';
+      case NotificationType.reviewSubmitted:
+      case NotificationType.ratingSubmitted:
+        return 'Lihat Ulasan';
     }
   }
 
@@ -380,29 +390,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case NotificationType.recipeRecommendation:
       case NotificationType.newRecipe:
         if (notification.relatedItemId != null) {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.recipeDetail,
-            arguments: {'recipeId': notification.relatedItemId!},
-          );
+          context.go('/recipe/${notification.relatedItemId}');
         }
         break;
 
       case NotificationType.expirationWarning:
       case NotificationType.lowStock:
+      case NotificationType.pantryItemAdded:
+      case NotificationType.pantryItemRemoved:
         // Navigate to pantry view
-        Navigator.pushNamed(context, AppRoutes.pantry);
+        context.go('/pantry');
         break;
 
       case NotificationType.review:
+      case NotificationType.reviewSubmitted:
+      case NotificationType.ratingSubmitted:
         // Navigate to recipe reviews
         if (notification.relatedItemId != null) {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.recipeDetail,
-            arguments: {'recipeId': notification.relatedItemId!},
+          context.go(
+            '/recipe/${notification.relatedItemId}',
+            extra: {'scrollToReview': true},
           );
         }
+        break;
+
+      case NotificationType.recipeSaved:
+      case NotificationType.recipeRemoved:
+        // Navigate to profile to see saved recipes
+        context.go('/profile');
         break;
 
       case NotificationType.achievement:

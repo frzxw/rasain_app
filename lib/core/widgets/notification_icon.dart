@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/colors.dart';
 import '../../services/notification_service.dart';
 import '../../routes.dart';
 
 class NotificationIcon extends StatelessWidget {
-  final Color? color;
+  final Color? iconColor;
   final double size;
   
   const NotificationIcon({
     super.key,
-    this.color,
+    this.iconColor,
     this.size = 24.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = color ?? Theme.of(context).appBarTheme.iconTheme?.color ?? Colors.white;
-    
     return Consumer<NotificationService>(
       builder: (context, notificationService, _) {
         return Stack(
@@ -25,13 +24,14 @@ class NotificationIcon extends StatelessWidget {
           children: [
             IconButton(
               icon: Icon(
-                Icons.notifications_outlined,
-                color: iconColor,
+                Icons.notifications,
+                color: iconColor ?? Colors.orange,
                 size: size,
               ),
               onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.notifications);
+                context.push('/notifications');
               },
+              tooltip: 'Notifikasi',
             ),
             
             if (notificationService.hasNewNotifications)

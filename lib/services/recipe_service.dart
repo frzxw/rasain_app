@@ -84,7 +84,6 @@ class RecipeService extends ChangeNotifier {
       await _supabaseService.client.from('saved_recipes').insert({
         'user_id': userId,
         'recipe_id': recipeId,
-        'saved_at': DateTime.now().toIso8601String(),
       });
 
       // Refresh saved recipes list
@@ -721,7 +720,6 @@ class RecipeService extends ChangeNotifier {
         await _supabaseService.client.from('saved_recipes').insert({
           'user_id': userId,
           'recipe_id': recipeId,
-          'saved_at': DateTime.now().toIso8601String(),
         });
       }
 
@@ -1095,12 +1093,10 @@ class RecipeService extends ChangeNotifier {
       }
     }
 
-    return recipesWithDetails;
-  }
-
-  // Get reviews for a specific recipe from recipe_reviews table
+    return recipesWithDetails;  }  // Get reviews for a specific recipe from recipe_reviews table
   Future<List<Map<String, dynamic>>> getRecipeReviews(String recipeId) async {
     try {
+      // Use JOIN with user_profiles like community service does
       final response = await _supabaseService.client
           .from('recipe_reviews')
           .select('''
@@ -1108,7 +1104,11 @@ class RecipeService extends ChangeNotifier {
             user_id,
             rating,
             comment,
-            created_at
+            created_at,
+            user_profiles!inner(
+              name,
+              image_url
+            )
           ''')
           .eq('recipe_id', recipeId)
           .order('created_at', ascending: false);

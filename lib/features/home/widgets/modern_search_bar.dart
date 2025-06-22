@@ -7,6 +7,7 @@ class ModernSearchBar extends StatelessWidget {
   final VoidCallback? onFilterTap;
   final bool hasActiveFilters;
   final VoidCallback? onCameraTap;
+  final List<Widget>? actions;
 
   const ModernSearchBar({
     super.key,
@@ -14,6 +15,7 @@ class ModernSearchBar extends StatelessWidget {
     this.onFilterTap,
     this.hasActiveFilters = false,
     this.onCameraTap,
+    this.actions,
   });
   @override
   Widget build(BuildContext context) {
@@ -87,6 +89,9 @@ class ModernSearchBar extends StatelessWidget {
                       : AppColors.textSecondary,
               isActive: hasActiveFilters,
             ),
+
+          // Custom actions (e.g., notification icon)
+          if (actions != null) ...actions!,
         ],
       ),
     );

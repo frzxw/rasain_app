@@ -6,19 +6,18 @@ class CategorySlider extends StatelessWidget {
   final List<String> categories;
   final String selectedCategory;
   final ValueChanged<String> onCategorySelected;
-  
+
   const CategorySlider({
     super.key,
     required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
   });
-
   @override
   Widget build(BuildContext context) {
-    // Add 'All' as the first category
-    final allCategories = [ ...categories];
-    
+    // Use the categories as provided (should already include 'All' as first item)
+    final allCategories = [...categories];
+
     return SizedBox(
       height: AppSizes.categoryChipHeight,
       child: ListView.builder(
@@ -27,7 +26,7 @@ class CategorySlider extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = allCategories[index];
           final isSelected = category == selectedCategory;
-          
+
           return Container(
             margin: EdgeInsets.only(
               right: index < allCategories.length - 1 ? AppSizes.marginS : 0,

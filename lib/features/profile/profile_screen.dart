@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/sizes.dart';
 import '../../core/theme/colors.dart';
 import '../../core/widgets/app_bar.dart';
@@ -32,6 +33,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Load saved recipes
       context.read<RecipeCubit>().initialize();
+      context.read<RecipeCubit>().getLikedRecipes();
     });
   }
 
@@ -39,7 +41,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const CustomAppBar(title: 'Profile'),
+      appBar: const CustomAppBar(
+        title: 'Profile',
+        showNotification: true,
+      ),
       body: BlocBuilder<AuthCubit, AuthState>(
         builder: (context, state) {
           final isAuthenticated = state.status == AuthStatus.authenticated;
@@ -65,96 +70,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return RefreshIndicator(
       onRefresh: () async {
         await context.read<AuthCubit>().initialize();
-        await context.read<RecipeCubit>().initialize();
+        await context.read<RecipeCubit>().getLikedRecipes();
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            // Profile Header
-            _buildProfileHeader(context, user),
+        child: BlocBuilder<RecipeCubit, RecipeState>(
+          builder: (context, recipeState) {
+            return Column(
+              children: [
+                // Profile Header
+                _buildProfileHeader(context, user, recipeState.savedRecipes.length),
 
-            const SizedBox(height: AppSizes.marginL),
+                const SizedBox(height: AppSizes.marginL),
 
-            // Saved Recipes
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.paddingM,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Resep Tersimpan', // Changed to Indonesian
-                    style: Theme.of(context).textTheme.headlineSmall,
+                // Saved Recipes
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingM,
                   ),
-                  Text(
-                    '${user.savedRecipesCount} tersimpan', // Changed to Indonesian
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Resep Tersimpan',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      Text(
+                        '${recipeState.savedRecipes.length} tersimpan',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSizes.marginM),
+                ),
+                const SizedBox(height: AppSizes.marginM),
 
-            // Saved Recipe List
-            BlocBuilder<RecipeCubit, RecipeState>(
-              builder: (context, state) {
-                return SavedRecipeList(
-                  recipes: state.savedRecipes,
-                  isLoading: state.status == RecipeStatus.loading,
-                );
-              },
-            ),
+                // Saved Recipe List
+                SavedRecipeList(
+                  recipes: recipeState.savedRecipes,
+                  isLoading: recipeState.status == RecipeStatus.loading,
+                ),
 
-            const SizedBox(height: AppSizes.marginL),
+                const SizedBox(height: AppSizes.marginL),
 
-            // User Recipe List - Resep Buatan Saya
-            BlocBuilder<RecipeCubit, RecipeState>(
-              builder: (context, state) {
-                return UserRecipeList(
-                  recipes: state.userRecipes,
-                  isLoading: state.status == RecipeStatus.loading,
-                );
-              },
-            ),
+                // User Recipe List - Resep Buatan Saya
+                UserRecipeList(
+                  recipes: recipeState.userRecipes,
+                  isLoading: recipeState.status == RecipeStatus.loading,
+                ),
 
-            const SizedBox(height: AppSizes.marginL),
+                const SizedBox(height: AppSizes.marginL),                // Settings and Profile Menu
+                ProfileMenu(
+                  user: user,
+                  onLogout: () async {
+                    await context.read<AuthCubit>().signOut();
+                  },
+                ),
 
-            // Settings and Profile Menu
-            ProfileMenu(
-              user: user,
-              onLogout: () async {
-                await context.read<AuthCubit>().signOut();
-              },
-              onUpdateSettings: (notifications, language, _) async {
-                final success = await context.read<AuthCubit>().updateSettings(
-                  notifications,
-                  language ?? 'id',
-                );
-
-                if (success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pengaturan berhasil diperbarui'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-            ),
-
-            const SizedBox(height: AppSizes.marginXL),
-          ],
+                const SizedBox(height: AppSizes.marginXL),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, UserProfile user) {
+  Widget _buildProfileHeader(
+      BuildContext context, UserProfile user, int savedRecipesCount) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.paddingM),
       child: Column(
@@ -167,27 +152,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               shape: BoxShape.circle,
               color: AppColors.surface,
               border: Border.all(color: AppColors.primary, width: 2),
-              image:
-                  user.imageUrl != null
-                      ? DecorationImage(
-                        image: NetworkImage(user.imageUrl!),
-                        fit: BoxFit.cover,
-                      )
-                      : null,
-            ),
-            child:
-                user.imageUrl == null
-                    ? const Icon(
-                      Icons.person,
-                      size: AppSizes.iconXL,
-                      color: AppColors.textSecondary,
+              image: user.imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(user.imageUrl!),
+                      fit: BoxFit.cover,
                     )
-                    : null,
+                  : null,
+            ),
+            child: user.imageUrl == null
+                ? const Icon(
+                    Icons.person,
+                    size: AppSizes.iconXL,
+                    color: AppColors.textSecondary,
+                  )
+                : null,
           ),
 
-          const SizedBox(height: AppSizes.marginM),
-
-          // User Name
+          const SizedBox(height: AppSizes.marginM), // User Name
           Text(
             user.name,
             style: Theme.of(
@@ -195,14 +176,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
 
+          // User Bio
+          if (user.bio != null && user.bio!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSizes.paddingS),
+              child: Text(
+                user.bio!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
           if (user.email != null)
             Padding(
               padding: const EdgeInsets.only(top: AppSizes.paddingXS),
               child: Text(
                 user.email!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                      color: AppColors.textSecondary,
+                    ),
               ),
             ),
 
@@ -214,8 +211,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildStatItem(
                 context,
-                count: user.savedRecipesCount,
-                label: 'Tersimpan', // Changed to Indonesian
+                count: savedRecipesCount,
+                label: 'Tersimpan',
               ),
               Container(
                 height: 24,
@@ -228,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildStatItem(
                 context,
                 count: user.postsCount,
-                label: 'Postingan', // Changed to Indonesian
+                label: 'Postingan',
               ),
             ],
           ),

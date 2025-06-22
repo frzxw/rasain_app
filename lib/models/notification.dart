@@ -8,7 +8,13 @@ enum NotificationType {
   newRecipe, 
   review, 
   achievement, 
-  system
+  system,
+  recipeSaved,
+  recipeRemoved,
+  pantryItemAdded,
+  pantryItemRemoved,
+  reviewSubmitted,
+  ratingSubmitted
 }
 
 class AppNotification {
@@ -107,6 +113,18 @@ class AppNotification {
         return Icons.emoji_events;
       case NotificationType.system:
         return Icons.notifications;
+      case NotificationType.recipeSaved:
+        return Icons.bookmark;
+      case NotificationType.recipeRemoved:
+        return Icons.bookmark_border;
+      case NotificationType.pantryItemAdded:
+        return Icons.add_shopping_cart;
+      case NotificationType.pantryItemRemoved:
+        return Icons.remove_shopping_cart;
+      case NotificationType.reviewSubmitted:
+        return Icons.rate_review;
+      case NotificationType.ratingSubmitted:
+        return Icons.star;
     }
   }
 
@@ -127,6 +145,18 @@ class AppNotification {
         return Colors.yellow.shade800;
       case NotificationType.system:
         return Colors.grey;
+      case NotificationType.recipeSaved:
+        return Colors.green;
+      case NotificationType.recipeRemoved:
+        return Colors.red;
+      case NotificationType.pantryItemAdded:
+        return Colors.blue;
+      case NotificationType.pantryItemRemoved:
+        return Colors.orange;
+      case NotificationType.reviewSubmitted:
+        return Colors.purple;
+      case NotificationType.ratingSubmitted:
+        return Colors.amber;
     }
   }
 }
